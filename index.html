@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#D3162F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="안전점검">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>일일안전보건점검표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: one-column field form, sticky date bar on top, cards per 위험요인, big tap targets for 완료/불량 */
+:root{
+  --bg:#F2F2EE; --surface:#FFFFFF; --sunk:#E9EAE4; --ink:#1D1E1A; --muted:#66685F; --line:#D5D6CE;
+  --brand:#D3162F; --olive:#93958A; --ok:#1E7A4B; --ok-soft:#E1F1E8; --bad:#C3172E; --bad-soft:#FBE4E6;
+  --focus:#1D4ED8;
+  --f-display:"IBM Plex Sans KR","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141513; --surface:#1E1F1C; --sunk:#262823; --ink:#ECECE6; --muted:#A3A598; --line:#363832;
+  --brand:#FF4A5D; --olive:#8B8D80; --ok:#47C584; --ok-soft:#173326; --bad:#FF5A6B; --bad-soft:#3A1A1E; --focus:#7AA2FF; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141513; --surface:#1E1F1C; --sunk:#262823; --ink:#ECECE6; --muted:#A3A598; --line:#363832;
+  --brand:#FF4A5D; --olive:#8B8D80; --ok:#47C584; --ok-soft:#173326; --bad:#FF5A6B; --bad-soft:#3A1A1E; --focus:#7AA2FF; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 120px}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* stripe from the paper form */
+.stripe{display:grid;grid-template-columns:1fr 3fr;height:6px}
+.stripe i:first-child{background:var(--olive)} .stripe i:last-child{background:var(--brand)}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 8px;display:grid;gap:8px}
+.title-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.title-row h1{font-family:var(--f-display);font-weight:700;font-size:17px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.title-row small{display:block;font-size:12px;color:var(--muted);font-weight:500}
+.save{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.save.dirty{color:var(--brand)}
+.days{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;scroll-snap-type:x proximity}
+.days::-webkit-scrollbar{display:none}
+.day{flex:0 0 auto;width:44px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 0 5px;text-align:center;cursor:pointer;scroll-snap-align:center;position:relative}
+.day b{display:block;font-family:var(--f-display);font-size:16px;font-variant-numeric:tabular-nums;line-height:1.2}
+.day span{font-size:11px;color:var(--muted)}
+.day.sun span{color:var(--brand)}
+.day[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.day[aria-pressed="true"] span{color:inherit;opacity:.8}
+.day .dot{position:absolute;top:4px;right:5px;width:6px;height:6px;border-radius:50%}
+.day .dot.part{background:var(--olive)} .day .dot.done{background:var(--ok)}
+.progress{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{flex:1;height:5px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .25s}
+
+nav.jump{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:14px 0 4px}
+nav.jump::-webkit-scrollbar{display:none}
+nav.jump a{flex:0 0 auto;font-size:13px;font-weight:500;color:var(--ink);text-decoration:none;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+
+section{margin-top:22px;display:grid;gap:10px;scroll-margin-top:150px}
+h2{font-family:var(--f-display);font-size:15px;font-weight:700;margin:0;display:flex;align-items:baseline;gap:8px;letter-spacing:-.01em}
+h2::before{content:"■";color:var(--brand);font-size:11px}
+h2 em{font-style:normal;font-weight:500;font-size:12px;color:var(--muted)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:12px;min-width:0}
+.kv{display:grid;grid-template-columns:84px 1fr;gap:8px 12px;align-items:center;font-size:14px}
+.kv dt{color:var(--muted);font-size:13px}
+.kv dd{margin:0;font-weight:500;min-width:0}
+label.f{display:grid;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+input[type=text],textarea{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px 12px;font-size:16px;color:var(--ink);min-width:0}
+textarea{resize:vertical;min-height:44px;line-height:1.45}
+input[type=text]:focus,textarea:focus{outline:2px solid var(--focus);outline-offset:-1px;background:var(--surface)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* 결재 */
+.sign{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden;text-align:center;font-size:12px}
+.sign div{border-left:1px solid var(--line);display:grid}
+.sign div:first-child{border-left:0}
+.sign b{background:var(--sunk);padding:4px 2px;font-weight:600}
+.sign span{color:var(--muted);padding:2px}
+.sign i{height:36px;border-top:1px dashed var(--line)}
+
+/* risk card */
+.risk-head{display:grid;gap:6px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:5px;background:var(--sunk);color:var(--ink)}
+.tag.no{background:var(--ink);color:var(--bg);font-family:var(--f-display)}
+.risk-text{font-size:14px;font-weight:500;line-height:1.5}
+.risk-text small{display:block;font-size:11px;color:var(--brand);font-weight:700;letter-spacing:.04em}
+.meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px}
+.measure{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:10px}
+.measure p{margin:0;font-size:14px;font-weight:500}
+.measure p b{font-family:var(--f-display);color:var(--muted);margin-right:4px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{min-height:46px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.seg button .o{width:18px;height:18px;border-radius:50%;border:2px solid currentColor;opacity:.35}
+.seg button[data-v="완료"][aria-pressed="true"]{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.seg button[data-v="불량"][aria-pressed="true"]{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.seg button[aria-pressed="true"] .o{opacity:1}
+.seg3{grid-template-columns:auto 1fr 1fr;align-items:center}
+.seg3 > span{font-size:13px;color:var(--muted);padding-right:4px}
+
+/* photo */
+.photo{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:start}
+.thumb{width:96px;aspect-ratio:4/3;max-width:100%;border-radius:8px;border:1.5px dashed var(--line);background:var(--sunk);display:grid;place-items:center;overflow:hidden;font-size:11px;color:var(--muted);text-align:center;line-height:1.3;position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.has{border-style:solid}
+.photo-ctl{display:grid;gap:6px;min-width:0}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 11px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;min-height:36px}
+.btn.ghost{color:var(--muted)}
+.btn svg{width:16px;height:16px}
+.slot{font-size:11px;color:var(--muted)}
+.edit-toggle{justify-self:start}
+.editing .risk-text,.editing .measure p,.editing .meta{display:none}
+.edit-fields{display:none;gap:8px}
+.editing .edit-fields{display:grid}
+
+.extra-head{display:flex;justify-content:space-between;align-items:center}
+.extra-head b{font-family:var(--f-display)}
+footer.bot{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:5}
+.bot-in{max-width:720px;margin:0 auto;display:flex;gap:8px;align-items:center}
+.bot-in .note{flex:1;font-size:12px;color:var(--muted);min-width:0}
+.primary{background:var(--ink);color:var(--bg);border:0;border-radius:9px;padding:12px 18px;font-weight:700;font-size:15px;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+.confirm{display:flex;gap:8px;align-items:center;font-size:13px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}.kv{grid-template-columns:72px 1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<header class="top">
+  <div class="stripe"><i></i><i></i></div>
+  <div class="top-in">
+    <div class="title-row">
+      <div><h1>일일안전보건점검표</h1><small id="sub">2026년 11월 · 공사팀</small></div>
+      <span class="save" id="save">저장됨</span>
+    </div>
+    <div class="days" id="days" role="group" aria-label="점검일 선택"></div>
+    <div class="progress"><span id="progTxt">점검 0/6</span><div class="bar"><i id="progBar"></i></div><span id="photoTxt">사진 0</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="jump" aria-label="바로가기">
+    <a href="#s-info">기본정보</a><a href="#s-check">중점관리 점검</a><a href="#s-extra">추가위험발굴</a><a href="#s-opinion">공사팀장 의견</a>
+  </nav>
+
+  <section id="s-info">
+    <h2>기본정보</h2>
+    <div class="card">
+      <dl class="kv" style="margin:0">
+        <dt>현장명</dt><dd id="v-site"></dd>
+        <dt>점검일</dt><dd id="v-date" style="font-variant-numeric:tabular-nums"></dd>
+        <dt>관리기간</dt><dd id="v-period" style="font-variant-numeric:tabular-nums"></dd>
+        <dt>협력업체</dt><dd id="v-partner"></dd>
+      </dl>
+      <label class="f">점검자<input type="text" id="inspector" placeholder="예: 김대건" autocomplete="name"></label>
+      <div class="sign" aria-label="결재란 (출력 후 서명)">
+        <div><b>작성자</b><span>일일안전담당자</span><i></i></div>
+        <div><b>검토자</b><span>공사팀장</span><i></i></div>
+        <div><b>승인자</b><span>현장소장</span><i></i></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s-check">
+    <h2>중점관리 점검 <em>A등급 위험요인 · 개선대책별 완료/불량</em></h2>
+    <div id="risks" style="display:grid;gap:12px"></div>
+  </section>
+
+  <section id="s-extra">
+    <h2>추가위험발굴 <em>오늘 새로 발견한 위험</em></h2>
+    <div id="extras" style="display:grid;gap:12px"></div>
+  </section>
+
+  <section id="s-opinion">
+    <h2>공사팀장 점검 / 승인(검토)의견</h2>
+    <div class="card"><textarea id="leaderOpinion" rows="3" placeholder="공사팀장 의견"></textarea></div>
+  </section>
+</main>
+
+<footer class="bot"><div class="bot-in">
+  <span class="note" id="botNote">입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.</span>
+  <span class="confirm" id="clearBox"><button class="btn ghost" id="clearBtn" type="button">이 날짜 비우기</button></span>
+</div></footer>
+<div class="toast" id="toast" role="status"></div>
+
+<input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
+<input type="file" id="fileLib" accept="image/*" hidden>
+
+<script>
+(function(){
+/* ---------- 양식 기본값 (26. 11월 일일안전보건점검표 공사팀.xlsx 기준) ---------- */
+const DEFAULT_TPL = {
+  site:"온천제2공영아파트일원 가로주택정비사업",
+  year:2026, month:11,
+  partner:"동우건설",
+  items:[
+    {work:"골조",sub:"단열재\n설치",loc:"101동\n102동\n103동",
+     risk:"슬라브 단열재 설치 작업 시 화기작업 및 흡연으로 인한\n화재 위험",when:"11.01\n~\n11.30",owner:"쌍용 김대건 기사\n동우 박찬섭 차장",
+     measures:["1. 단열재 설치 작업 시 해당 작업구간 소화기 비치","2. 화기작업 불가피 시 불연포 덮개 및 화재감시자 배치"]},
+    {work:"골조",sub:"시스템\n동바리",loc:"101동\n102동\n103동",
+     risk:"시스템 동바리, 비계 승하강 시 사다리 탈락 또는\n미끄러짐으로 인한 근로자 추락 위험",when:"11.01\n~\n11.30",owner:"쌍용 배윤기 대리\n동우 이경국 과장",
+     measures:["1. 수직 승강사다리 고정 철저 및 사용 전 고정 상태 점검 후\n    이동","2. 승하강 시 3점 접촉 유지하고, 해치발판 닫힘 상태를\n    확인 할 것"]},
+    {work:"설비",sub:"배관설치\n공사",loc:"B4F 주차장",
+     risk:"샵장 내에서 배관 절단 작업 중 인화성, 가연성 물질에\n불티가 튀어 화재 발생 위험",when:"11.01\n~\n11.30",owner:"쌍용 최외섭 부장\n정진 조영식 소장",
+     measures:["1. 샵장 내부 불티방지포 설치 및 소화기 비치","2. 샵장 내 확산소화기 설치 및 휀스 설치하여 격리 작업 할 것"]}
+  ]
+};
+const EXTRA_ROWS = 2; // 엑셀 19·20행
+const WD = ["일","월","화","수","목","금","토"];
+
+/* ---------- 저장소: IndexedDB, 안 되면 메모리 ---------- */
+const mem = {};
+let dbp = null;
+function db(){
+  if(dbp) return dbp;
+  dbp = new Promise((res)=>{
+    try{
+      const r = indexedDB.open("daily-safety-check",1);
+      r.onupgradeneeded = ()=> r.result.createObjectStore("kv");
+      r.onsuccess = ()=> res(r.result);
+      r.onerror = ()=> res(null);
+    }catch(e){ res(null); }
+  });
+  return dbp;
+}
+async function get(k){
+  const d = await db(); if(!d) return mem[k];
+  return new Promise(res=>{ try{ const q=d.transaction("kv").objectStore("kv").get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>res(mem[k]); }catch(e){res(mem[k]);} });
+}
+async function put(k,v){
+  mem[k]=v; const d = await db(); if(!d) return false;
+  return new Promise(res=>{ try{ const t=d.transaction("kv","readwrite"); t.objectStore("kv").put(v,k); t.oncomplete=()=>res(true); t.onerror=()=>res(false);}catch(e){res(false);} });
+}
+async function del(k){ delete mem[k]; const d=await db(); if(!d) return; try{ d.transaction("kv","readwrite").objectStore("kv").delete(k);}catch(e){} }
+
+/* ---------- 상태 ---------- */
+let tpl = JSON.parse(JSON.stringify(DEFAULT_TPL));
+let cur = null;      // 선택 날짜 YYYY-MM-DD
+let rec = null;      // 해당 날짜 기록
+let summary = {};    // 날짜별 진행 요약
+let photoTarget = null;
+const $ = s=>document.querySelector(s);
+const pad = n=>String(n).padStart(2,"0");
+const ymd = (y,m,d)=>`${y}-${pad(m)}-${pad(d)}`;
+const dotDate = s=>s.replace(/-/g,".");
+const lastDay = ()=> new Date(tpl.year, tpl.month, 0).getDate();
+const measureKeys = ()=> tpl.items.flatMap((it,i)=> it.measures.map((_,j)=>`${i+1}-${j+1}`));
+
+function blankRec(date){
+  const results={}; measureKeys().forEach(k=>results[k]={r:"",note:"",photo:null,caption:""});
+  return {date, inspector:"", leaderOpinion:"", results,
+    extra:Array.from({length:EXTRA_ROWS},()=>({sub:"",loc:"",risk:"",action:"",fix:"",fb:"",reflect:"",partner:"",photo:null,caption:""}))};
+}
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function nl(s){return esc(s).replace(/\n\s*/g," ").replace(/\s+/g," ").trim();}
+
+/* ---------- 날짜 줄 ---------- */
+function renderDays(){
+  const box=$("#days"); box.innerHTML="";
+  for(let d=1; d<=lastDay(); d++){
+    const k=ymd(tpl.year,tpl.month,d), w=new Date(tpl.year,tpl.month-1,d).getDay();
+    const b=document.createElement("button"); b.type="button"; b.className="day"+(w===0?" sun":"");
+    b.setAttribute("aria-pressed", k===cur); b.dataset.k=k;
+    const st=summary[k]; const dot = st ? `<i class="dot ${st==="done"?"done":"part"}"></i>`:"";
+    b.innerHTML=`${dot}<b>${d}</b><span>${WD[w]}</span>`;
+    b.onclick=()=>selectDay(k);
+    box.appendChild(b);
+  }
+  const on=box.querySelector('[aria-pressed="true"]'); if(on) on.scrollIntoView({inline:"center",block:"nearest"});
+}
+
+/* ---------- 본문 ---------- */
+function photoBlock(id, slotLabel, p, caption){
+  return `<div class="photo">
+    <div class="thumb ${p?"has":""}">${p?`<img src="${p}" alt="${esc(slotLabel)} 사진">`:`사진 없음<br>${esc(slotLabel)}`}</div>
+    <div class="photo-ctl">
+      <div class="btns">
+        <button class="btn" type="button" data-cam="${id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>촬영</button>
+        <button class="btn" type="button" data-lib="${id}">앨범</button>
+        ${p?`<button class="btn ghost" type="button" data-rm="${id}">삭제</button>`:""}
+      </div>
+      <input type="text" data-cap="${id}" value="${esc(caption)}" placeholder="사진 내용">
+      <span class="slot">사진대지 · ${esc(slotLabel)}</span>
+    </div></div>`;
+}
+
+function renderRisks(){
+  const box=$("#risks");
+  box.innerHTML = tpl.items.map((it,i)=>{
+    const ms = it.measures.map((m,j)=>{
+      const k=`${i+1}-${j+1}`, r=rec.results[k]||{};
+      return `<div class="measure">
+        <p>${esc(m.replace(/\n\s*/g," "))}</p>
+        <div class="edit-fields"><label class="f">개선대책 ${j+1}<textarea data-tpl="m" data-i="${i}" data-j="${j}" rows="2">${esc(m)}</textarea></label></div>
+        <div class="seg" role="group" aria-label="점검결과 ${k}">
+          <button type="button" data-res="${k}" data-v="완료" aria-pressed="${r.r==="완료"}"><span class="o"></span>완료</button>
+          <button type="button" data-res="${k}" data-v="불량" aria-pressed="${r.r==="불량"}"><span class="o"></span>불량</button>
+        </div>
+        <label class="f">점검 의견<textarea data-note="${k}" rows="1" placeholder="${r.r==="불량"?"불량 내용과 조치 계획":"특이사항 없으면 비워두세요"}">${esc(r.note)}</textarea></label>
+        ${photoBlock("m:"+k, "중점관리사항 "+k, r.photo, r.caption)}
+      </div>`;
+    }).join("");
+    return `<article class="card" id="risk-${i}">
+      <div class="risk-head">
+        <div class="tags"><span class="tag no">${i+1}</span><span class="tag">${esc(it.work)}</span><span class="tag">${nl(it.sub)}</span><span class="tag">${nl(it.loc)}</span></div>
+        <div class="risk-text"><small>A등급 위험요인</small>${nl(it.risk)}</div>
+        <div class="meta"><span>작업일시 ${nl(it.when)}</span><span>담당 ${nl(it.owner)}</span></div>
+        <div class="edit-fields">
+          <div class="grid2">
+            <label class="f">공종<input type="text" data-tpl="work" data-i="${i}" value="${esc(it.work)}"></label>
+            <label class="f">중공종<input type="text" data-tpl="sub" data-i="${i}" value="${esc(it.sub.replace(/\n/g," "))}"></label>
+            <label class="f">작업위치<input type="text" data-tpl="loc" data-i="${i}" value="${esc(it.loc.replace(/\n/g," "))}"></label>
+            <label class="f">작업일시<input type="text" data-tpl="when" data-i="${i}" value="${esc(it.when.replace(/\n/g," "))}"></label>
+          </div>
+          <label class="f">A등급 위험요인<textarea data-tpl="risk" data-i="${i}" rows="2">${esc(it.risk)}</textarea></label>
+          <label class="f">공정담당자 / 개선책임자<textarea data-tpl="owner" data-i="${i}" rows="2">${esc(it.owner)}</textarea></label>
+        </div>
+        <button class="btn ghost edit-toggle" type="button" data-edit="${i}">항목 수정</button>
+      </div>
+      ${ms}
+    </article>`;
+  }).join("");
+}
+
+function renderExtras(){
+  const box=$("#extras");
+  box.innerHTML = rec.extra.map((x,i)=>`<article class="card">
+    <div class="extra-head"><b>추가위험 ${i+1}</b><span class="slot">출력표 ${19+i}행</span></div>
+    <div class="grid2">
+      <label class="f">중공종<input type="text" data-x="${i}" data-f="sub" value="${esc(x.sub)}" placeholder="예: 철근조립"></label>
+      <label class="f">작업위치<input type="text" data-x="${i}" data-f="loc" value="${esc(x.loc)}" placeholder="예: 102동 B2F"></label>
+    </div>
+    <label class="f">위험요인 (원인과 결과 명확히)<textarea data-x="${i}" data-f="risk" rows="2" placeholder="예: 개구부 덮개 미고정으로 인한 추락 위험">${esc(x.risk)}</textarea></label>
+    <label class="f">현장 조치 사항<textarea data-x="${i}" data-f="action" rows="2" placeholder="예: 덮개 고정 및 '개구부 주의' 표지 부착">${esc(x.action)}</textarea></label>
+    <div class="seg seg3" role="group" aria-label="현장조치"><span>현장조치</span>
+      <button type="button" data-xo="${i}" data-f="fix" data-v="O" aria-pressed="${x.fix==="O"}" style="min-height:40px">O</button>
+      <button type="button" data-xo="${i}" data-f="fix" data-v="X" aria-pressed="${x.fix==="X"}" style="min-height:40px">X</button></div>
+    <div class="seg seg3" role="group" aria-label="F/B"><span>F / B&nbsp;&nbsp;&nbsp;</span>
+      <button type="button" data-xo="${i}" data-f="fb" data-v="O" aria-pressed="${x.fb==="O"}" style="min-height:40px">O</button>
+      <button type="button" data-xo="${i}" data-f="fb" data-v="X" aria-pressed="${x.fb==="X"}" style="min-height:40px">X</button></div>
+    <label class="f">위험성평가 중점관리 항목 반영 여부 <span style="font-size:11px">(기준: 재발 시 중대재해 발생 위험)</span><input type="text" data-x="${i}" data-f="reflect" value="${esc(x.reflect)}" placeholder="예: 반영 / 미반영"></label>
+    <label class="f">협력업체<input type="text" data-x="${i}" data-f="partner" value="${esc(x.partner)}" placeholder="${esc(tpl.partner)}"></label>
+    ${photoBlock("x:"+i, (i+1)+". 추가위험발굴", x.photo, x.caption)}
+  </article>`).join("");
+}
+
+function renderInfo(){
+  const [y,m,d]=cur.split("-").map(Number); const w=new Date(y,m-1,d).getDay();
+  $("#v-site").textContent=tpl.site;
+  $("#v-date").textContent=`${dotDate(cur)} (${WD[w]})`;
+  $("#v-period").textContent=`${tpl.year}.${pad(tpl.month)}.01 ~ ${tpl.year}.${pad(tpl.month)}.${pad(lastDay())}`;
+  $("#v-partner").textContent=tpl.partner;
+  $("#sub").textContent=`${tpl.year}년 ${tpl.month}월 · 공사팀`;
+  $("#inspector").value=rec.inspector||"";
+  $("#leaderOpinion").value=rec.leaderOpinion||"";
+}
+
+function stat(r){
+  const keys=measureKeys(); const n=keys.filter(k=>r.results[k]&&r.results[k].r).length;
+  const photos=keys.filter(k=>r.results[k]&&r.results[k].photo).length + r.extra.filter(x=>x.photo).length;
+  const any = n>0 || photos>0 || r.inspector || r.leaderOpinion || r.extra.some(x=>x.risk||x.action);
+  return {n,total:keys.length,photos,any};
+}
+function renderProgress(){
+  const s=stat(rec);
+  $("#progTxt").textContent=`점검 ${s.n}/${s.total}`;
+  $("#progBar").style.width=(s.total? s.n/s.total*100:0)+"%";
+  $("#photoTxt").textContent=`사진 ${s.photos}`;
+  const bad = measureKeys().filter(k=>rec.results[k].r==="불량").length;
+  $("#botNote").textContent = bad ? `불량 ${bad}건 · 점검 의견에 조치 내용을 적어주세요.` : "입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.";
+}
+function renderAll(){ renderInfo(); renderRisks(); renderExtras(); renderProgress(); renderDays(); }
+
+/* ---------- 저장 ---------- */
+let saveT=null;
+function markDirty(){
+  $("#save").textContent="저장 중…"; $("#save").classList.add("dirty");
+  clearTimeout(saveT); saveT=setTimeout(saveNow,400);
+}
+async function saveNow(){
+  const s=stat(rec);
+  const ok = await put("day:"+cur, rec);
+  summary[cur] = s.any ? (s.n===s.total ? "done":"part") : undefined;
+  if(!s.any) delete summary[cur];
+  await put("summary:"+tpl.year+"-"+tpl.month, summary);
+  const t=new Date();
+  $("#save").textContent = ok ? `저장됨 ${pad(t.getHours())}:${pad(t.getMinutes())}` : "임시 저장";
+  $("#save").classList.toggle("dirty", !ok);
+  const btn=document.querySelector(`.day[data-k="${cur}"]`);
+  if(btn){ const old=btn.querySelector(".dot"); if(old) old.remove(); if(summary[cur]) btn.insertAdjacentHTML("afterbegin",`<i class="dot ${summary[cur]==="done"?"done":"part"}"></i>`); }
+}
+async function saveTpl(){ await put("tpl:"+tpl.year+"-"+tpl.month, tpl); }
+
+async function selectDay(k){
+  if(saveT){ clearTimeout(saveT); await saveNow(); }
+  cur=k;
+  const r=await get("day:"+k);
+  rec = r || blankRec(k);
+  measureKeys().forEach(key=>{ if(!rec.results[key]) rec.results[key]={r:"",note:"",photo:null,caption:""}; });
+  renderAll();
+  $("#save").textContent = r ? "저장됨" : "새 점검"; $("#save").classList.remove("dirty");
+  window.scrollTo({top:0});
+}
+
+/* ---------- 사진: 긴 변 1600px JPEG로 줄여 저장 ---------- */
+function shrink(file){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file); const img=new Image();
+    img.onload=()=>{
+      const max=1600, s=Math.min(1, max/Math.max(img.width,img.height));
+      const c=document.createElement("canvas"); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url); res(c.toDataURL("image/jpeg",0.82));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url); rej(new Error("이미지를 읽지 못했습니다"));};
+    img.src=url;
+  });
+}
+function setPhoto(id,val){
+  const [t,k]=id.split(":");
+  if(t==="m") rec.results[k].photo=val; else rec.extra[+k].photo=val;
+}
+async function onFile(e){
+  const f=e.target.files&&e.target.files[0]; e.target.value="";
+  if(!f||!photoTarget) return;
+  try{ setPhoto(photoTarget, await shrink(f)); rerenderFor(photoTarget); markDirty(); toast("사진을 넣었습니다"); }
+  catch(err){ toast("사진을 읽지 못했습니다. 다른 사진으로 다시 시도해 주세요."); }
+}
+function rerenderFor(id){ const y=window.scrollY; if(id.startsWith("m")) renderRisks(); else renderExtras(); renderProgress(); window.scrollTo({top:y}); }
+$("#fileCam").addEventListener("change",onFile);
+$("#fileLib").addEventListener("change",onFile);
+
+let toastT; function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("on"),1800); }
+
+/* ---------- 이벤트 ---------- */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.res){ const r=rec.results[b.dataset.res]; r.r = r.r===b.dataset.v ? "" : b.dataset.v;
+    b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x.dataset.v===r.r));
+    const ta=b.closest(".measure").querySelector("[data-note]"); ta.placeholder = r.r==="불량"?"불량 내용과 조치 계획":"특이사항 없으면 비워두세요";
+    if(r.r==="불량") ta.focus({preventScroll:true});
+    renderProgress(); markDirty(); return; }
+  if(b.dataset.xo!==undefined){ const x=rec.extra[+b.dataset.xo], f=b.dataset.f; x[f] = x[f]===b.dataset.v ? "" : b.dataset.v;
+    b.parentElement.querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed", z.dataset.v===x[f])); markDirty(); return; }
+  if(b.dataset.cam){ photoTarget=b.dataset.cam; $("#fileCam").click(); return; }
+  if(b.dataset.lib){ photoTarget=b.dataset.lib; $("#fileLib").click(); return; }
+  if(b.dataset.rm){ setPhoto(b.dataset.rm,null); rerenderFor(b.dataset.rm); markDirty(); return; }
+  if(b.dataset.edit!==undefined){ const c=b.closest(".card"); const on=c.classList.toggle("editing");
+    b.textContent = on ? "수정 완료" : "항목 수정";
+    if(!on){ saveTpl(); const y=window.scrollY; renderRisks(); window.scrollTo({top:y}); toast("이번 달 양식에 반영했습니다"); }
+    return; }
+});
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.id==="inspector"){ rec.inspector=t.value; markDirty(); }
+  else if(t.id==="leaderOpinion"){ rec.leaderOpinion=t.value; markDirty(); }
+  else if(t.dataset.note){ rec.results[t.dataset.note].note=t.value; markDirty(); }
+  else if(t.dataset.cap){ const [ty,k]=t.dataset.cap.split(":"); if(ty==="m") rec.results[k].caption=t.value; else rec.extra[+k].caption=t.value; markDirty(); }
+  else if(t.dataset.x!==undefined){ rec.extra[+t.dataset.x][t.dataset.f]=t.value; markDirty(); }
+  else if(t.dataset.tpl){ const it=tpl.items[+t.dataset.i];
+    if(t.dataset.tpl==="m") it.measures[+t.dataset.j]=t.value; else it[t.dataset.tpl]=t.value; }
+  if(t.tagName==="TEXTAREA"){ t.style.height="auto"; t.style.height=t.scrollHeight+2+"px"; }
+});
+
+/* 이 날짜 비우기: 페이지 안에서 한 번 더 확인 */
+$("#clearBox").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  if(b.id==="clearBtn"){ $("#clearBox").innerHTML=`<span>${dotDate(cur)} 기록을 지울까요?</span><button class="btn" id="clearYes" type="button" style="color:var(--bad)">지우기</button><button class="btn ghost" id="clearNo" type="button">취소</button>`; $("#botNote").hidden=true; return; }
+  if(b.id==="clearYes"){ rec=blankRec(cur); del("day:"+cur); delete summary[cur]; put("summary:"+tpl.year+"-"+tpl.month, summary); renderAll(); toast("비웠습니다"); }
+  $("#clearBox").innerHTML=`<button class="btn ghost" id="clearBtn" type="button">이 날짜 비우기</button>`; $("#botNote").hidden=false;
+});
+
+/* ---------- 시작 ---------- */
+(async function start(){
+  const saved=await get("tpl:"+DEFAULT_TPL.year+"-"+DEFAULT_TPL.month); if(saved) tpl=saved;
+  summary = (await get("summary:"+tpl.year+"-"+tpl.month)) || {};
+  const now=new Date();
+  const d = (now.getFullYear()===tpl.year && now.getMonth()+1===tpl.month) ? now.getDate() : 1;
+  await selectDay(ymd(tpl.year,tpl.month,d));
+})();
+})();
+</script>
+
+<script>
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
+</script>
+</body>
+</html>

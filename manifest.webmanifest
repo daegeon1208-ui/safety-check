@@ -1,0 +1,14 @@
+{
+  "name": "일일안전보건점검표",
+  "short_name": "안전점검",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F2F2EE",
+  "theme_color": "#D3162F",
+  "lang": "ko",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
