@@ -148,6 +148,9 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
 .sheet-in p{margin:0;font-size:14px;color:var(--muted)}
 .sheet-btns{display:flex;flex-wrap:wrap;gap:8px}
 .sheet-btns > *{min-height:44px}
+.pin-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:-6px}
+.pin-row .btn{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
+#cloudPin{letter-spacing:.15em}
 @media (max-width:420px){.grid2{grid-template-columns:1fr}.kv{grid-template-columns:72px 1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -226,7 +229,8 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
     <h3 id="cloudTitle">구글 시트·드라이브 저장</h3>
     <p>설정 안내서대로 만든 웹 앱 URL과 PIN을 넣으면, 점검 기록은 구글 시트에, 사진은 구글 드라이브에 저장돼요. 인터넷이 끊기면 휴대폰에 두었다가 연결되면 자동으로 보냅니다.</p>
     <label class="f">웹 앱 URL<input type="text" id="cloudUrl" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></label>
-    <label class="f">PIN<input type="text" id="cloudPin" inputmode="numeric" autocomplete="off" placeholder="스크립트에 적은 PIN"></label>
+    <label class="f" for="cloudPin">PIN</label>
+    <div class="pin-row"><input type="text" id="cloudPin" inputmode="numeric" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="스크립트에 적은 PIN"><button class="btn" id="pinShow" type="button">누르는 동안 보기</button></div>
     <p id="cloudMsg" role="status"></p>
     <div class="sheet-btns">
       <button class="primary" type="submit">연결하기</button>
@@ -522,12 +526,29 @@ async function pullMonth(){
     Object.assign(summary, sm.summary||{}); renderDays();
   }catch(e){}
 }
-$("#cloudBtn").addEventListener("click",()=>{ $("#cloudUrl").value=cloud.url; $("#cloudPin").value=cloud.pin; $("#cloudMsg").textContent=cloud.url?"연결되어 있어요.":""; $("#cloudSheet").hidden=false; });
+/* PIN은 *로 가리고, 보기 버튼을 누르고 있는 동안만 숫자를 보여준다 */
+let pinReal="", pinShown=false;
+const pinEl=$("#cloudPin");
+function pinMask(){ pinEl.value = pinShown ? pinReal : "*".repeat(pinReal.length); }
+pinEl.addEventListener("input",()=>{
+  if(pinShown) return;
+  const v=pinEl.value, stars=(v.match(/\*/g)||[]).length;
+  pinReal = pinReal.slice(0,stars) + v.replace(/\*/g,"");
+  pinMask();
+});
+function pinReveal(on){ pinShown=on; pinEl.readOnly=on; pinMask(); }
+const pb=$("#pinShow");
+pb.addEventListener("pointerdown",e=>{ e.preventDefault(); pinReveal(true); });
+["pointerup","pointerleave","pointercancel","blur"].forEach(ev=>pb.addEventListener(ev,()=>pinReveal(false)));
+pb.addEventListener("contextmenu",e=>e.preventDefault());
+pb.addEventListener("keydown",e=>{ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); pinReveal(true); } });
+pb.addEventListener("keyup",()=>pinReveal(false));
+$("#cloudBtn").addEventListener("click",()=>{ $("#cloudUrl").value=cloud.url; pinReal=cloud.pin||""; pinReveal(false); $("#cloudMsg").textContent=cloud.url?"연결되어 있어요.":""; $("#cloudSheet").hidden=false; });
 $("#cloudClose").addEventListener("click",()=>{ $("#cloudSheet").hidden=true; });
-$("#cloudOff").addEventListener("click",()=>{ cloud={url:"",pin:""}; try{localStorage.removeItem("cloud");}catch(e){} refreshCloudBadge(); $("#cloudMsg").textContent="연결을 끊었어요. 기록은 이 휴대폰에만 저장됩니다."; });
+$("#cloudOff").addEventListener("click",()=>{ cloud={url:"",pin:""}; pinReal=""; pinMask(); try{localStorage.removeItem("cloud");}catch(e){} refreshCloudBadge(); $("#cloudMsg").textContent="연결을 끊었어요. 기록은 이 휴대폰에만 저장됩니다."; });
 $("#cloudForm").addEventListener("submit",async e=>{
   e.preventDefault();
-  const url=$("#cloudUrl").value.trim(), pin=$("#cloudPin").value.trim();
+  const url=$("#cloudUrl").value.trim(), pin=pinReal.trim();
   if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)){ $("#cloudMsg").textContent="URL은 https://script.google.com/ 으로 시작하고 /exec 로 끝나야 해요."; return; }
   $("#cloudMsg").textContent="확인하는 중…";
   const old=cloud; cloud={url,pin};
