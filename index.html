@@ -186,11 +186,6 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
         <dt>협력업체</dt><dd id="v-partner"></dd>
       </dl>
       <label class="f">점검자<input type="text" id="inspector" placeholder="예: 김대건" autocomplete="name"></label>
-      <div class="sign" aria-label="결재란 (출력 후 서명)">
-        <div><b>작성자</b><span>일일안전담당자</span><i></i></div>
-        <div><b>검토자</b><span>공사팀장</span><i></i></div>
-        <div><b>승인자</b><span>현장소장</span><i></i></div>
-      </div>
     </div>
   </section>
 
@@ -208,7 +203,6 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
 
 <footer class="bot"><div class="bot-in">
   <span class="note" id="botNote">입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.</span>
-  <span class="confirm" id="clearBox"><button class="btn ghost" id="clearBtn" type="button">비우기</button></span>
   <button class="primary" id="pdfBtn" type="button">PDF 출력</button>
 </div></footer>
 <div class="sheet" id="pdfSheet" hidden>
@@ -425,7 +419,7 @@ function renderProgress(){
   $("#progBar").style.width=(s.total? s.n/s.total*100:0)+"%";
   $("#photoTxt").textContent=`사진 ${s.photos}`;
   const bad = measureKeys().filter(k=>rec.results[k].r==="불량").length;
-  $("#botNote").textContent = bad ? `불량 ${bad}건 · 점검 의견에 조치 내용을 적어주세요.` : "입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.";
+  $("#botNote").textContent = bad ? `불량 ${bad}건 · 점검 의견에 조치 내용을 적어주세요.` : (cloud.url ? "입력 내용과 사진은 구글에 자동 저장됩니다." : "입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.");
 }
 function renderAll(){ renderInfo(); renderRisks(); renderExtras(); renderProgress(); renderDays(); }
 
@@ -661,15 +655,10 @@ document.addEventListener("input",e=>{
 });
 
 /* 이 날짜 비우기: 페이지 안에서 한 번 더 확인 */
-$("#clearBox").addEventListener("click",e=>{
-  const b=e.target.closest("button"); if(!b) return;
-  if(b.id==="clearBtn"){ $("#clearBox").innerHTML=`<span>${dotDate(cur)} 기록을 지울까요?</span><button class="btn" id="clearYes" type="button" style="color:var(--bad)">지우기</button><button class="btn ghost" id="clearNo" type="button">취소</button>`; $("#botNote").hidden=true; $("#pdfBtn").hidden=true; return; }
-  if(b.id==="clearYes"){ rec=blankRec(cur); rec.updatedAt=Date.now(); saveNow(); renderAll(); toast("비웠습니다"); }
-  $("#clearBox").innerHTML=`<button class="btn ghost" id="clearBtn" type="button">비우기</button>`; $("#botNote").hidden=false; $("#pdfBtn").hidden=false;
-});
+
 
 /* ---------- PDF 출력: 원본 엑셀 양식 그대로 ---------- */
-const APP_VER="2026-11-09f";
+const APP_VER="2026-11-09g";
 let pdfUrl=null, pdfFile=null, libs=null;
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
 async function loadLibs(){
