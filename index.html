@@ -149,6 +149,11 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
 .sheet-in p{margin:0;font-size:14px;color:var(--muted)}
 .sheet-btns{display:flex;flex-wrap:wrap;gap:8px}
 .sheet-btns > *{min-height:44px}
+/* PDF 창: 보내기는 한 줄 전체, 나머지 셋은 한 줄에 같은 폭 */
+.pdf-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pdf-btns > *{justify-content:center;text-align:center;font-size:15px;min-height:48px}
+.pdf-btns .pdf-share{grid-column:1 / -1;font-size:16px;min-height:52px}
+.pdf-btns .primary-alt{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .pin-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:-6px}
 .pin-row .btn{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
 #cloudPin{letter-spacing:.15em}
@@ -210,9 +215,9 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
     <h3 id="pdfTitle">PDF 출력</h3>
     <p class="slot" id="pdfVer"></p>
     <p id="pdfMsg">원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽)으로 만드는 중…</p>
-    <div class="sheet-btns">
-      <a class="primary" id="pdfSave" hidden>PDF 저장</a>
-      <button class="btn" id="pdfShare" type="button" hidden>카톡 등으로 보내기</button>
+    <div class="sheet-btns pdf-btns">
+      <button class="primary pdf-share" id="pdfShare" type="button" hidden>카톡 등으로 보내기</button>
+      <a class="btn" id="pdfSave" hidden>PDF 저장</a>
       <a class="btn" id="pdfOpen" target="_blank" rel="noopener" hidden>열어보기</a>
       <button class="btn ghost" id="pdfClose" type="button">닫기</button>
     </div>
@@ -658,7 +663,7 @@ document.addEventListener("input",e=>{
 
 
 /* ---------- PDF 출력: 원본 엑셀 양식 그대로 ---------- */
-const APP_VER="2026-11-09g";
+const APP_VER="2026-11-09h";
 let pdfUrl=null, pdfFile=null, libs=null;
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
 async function loadLibs(){
@@ -686,7 +691,9 @@ $("#pdfBtn").addEventListener("click", async ()=>{
     pdfFile = (typeof File!=="undefined") ? new File([blob],name,{type:"application/pdf"}) : null;
     const a=$("#pdfSave"); a.href=pdfUrl; a.download=name; a.hidden=false;
     $("#pdfOpen").href=pdfUrl; $("#pdfOpen").hidden=false;
-    $("#pdfShare").hidden = !(pdfFile && navigator.canShare && navigator.canShare({files:[pdfFile]}));
+    const canShare = !!(pdfFile && navigator.canShare && navigator.canShare({files:[pdfFile]}));
+    $("#pdfShare").hidden = !canShare;
+    a.classList.toggle("primary-alt", !canShare);   // 보내기가 안 되는 기기에서는 저장 버튼을 강조
     $("#pdfMsg").textContent=`${name} (${Math.max(1,Math.round(bytes.length/1024))} KB) 준비됐어요.`;
   }catch(err){
     $("#pdfMsg").textContent="PDF를 만들지 못했어요. 인터넷에 연결된 상태에서 한 번 열어 글꼴을 받은 뒤 다시 눌러 주세요.";
