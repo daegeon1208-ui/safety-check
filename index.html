@@ -157,7 +157,7 @@ footer.bot{position:fixed;left:0;right:0;bottom:0;background:var(--surface);bord
 
 <main class="wrap">
   <nav class="jump" aria-label="바로가기">
-    <a href="#s-info">기본정보</a><a href="#s-check">중점관리 점검</a><a href="#s-extra">추가위험발굴</a><a href="#s-opinion">공사팀장 의견</a>
+    <a href="#s-info">기본정보</a><a href="#s-check">중점관리 점검</a><a href="#s-extra">추가위험발굴</a>
   </nav>
 
   <section id="s-info">
@@ -188,10 +188,6 @@ footer.bot{position:fixed;left:0;right:0;bottom:0;background:var(--surface);bord
     <div id="extras" style="display:grid;gap:12px"></div>
   </section>
 
-  <section id="s-opinion">
-    <h2>공사팀장 점검 / 승인(검토)의견</h2>
-    <div class="card"><textarea id="leaderOpinion" rows="3" placeholder="공사팀장 의견"></textarea></div>
-  </section>
 </main>
 
 <footer class="bot"><div class="bot-in">
@@ -369,13 +365,12 @@ function renderInfo(){
   $("#v-partner").textContent=tpl.partner;
   $("#sub").textContent=`${tpl.year}년 ${tpl.month}월 · 공사팀`;
   $("#inspector").value=rec.inspector||"";
-  $("#leaderOpinion").value=rec.leaderOpinion||"";
 }
 
 function stat(r){
   const keys=measureKeys(); const n=keys.filter(k=>r.results[k]&&r.results[k].r).length;
   const photos=keys.filter(k=>r.results[k]&&r.results[k].photo).length + r.extra.filter(x=>x.photo).length;
-  const any = n>0 || photos>0 || r.inspector || r.leaderOpinion || r.extra.some(x=>x.risk||x.action);
+  const any = n>0 || photos>0 || r.inspector || r.extra.some(x=>x.risk||x.action);
   return {n,total:keys.length,photos,any};
 }
 function renderProgress(){
@@ -470,7 +465,6 @@ document.addEventListener("click",e=>{
 document.addEventListener("input",e=>{
   const t=e.target;
   if(t.id==="inspector"){ rec.inspector=t.value; markDirty(); }
-  else if(t.id==="leaderOpinion"){ rec.leaderOpinion=t.value; markDirty(); }
   else if(t.dataset.note){ rec.results[t.dataset.note].note=t.value; markDirty(); }
   else if(t.dataset.cap){ const [ty,k]=t.dataset.cap.split(":"); if(ty==="m") rec.results[k].caption=t.value; else rec.extra[+k].caption=t.value; markDirty(); }
   else if(t.dataset.x!==undefined){ rec.extra[+t.dataset.x][t.dataset.f]=t.value; markDirty(); }
