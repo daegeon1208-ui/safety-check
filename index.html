@@ -51,6 +51,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .title-row small{display:block;font-size:12px;color:var(--muted);font-weight:500}
 .save{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .save.dirty{color:var(--brand)}
+.ver{font-size:10px;color:var(--muted);opacity:.75;font-weight:400;margin-left:4px;font-variant-numeric:tabular-nums}
 .hdr-r{display:grid;justify-items:end;gap:3px}
 .cloud{border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:11px;font-weight:600;padding:2px 9px 2px 7px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)}
 .cloud i{width:7px;height:7px;border-radius:50%;background:var(--olive)}
@@ -172,7 +173,6 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
       <div class="hdr-r"><span class="save" id="save">저장됨</span><button class="cloud" id="cloudBtn" type="button" aria-label="구글 저장 연결"><i id="cloudDot"></i><span id="cloudTxt">구글 연결</span></button></div>
     </div>
     <div class="days" id="days" role="group" aria-label="점검일 선택"></div>
-    <div class="progress"><span id="progTxt">점검 0/6</span><div class="bar"><i id="progBar"></i></div><span id="photoTxt">사진 0</span></div>
   </div>
 </header>
 
@@ -210,10 +210,19 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
   <span class="note" id="botNote">입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.</span>
   <button class="primary" id="pdfBtn" type="button">PDF 출력</button>
 </div></footer>
+<div class="sheet" id="warnSheet" hidden>
+  <div class="sheet-in" role="alertdialog" aria-modal="true" aria-labelledby="warnTitle">
+    <h3 id="warnTitle">점검자란이 비어 있어요</h3>
+    <p>기본정보의 점검자 이름을 넣지 않으면 PDF의 점검자 칸이 빈칸으로 나와요.</p>
+    <div class="sheet-btns pdf-btns">
+      <button class="primary pdf-share" id="warnFill" type="button">점검자 입력하기</button>
+      <button class="btn ghost" id="warnGo" type="button" style="grid-column:1 / -1">비워둔 채 출력</button>
+    </div>
+  </div>
+</div>
 <div class="sheet" id="pdfSheet" hidden>
   <div class="sheet-in" role="dialog" aria-modal="true" aria-labelledby="pdfTitle">
     <h3 id="pdfTitle">PDF 출력</h3>
-    <p class="slot" id="pdfVer"></p>
     <p id="pdfMsg">원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽)으로 만드는 중…</p>
     <div class="sheet-btns pdf-btns">
       <button class="primary pdf-share" id="pdfShare" type="button" hidden>카톡 등으로 보내기</button>
@@ -263,6 +272,7 @@ const DEFAULT_TPL = {
      measures:["1. 샵장 내부 불티방지포 설치 및 소화기 비치","2. 샵장 내 확산소화기 설치 및 휀스 설치하여 격리 작업 할 것"]}
   ]
 };
+const APP_VER="2026-11-09j";
 const EXTRA_ROWS = 2; // 엑셀 19·20행
 const WD = ["일","월","화","수","목","금","토"];
 
@@ -408,7 +418,7 @@ function renderInfo(){
   $("#v-date").textContent=`${dotDate(cur)} (${WD[w]})`;
   $("#v-period").textContent=`${tpl.year}.${pad(tpl.month)}.01 ~ ${tpl.year}.${pad(tpl.month)}.${pad(lastDay())}`;
   $("#v-partner").textContent=tpl.partner;
-  $("#sub").textContent=`${tpl.year}년 ${tpl.month}월 · 공사팀`;
+  $("#sub").innerHTML=`${tpl.year}년 ${tpl.month}월 · 공사팀 <span class="ver">v${APP_VER}</span>`;
   $("#inspector").value=rec.inspector||"";
 }
 
@@ -420,9 +430,6 @@ function stat(r){
 }
 function renderProgress(){
   const s=stat(rec);
-  $("#progTxt").textContent=`점검 ${s.n}/${s.total}`;
-  $("#progBar").style.width=(s.total? s.n/s.total*100:0)+"%";
-  $("#photoTxt").textContent=`사진 ${s.photos}`;
   const bad = measureKeys().filter(k=>rec.results[k].r==="불량").length;
   $("#botNote").textContent = bad ? `불량 ${bad}건 · 점검 의견에 조치 내용을 적어주세요.` : (cloud.url ? "입력 내용과 사진은 구글에 자동 저장됩니다." : "입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.");
 }
@@ -663,7 +670,6 @@ document.addEventListener("input",e=>{
 
 
 /* ---------- PDF 출력: 원본 엑셀 양식 그대로 ---------- */
-const APP_VER="2026-11-09i";
 let pdfUrl=null, pdfFile=null, libs=null;
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
 async function loadLibs(){
@@ -675,9 +681,16 @@ async function loadLibs(){
     fetch("fonts/KoPubDotum-Medium.ttf").then(r=>r.arrayBuffer())]);
   libs={layout,fonts:{B:new Uint8Array(B),M:new Uint8Array(M)}}; return libs;
 }
+/* 점검자 미입력 알림 */
+let skipInspector=false;
+$("#warnFill").addEventListener("click",()=>{ $("#warnSheet").hidden=true; const el=$("#inspector"); el.scrollIntoView({block:"center"}); el.focus(); });
+$("#warnGo").addEventListener("click",()=>{ $("#warnSheet").hidden=true; skipInspector=true; $("#pdfBtn").click(); });
+$("#warnSheet").addEventListener("click",e=>{ if(e.target.id==="warnSheet") $("#warnSheet").hidden=true; });
 $("#pdfBtn").addEventListener("click", async ()=>{
   if(saveT){ clearTimeout(saveT); await saveNow(); }
-  const sh=$("#pdfSheet"); sh.hidden=false; $("#pdfVer").textContent="앱 버전 "+APP_VER;
+  if(!(rec.inspector||"").trim() && !skipInspector){ $("#warnSheet").hidden=false; return; }
+  skipInspector=false;
+  const sh=$("#pdfSheet"); sh.hidden=false;
   ["#pdfSave","#pdfShare","#pdfOpen"].forEach(s=>$(s).hidden=true);
   $("#pdfMsg").textContent="원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽)으로 만드는 중…";
   try{
