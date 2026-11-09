@@ -111,8 +111,12 @@
 /* 앱 기록 → 엑셀 칸 주소 */
 (function (root) {
   // [사진 칸, 개선대책 칸(중점관리사항 옆), 내용 칸]
-  const PHOTO_SLOTS = { "1-1": ["A5", "C11", "C13"], "1-2": ["F5", "H11", "H13"], "2-1": ["K5", "M11", "M13"], "2-2": ["P5", "R11", "R13"], "3-1": ["A15", "C21", "C23"], "3-2": ["F15", "H21", "H23"] };
-  const EXTRA_SLOTS = [["A26", "C32"], ["H26", "J32"], ["O26", "Q32"]];
+  // 사진대지 칸 (왼쪽 위부터 차례로): [사진, 중점관리사항 라벨, 개선대책, 내용 라벨, 의견]
+  const PHOTO_SLOTS = [
+    ["A5", "A11", "C11", "A13", "C13"], ["F5", "F11", "H11", "F13", "H13"], ["K5", "K11", "M11", "K13", "M13"], ["P5", "P11", "R11", "P13", "R13"],
+    ["A15", "A21", "C21", "A23", "C23"], ["F15", "F21", "H21", "F23", "H23"], ["K15", "K21", "M21", "K23", "M23"], ["P15", "P21", "R21", "P23", "R23"]];
+  // 추가위험발굴: [사진, 라벨, 내용]
+  const EXTRA_SLOTS = [["A26", "A32", "C32"], ["H26", "H32", "J32"], ["O26", "O32", "Q32"]];
   function dataUrlBytes(u) {
     const b = atob(u.split(",")[1]); const a = new Uint8Array(b.length);
     for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a;
@@ -125,7 +129,11 @@
       C5: tpl.site, C6: rec.date.replace(/-/g, "."), K6: tpl.partner, O6: rec.inspector || "",
       C7: `${tpl.year}.${p(tpl.month)}.01 ~ ${tpl.year}.${p(tpl.month)}.${p(last)}`
     };
-    const v2 = { A21: "중점관리사항 3-1", F21: "중점관리사항 3-2", A23: "내   용", F23: "내   용", __sz: {} }, ph = {};
+    const v2 = { __sz: {} }, ph = {};
+    // 사진 있는 항목만 빈칸 없이 앞에서부터 채운다 → 빈 칸은 라벨도 비운다
+    PHOTO_SLOTS.forEach(sl => { v2[sl[1]] = ""; v2[sl[2]] = ""; v2[sl[3]] = ""; v2[sl[4]] = ""; });
+    EXTRA_SLOTS.forEach(sl => { v2[sl[1]] = ""; v2[sl[2]] = ""; });
+    let pi = 0, xi = 0;
     tpl.items.forEach((it, i) => {
       const r = 10 + i * 2;
       Object.assign(v1, { ["A" + r]: it.work, ["B" + r]: it.sub, ["C" + r]: it.loc, ["D" + r]: it.risk, ["N" + r]: it.when, ["O" + r]: it.owner });
@@ -136,20 +144,22 @@
         v1["P" + rr] = res.r === "완료" ? "O" : (res.r ? "" : "-"); v1["Q" + rr] = res.r === "불량" ? "O" : "";
         const note = (res.note || "").trim() || (res.r ? "" : "금일 해당작업 없음");
         v1["R" + rr] = note ? (/^-/.test(note) ? " " + note : " - " + note) : "";
-        const slot = PHOTO_SLOTS[key];
+        const slot = res.photo ? PHOTO_SLOTS[pi++] : null;
         if (slot && res.photo) {
           ph[slot[0]] = res.photo;
+          v2[slot[1]] = "중점관리사항 " + key; v2[slot[3]] = "내   용";
           // 중점관리사항 옆: 개선대책(번호 없이), 내용: 점검 의견
-          v2[slot[1]] = String(m).replace(/^\s*\d+\s*[.)]\s*/, "").replace(/\s*\n\s*/g, " ").trim();
-          v2[slot[2]] = note;
-          v2.__sz[slot[1]] = 11; v2.__sz[slot[2]] = 11;
+          v2[slot[2]] = String(m).replace(/^\s*\d+\s*[.)]\s*/, "").replace(/\s*\n\s*/g, " ").trim();
+          v2[slot[4]] = note;
+          v2.__sz[slot[2]] = 11; v2.__sz[slot[4]] = 11;
         }
       });
     });
     (rec.extra || []).forEach((x, i) => {
       const r = 19 + i;
       if (r <= 20) Object.assign(v1, { ["A" + r]: x.sub, ["C" + r]: x.loc, ["D" + r]: x.risk, ["I" + r]: x.action, ["N" + r]: x.fix, ["O" + r]: x.fb, ["P" + r]: x.reflect, ["W" + r]: x.partner });
-      const s = EXTRA_SLOTS[i]; if (s) { if (x.photo) ph[s[0]] = x.photo; v2[s[1]] = x.caption || ""; }
+      const s = x.photo ? EXTRA_SLOTS[xi++] : null;
+      if (s) { ph[s[0]] = x.photo; v2[s[1]] = (i + 1) + ". 추가위험발굴"; v2[s[2]] = x.caption || ""; }
     });
     const photos2 = {};
     for (const a in ph) photos2[a] = typeof ph[a] === "string" ? dataUrlBytes(ph[a]) : ph[a];
