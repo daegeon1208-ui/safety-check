@@ -663,7 +663,7 @@ document.addEventListener("input",e=>{
 
 
 /* ---------- PDF 출력: 원본 엑셀 양식 그대로 ---------- */
-const APP_VER="2026-11-09h";
+const APP_VER="2026-11-09i";
 let pdfUrl=null, pdfFile=null, libs=null;
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
 async function loadLibs(){
@@ -716,7 +716,15 @@ $("#pdfSheet").addEventListener("click", e=>{ if(e.target.id==="pdfSheet") $("#p
 </script>
 
 <script>
-if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}
+/* 새 버전이 올라오면 앱을 열거나 다시 볼 때 자동으로 확인하고, 바뀌었으면 한 번 새로고침한다 */
+if("serviceWorker" in navigator){
+  let reloaded=false, hadCtrl=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(hadCtrl && !reloaded){ reloaded=true; location.reload(); } hadCtrl=true; });
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").then(reg=>{
+    const check=()=>reg.update().catch(()=>{});
+    check(); document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") check(); });
+  }).catch(()=>{}));
+}
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
 </script>
 </body>
