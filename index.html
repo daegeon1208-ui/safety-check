@@ -106,7 +106,7 @@ input[type=text]:focus,textarea:focus{outline:2px solid var(--focus);outline-off
 .measure{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:10px}
 .measure p{margin:0;font-size:14px;font-weight:500}
 .measure p b{font-family:var(--f-display);color:var(--muted);margin-right:4px}
-.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg{display:grid;grid-template-columns:2fr 1fr;gap:8px}
 .seg button{min-height:46px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
 .seg button .o{width:18px;height:18px;border-radius:50%;border:2px solid currentColor;opacity:.35}
 .seg button[data-v="완료"][aria-pressed="true"]{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
@@ -304,6 +304,7 @@ function blankRec(date){
   return {date, inspector:"", leaderOpinion:"", results,
     extra:Array.from({length:EXTRA_ROWS},()=>({sub:"",loc:"",risk:"",action:"",fix:"",fb:"",reflect:"",partner:"",photo:null,caption:""}))};
 }
+function notePh(v){ return v==="불량" ? "불량 내용과 조치 계획" : v==="완료" ? "특이사항 없으면 비워두세요" : "결과를 안 누르면 출력 시 '금일 해당작업 없음'"; }
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function nl(s){return esc(s).replace(/\n\s*/g," ").replace(/\s+/g," ").trim();}
 
@@ -349,7 +350,7 @@ function renderRisks(){
           <button type="button" data-res="${k}" data-v="완료" aria-pressed="${r.r==="완료"}"><span class="o"></span>완료</button>
           <button type="button" data-res="${k}" data-v="불량" aria-pressed="${r.r==="불량"}"><span class="o"></span>불량</button>
         </div>
-        <label class="f">점검 의견<textarea data-note="${k}" rows="1" placeholder="${r.r==="불량"?"불량 내용과 조치 계획":"특이사항 없으면 비워두세요"}">${esc(r.note)}</textarea></label>
+        <label class="f">점검 의견<textarea data-note="${k}" rows="1" placeholder="${notePh(r.r)}">${esc(r.note)}</textarea></label>
         ${photoBlock("m:"+k, "중점관리사항 "+k, r.photo, r.caption)}
       </div>`;
     }).join("");
@@ -589,7 +590,7 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.dataset.res){ const r=rec.results[b.dataset.res]; r.r = r.r===b.dataset.v ? "" : b.dataset.v;
     b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x.dataset.v===r.r));
-    const ta=b.closest(".measure").querySelector("[data-note]"); ta.placeholder = r.r==="불량"?"불량 내용과 조치 계획":"특이사항 없으면 비워두세요";
+    const ta=b.closest(".measure").querySelector("[data-note]"); ta.placeholder = notePh(r.r);
     if(r.r==="불량") ta.focus({preventScroll:true});
     renderProgress(); markDirty(); return; }
   if(b.dataset.xo!==undefined){ const x=rec.extra[+b.dataset.xo], f=b.dataset.f; x[f] = x[f]===b.dataset.v ? "" : b.dataset.v;

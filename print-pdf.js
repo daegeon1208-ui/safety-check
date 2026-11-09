@@ -131,7 +131,11 @@
       Object.assign(v1, { ["A" + r]: it.work, ["B" + r]: it.sub, ["C" + r]: it.loc, ["D" + r]: it.risk, ["N" + r]: it.when, ["O" + r]: it.owner });
       it.measures.forEach((m, j) => {
         const rr = r + j, key = `${i + 1}-${j + 1}`, res = (rec.results && rec.results[key]) || {};
-        v1["I" + rr] = m; v1["P" + rr] = res.r === "완료" ? "O" : ""; v1["Q" + rr] = res.r === "불량" ? "O" : ""; v1["R" + rr] = res.note || "";
+        v1["I" + rr] = m;
+        // 결과를 안 누른 항목: 완료 칸 "-", 의견 "금일 해당작업 없음" / 의견은 앞에 " - "를 붙인다
+        v1["P" + rr] = res.r === "완료" ? "O" : (res.r ? "" : "-"); v1["Q" + rr] = res.r === "불량" ? "O" : "";
+        const note = (res.note || "").trim() || (res.r ? "" : "금일 해당작업 없음");
+        v1["R" + rr] = note ? (/^-/.test(note) ? " " + note : " - " + note) : "";
         const slot = PHOTO_SLOTS[key];
         if (slot) { if (res.photo) ph[slot[0]] = res.photo; v2[slot[1]] = res.caption || ""; }
       });
