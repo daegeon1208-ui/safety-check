@@ -56,10 +56,9 @@
       for (const c of S.cells) {
         const bytes = pics[c.a]; if (!bytes) continue;
         let img; try { img = await doc.embedJpg(bytes); } catch (e) { try { img = await doc.embedPng(bytes); } catch (e2) { continue; } }
-        const pad = 3, bw = c.w * k - pad * 2, bh = c.h * k - pad * 2;
-        const s = Math.min(bw / img.width, bh / img.height);
-        const w = img.width * s, h = img.height * s;
-        page.drawImage(img, { x: X(c.x) + pad + (bw - w) / 2, y: Y(c.y + c.h) + pad + (bh - h) / 2, width: w, height: h });
+        // 칸에 꽉 차게 늘려 넣는다 (비율 무시, 테두리만 남김)
+        const pad = 0.75, bw = c.w * k - pad * 2, bh = c.h * k - pad * 2;
+        page.drawImage(img, { x: X(c.x) + pad, y: Y(c.y + c.h) + pad, width: bw, height: bh });
       }
 
       // 3) 테두리
@@ -73,7 +72,7 @@
         const font = fonts[c.font] || fonts.M;
         const typed = (c.a in vals);  // 앱에서 입력한 값: 칸 안에 들어가도록 줄바꿈하고 넘치면 글자를 줄인다
         const padX = 2.25 * k, maxW = c.w * k - padX * 2;
-        let size = c.sz * k, lines, lh;
+        let size = ((vals.__sz && vals.__sz[c.a]) || c.sz) * k, lines, lh;
         for (;;) {
           lines = wrapLines(t, font, size, maxW, c.wrap || typed);
           lh = font.heightAtSize(size);
@@ -111,7 +110,8 @@
 
 /* 앱 기록 → 엑셀 칸 주소 */
 (function (root) {
-  const PHOTO_SLOTS = { "1-1": ["A5", "C13"], "1-2": ["F5", "H13"], "2-1": ["K5", "M13"], "2-2": ["P5", "R13"], "3-1": ["A15", "C23"], "3-2": ["F15", "H23"] };
+  // [사진 칸, 개선대책 칸(중점관리사항 옆), 내용 칸]
+  const PHOTO_SLOTS = { "1-1": ["A5", "C11", "C13"], "1-2": ["F5", "H11", "H13"], "2-1": ["K5", "M11", "M13"], "2-2": ["P5", "R11", "R13"], "3-1": ["A15", "C21", "C23"], "3-2": ["F15", "H21", "H23"] };
   const EXTRA_SLOTS = [["A26", "C32"], ["H26", "J32"], ["O26", "Q32"]];
   function dataUrlBytes(u) {
     const b = atob(u.split(",")[1]); const a = new Uint8Array(b.length);
@@ -125,7 +125,7 @@
       C5: tpl.site, C6: rec.date.replace(/-/g, "."), K6: tpl.partner, O6: rec.inspector || "",
       C7: `${tpl.year}.${p(tpl.month)}.01 ~ ${tpl.year}.${p(tpl.month)}.${p(last)}`
     };
-    const v2 = { A21: "중점관리사항 3-1", F21: "중점관리사항 3-2", A23: "내   용", F23: "내   용" }, ph = {};
+    const v2 = { A21: "중점관리사항 3-1", F21: "중점관리사항 3-2", A23: "내   용", F23: "내   용", __sz: {} }, ph = {};
     tpl.items.forEach((it, i) => {
       const r = 10 + i * 2;
       Object.assign(v1, { ["A" + r]: it.work, ["B" + r]: it.sub, ["C" + r]: it.loc, ["D" + r]: it.risk, ["N" + r]: it.when, ["O" + r]: it.owner });
@@ -137,7 +137,13 @@
         const note = (res.note || "").trim() || (res.r ? "" : "금일 해당작업 없음");
         v1["R" + rr] = note ? (/^-/.test(note) ? " " + note : " - " + note) : "";
         const slot = PHOTO_SLOTS[key];
-        if (slot) { if (res.photo) ph[slot[0]] = res.photo; v2[slot[1]] = res.caption || ""; }
+        if (slot && res.photo) {
+          ph[slot[0]] = res.photo;
+          // 중점관리사항 옆: 개선대책(번호 없이), 내용: 점검 의견
+          v2[slot[1]] = String(m).replace(/^\s*\d+\s*[.)]\s*/, "").replace(/\s*\n\s*/g, " ").trim();
+          v2[slot[2]] = note;
+          v2.__sz[slot[1]] = 11; v2.__sz[slot[2]] = 11;
+        }
       });
     });
     (rec.extra || []).forEach((x, i) => {

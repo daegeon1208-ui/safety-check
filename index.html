@@ -308,7 +308,7 @@ function blankRec(date){
   return {date, inspector:"", leaderOpinion:"", results,
     extra:Array.from({length:EXTRA_ROWS},()=>({sub:"",loc:"",risk:"",action:"",fix:"",fb:"",reflect:"",partner:"",photo:null,caption:""}))};
 }
-function notePh(v){ return v==="불량" ? "불량 내용과 조치 계획" : v==="완료" ? "특이사항 없으면 비워두세요" : "결과를 안 누르면 출력 시 '금일 해당작업 없음'"; }
+function notePh(v){ return v==="불량" ? "불량 내용과 조치 계획" : v==="완료" ? "특이사항 없으면 비워두세요" : "미선택 시 '금일 해당작업 없음'"; }
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function nl(s){return esc(s).replace(/\n\s*/g," ").replace(/\s+/g," ").trim();}
 
@@ -335,9 +335,9 @@ function photoBlock(id, slotLabel, p, caption){
       <div class="btns">
         <button class="btn" type="button" data-cam="${id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>촬영</button>
         <button class="btn" type="button" data-lib="${id}">앨범</button>
-        ${p?`<button class="btn ghost" type="button" data-rm="${id}">삭제</button>`:""}
+        ${p?`<button class="btn" type="button" data-rot="${id}" aria-label="사진 오른쪽으로 90도 회전"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>회전</button><button class="btn ghost" type="button" data-rm="${id}">삭제</button>`:""}
       </div>
-      <input type="text" data-cap="${id}" value="${esc(caption)}" placeholder="사진 내용">
+      ${id.startsWith("m:") ? `<span class="slot">사진대지 내용 칸에는 점검 의견이 들어가요.</span>` : `<input type="text" data-cap="${id}" value="${esc(caption)}" placeholder="사진 내용">`}
       <span class="slot">사진대지 · ${esc(slotLabel)}</span>
     </div></div>`;
 }
@@ -589,6 +589,14 @@ function shrink(file){
     img.src=url;
   });
 }
+/* 사진을 오른쪽으로 90도 돌린다 */
+function rotateData(url){
+  return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>{
+    const c=document.createElement("canvas"); c.width=img.height; c.height=img.width;
+    const g=c.getContext("2d"); g.translate(c.width,0); g.rotate(Math.PI/2); g.drawImage(img,0,0);
+    res(c.toDataURL("image/jpeg",0.85)); }; img.onerror=rej; img.src=url; });
+}
+function getPhoto(id){ const [t,k]=id.split(":"); return t==="m" ? rec.results[k].photo : rec.extra[+k].photo; }
 function setPhoto(id,val){
   const [t,k]=id.split(":");
   const o = t==="m" ? rec.results[k] : rec.extra[+k];
@@ -618,6 +626,9 @@ document.addEventListener("click",e=>{
     b.parentElement.querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed", z.dataset.v===x[f])); markDirty(); return; }
   if(b.dataset.cam){ photoTarget=b.dataset.cam; $("#fileCam").click(); return; }
   if(b.dataset.lib){ photoTarget=b.dataset.lib; $("#fileLib").click(); return; }
+  if(b.dataset.rot){ const id=b.dataset.rot; b.disabled=true;
+    rotateData(getPhoto(id)).then(u=>{ setPhoto(id,u); rerenderFor(id); markDirty(); }).catch(()=>{ b.disabled=false; toast("사진을 돌리지 못했습니다"); });
+    return; }
   if(b.dataset.rm){ setPhoto(b.dataset.rm,null); rerenderFor(b.dataset.rm); markDirty(); return; }
   if(b.dataset.edit!==undefined){ const c=b.closest(".card"); const on=c.classList.toggle("editing");
     b.textContent = on ? "수정 완료" : "항목 수정";
