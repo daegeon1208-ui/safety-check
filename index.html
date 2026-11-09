@@ -375,7 +375,6 @@ function renderRisks(){
           <label class="f">A등급 위험요인<textarea data-tpl="risk" data-i="${i}" rows="2">${esc(it.risk)}</textarea></label>
           <label class="f">공정담당자 / 개선책임자<textarea data-tpl="owner" data-i="${i}" rows="2">${esc(it.owner)}</textarea></label>
         </div>
-        <button class="btn ghost edit-toggle" type="button" data-edit="${i}">항목 수정</button>
       </div>
       ${ms}
     </article>`;
@@ -670,7 +669,7 @@ $("#clearBox").addEventListener("click",e=>{
 });
 
 /* ---------- PDF 출력: 원본 엑셀 양식 그대로 ---------- */
-const APP_VER="2026-11-09d";
+const APP_VER="2026-11-09e";
 let pdfUrl=null, pdfFile=null, libs=null;
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
 async function loadLibs(){
