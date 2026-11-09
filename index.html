@@ -37,6 +37,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
 .wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 120px}
 button,input,textarea{font:inherit;color:inherit}
+html,body,button,a,input,textarea{touch-action:manipulation}  /* 두 번 탭해도 화면이 확대되지 않게 */
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 /* stripe from the paper form */
@@ -591,11 +592,26 @@ function shrink(file){
   });
 }
 /* 사진을 오른쪽으로 90도 돌린다 */
-function rotateData(url){
-  return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>{
-    const c=document.createElement("canvas"); c.width=img.height; c.height=img.width;
-    const g=c.getContext("2d"); g.translate(c.width,0); g.rotate(Math.PI/2); g.drawImage(img,0,0);
+function rotateData(url,n){
+  n=((n%4)+4)%4;
+  return new Promise((res,rej)=>{ if(!n) return res(url); const img=new Image(); img.onload=()=>{
+    const c=document.createElement("canvas"); const odd=n%2===1;
+    c.width=odd?img.height:img.width; c.height=odd?img.width:img.height;
+    const g=c.getContext("2d"); g.translate(c.width/2,c.height/2); g.rotate(n*Math.PI/2); g.drawImage(img,-img.width/2,-img.height/2);
     res(c.toDataURL("image/jpeg",0.85)); }; img.onerror=rej; img.src=url; });
+}
+/* 회전 버튼을 여러 번 빨리 눌러도 화면에서 바로 돌려 보여주고, 손을 멈추면 한 번에 저장한다 */
+const rotQ={}, rotT={};
+function queueRotate(id, btn){
+  rotQ[id]=(rotQ[id]||0)+1;
+  const img=btn.closest(".photo").querySelector(".thumb img");
+  if(img){ img.style.transition="transform .15s"; img.style.transform=`rotate(${rotQ[id]*90}deg)`; }
+  clearTimeout(rotT[id]);
+  rotT[id]=setTimeout(async()=>{
+    const n=rotQ[id]; rotQ[id]=0;
+    try{ setPhoto(id, await rotateData(getPhoto(id), n)); rerenderFor(id); markDirty(); }
+    catch(e){ rerenderFor(id); toast("사진을 돌리지 못했습니다"); }
+  },500);
 }
 function getPhoto(id){ const [t,k]=id.split(":"); return t==="m" ? rec.results[k].photo : rec.extra[+k].photo; }
 function setPhoto(id,val){
@@ -627,9 +643,7 @@ document.addEventListener("click",e=>{
     b.parentElement.querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed", z.dataset.v===x[f])); markDirty(); return; }
   if(b.dataset.cam){ photoTarget=b.dataset.cam; $("#fileCam").click(); return; }
   if(b.dataset.lib){ photoTarget=b.dataset.lib; $("#fileLib").click(); return; }
-  if(b.dataset.rot){ const id=b.dataset.rot; b.disabled=true;
-    rotateData(getPhoto(id)).then(u=>{ setPhoto(id,u); rerenderFor(id); markDirty(); }).catch(()=>{ b.disabled=false; toast("사진을 돌리지 못했습니다"); });
-    return; }
+  if(b.dataset.rot){ queueRotate(b.dataset.rot, b); return; }
   if(b.dataset.rm){ setPhoto(b.dataset.rm,null); rerenderFor(b.dataset.rm); markDirty(); return; }
   if(b.dataset.edit!==undefined){ const c=b.closest(".card"); const on=c.classList.toggle("editing");
     b.textContent = on ? "수정 완료" : "항목 수정";
@@ -656,7 +670,7 @@ $("#clearBox").addEventListener("click",e=>{
 });
 
 /* ---------- PDF 출력: 원본 엑셀 양식 그대로 ---------- */
-const APP_VER="2026-11-09c";
+const APP_VER="2026-11-09d";
 let pdfUrl=null, pdfFile=null, libs=null;
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
 async function loadLibs(){
