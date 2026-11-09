@@ -136,6 +136,14 @@ footer.bot{position:fixed;left:0;right:0;bottom:0;background:var(--surface);bord
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 .confirm{display:flex;gap:8px;align-items:center;font-size:13px}
+a.primary,a.btn{text-decoration:none;color:inherit}
+a.primary{color:var(--bg);display:inline-flex;align-items:center}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet-in{background:var(--surface);color:var(--ink);width:100%;max-width:520px;border-radius:14px 14px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:10px}
+.sheet-in h3{margin:0;font-family:var(--f-display);font-size:17px}
+.sheet-in p{margin:0;font-size:14px;color:var(--muted)}
+.sheet-btns{display:flex;flex-wrap:wrap;gap:8px}
+.sheet-btns > *{min-height:44px}
 @media (max-width:420px){.grid2{grid-template-columns:1fr}.kv{grid-template-columns:72px 1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -192,8 +200,21 @@ footer.bot{position:fixed;left:0;right:0;bottom:0;background:var(--surface);bord
 
 <footer class="bot"><div class="bot-in">
   <span class="note" id="botNote">입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.</span>
-  <span class="confirm" id="clearBox"><button class="btn ghost" id="clearBtn" type="button">이 날짜 비우기</button></span>
+  <span class="confirm" id="clearBox"><button class="btn ghost" id="clearBtn" type="button">비우기</button></span>
+  <button class="primary" id="pdfBtn" type="button">PDF 출력</button>
 </div></footer>
+<div class="sheet" id="pdfSheet" hidden>
+  <div class="sheet-in" role="dialog" aria-modal="true" aria-labelledby="pdfTitle">
+    <h3 id="pdfTitle">PDF 출력</h3>
+    <p id="pdfMsg">원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽)으로 만드는 중…</p>
+    <div class="sheet-btns">
+      <a class="primary" id="pdfSave" hidden>PDF 저장</a>
+      <button class="btn" id="pdfShare" type="button" hidden>카톡 등으로 보내기</button>
+      <a class="btn" id="pdfOpen" target="_blank" rel="noopener" hidden>열어보기</a>
+      <button class="btn ghost" id="pdfClose" type="button">닫기</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast" role="status"></div>
 
 <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
@@ -476,10 +497,48 @@ document.addEventListener("input",e=>{
 /* 이 날짜 비우기: 페이지 안에서 한 번 더 확인 */
 $("#clearBox").addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
-  if(b.id==="clearBtn"){ $("#clearBox").innerHTML=`<span>${dotDate(cur)} 기록을 지울까요?</span><button class="btn" id="clearYes" type="button" style="color:var(--bad)">지우기</button><button class="btn ghost" id="clearNo" type="button">취소</button>`; $("#botNote").hidden=true; return; }
+  if(b.id==="clearBtn"){ $("#clearBox").innerHTML=`<span>${dotDate(cur)} 기록을 지울까요?</span><button class="btn" id="clearYes" type="button" style="color:var(--bad)">지우기</button><button class="btn ghost" id="clearNo" type="button">취소</button>`; $("#botNote").hidden=true; $("#pdfBtn").hidden=true; return; }
   if(b.id==="clearYes"){ rec=blankRec(cur); del("day:"+cur); delete summary[cur]; put("summary:"+tpl.year+"-"+tpl.month, summary); renderAll(); toast("비웠습니다"); }
-  $("#clearBox").innerHTML=`<button class="btn ghost" id="clearBtn" type="button">이 날짜 비우기</button>`; $("#botNote").hidden=false;
+  $("#clearBox").innerHTML=`<button class="btn ghost" id="clearBtn" type="button">비우기</button>`; $("#botNote").hidden=false; $("#pdfBtn").hidden=false;
 });
+
+/* ---------- PDF 출력: 원본 엑셀 양식 그대로 ---------- */
+let pdfUrl=null, pdfFile=null, libs=null;
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
+async function loadLibs(){
+  if(libs) return libs;
+  await loadScript("lib/pdf-lib.min.js"); await loadScript("lib/fontkit.umd.min.js"); await loadScript("print-pdf.js");
+  const [layout,B,M] = await Promise.all([
+    fetch("layout.json").then(r=>r.json()),
+    fetch("fonts/KoPubDotum-Bold.ttf").then(r=>r.arrayBuffer()),
+    fetch("fonts/KoPubDotum-Medium.ttf").then(r=>r.arrayBuffer())]);
+  libs={layout,fonts:{B:new Uint8Array(B),M:new Uint8Array(M)}}; return libs;
+}
+$("#pdfBtn").addEventListener("click", async ()=>{
+  if(saveT){ clearTimeout(saveT); await saveNow(); }
+  const sh=$("#pdfSheet"); sh.hidden=false;
+  ["#pdfSave","#pdfShare","#pdfOpen"].forEach(s=>$(s).hidden=true);
+  $("#pdfMsg").textContent="원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽)으로 만드는 중…";
+  try{
+    const L=await loadLibs();
+    const m=SafetyPrint.mapRecord(tpl, rec);
+    const bytes=await SafetyPrint.buildPdf(PDFLib, fontkit, L.fonts, L.layout, m.values, m.photos);
+    const name=`${cur.slice(2).replace(/-/g,"")} 일일안전보건점검표.pdf`;
+    const blob=new Blob([bytes],{type:"application/pdf"});
+    if(pdfUrl) URL.revokeObjectURL(pdfUrl);
+    pdfUrl=URL.createObjectURL(blob);
+    pdfFile = (typeof File!=="undefined") ? new File([blob],name,{type:"application/pdf"}) : null;
+    const a=$("#pdfSave"); a.href=pdfUrl; a.download=name; a.hidden=false;
+    $("#pdfOpen").href=pdfUrl; $("#pdfOpen").hidden=false;
+    $("#pdfShare").hidden = !(pdfFile && navigator.canShare && navigator.canShare({files:[pdfFile]}));
+    $("#pdfMsg").textContent=`${name} (${Math.max(1,Math.round(bytes.length/1024))} KB) 준비됐어요.`;
+  }catch(err){
+    $("#pdfMsg").textContent="PDF를 만들지 못했어요. 인터넷에 연결된 상태에서 한 번 열어 글꼴을 받은 뒤 다시 눌러 주세요.";
+  }
+});
+$("#pdfShare").addEventListener("click", async ()=>{ try{ await navigator.share({files:[pdfFile], title:pdfFile.name}); }catch(e){} });
+$("#pdfClose").addEventListener("click", ()=>{ $("#pdfSheet").hidden=true; });
+$("#pdfSheet").addEventListener("click", e=>{ if(e.target.id==="pdfSheet") $("#pdfSheet").hidden=true; });
 
 /* ---------- 시작 ---------- */
 (async function start(){
