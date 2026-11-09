@@ -50,6 +50,10 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .title-row small{display:block;font-size:12px;color:var(--muted);font-weight:500}
 .save{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .save.dirty{color:var(--brand)}
+.hdr-r{display:grid;justify-items:end;gap:3px}
+.cloud{border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:11px;font-weight:600;padding:2px 9px 2px 7px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)}
+.cloud i{width:7px;height:7px;border-radius:50%;background:var(--olive)}
+.cloud.on i{background:var(--ok)} .cloud.wait i{background:#D9A400} .cloud.err i{background:var(--bad)}
 .days{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;scroll-snap-type:x proximity}
 .days::-webkit-scrollbar{display:none}
 .day{flex:0 0 auto;width:44px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 0 5px;text-align:center;cursor:pointer;scroll-snap-align:center;position:relative}
@@ -156,7 +160,7 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
   <div class="top-in">
     <div class="title-row">
       <div><h1>일일안전보건점검표</h1><small id="sub">2026년 11월 · 공사팀</small></div>
-      <span class="save" id="save">저장됨</span>
+      <div class="hdr-r"><span class="save" id="save">저장됨</span><button class="cloud" id="cloudBtn" type="button" aria-label="구글 저장 연결"><i id="cloudDot"></i><span id="cloudTxt">구글 연결</span></button></div>
     </div>
     <div class="days" id="days" role="group" aria-label="점검일 선택"></div>
     <div class="progress"><span id="progTxt">점검 0/6</span><div class="bar"><i id="progBar"></i></div><span id="photoTxt">사진 0</span></div>
@@ -216,6 +220,21 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
   </div>
 </div>
 <div class="toast" id="toast" role="status"></div>
+
+<div class="sheet" id="cloudSheet" hidden>
+  <form class="sheet-in" id="cloudForm" role="dialog" aria-modal="true" aria-labelledby="cloudTitle">
+    <h3 id="cloudTitle">구글 시트·드라이브 저장</h3>
+    <p>설정 안내서대로 만든 웹 앱 URL과 PIN을 넣으면, 점검 기록은 구글 시트에, 사진은 구글 드라이브에 저장돼요. 인터넷이 끊기면 휴대폰에 두었다가 연결되면 자동으로 보냅니다.</p>
+    <label class="f">웹 앱 URL<input type="text" id="cloudUrl" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></label>
+    <label class="f">PIN<input type="text" id="cloudPin" inputmode="numeric" autocomplete="off" placeholder="스크립트에 적은 PIN"></label>
+    <p id="cloudMsg" role="status"></p>
+    <div class="sheet-btns">
+      <button class="primary" type="submit">연결하기</button>
+      <button class="btn ghost" id="cloudOff" type="button">연결 끊기</button>
+      <button class="btn ghost" id="cloudClose" type="button">닫기</button>
+    </div>
+  </form>
+</div>
 
 <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
 <input type="file" id="fileLib" accept="image/*" hidden>
@@ -407,6 +426,7 @@ function renderAll(){ renderInfo(); renderRisks(); renderExtras(); renderProgres
 /* ---------- 저장 ---------- */
 let saveT=null;
 function markDirty(){
+  rec.updatedAt=Date.now();
   $("#save").textContent="저장 중…"; $("#save").classList.add("dirty");
   clearTimeout(saveT); saveT=setTimeout(saveNow,400);
 }
@@ -421,8 +441,105 @@ async function saveNow(){
   $("#save").classList.toggle("dirty", !ok);
   const btn=document.querySelector(`.day[data-k="${cur}"]`);
   if(btn){ const old=btn.querySelector(".dot"); if(old) old.remove(); if(summary[cur]) btn.insertAdjacentHTML("afterbegin",`<i class="dot ${summary[cur]==="done"?"done":"part"}"></i>`); }
+  if(cloud.url){ await addPending(cur); schedulePush(); }
 }
-async function saveTpl(){ await put("tpl:"+tpl.year+"-"+tpl.month, tpl); }
+async function saveTpl(){ await put("tpl:"+tpl.year+"-"+tpl.month, tpl); if(cloud.url) api({action:"saveTpl",ym:ymKey(),tpl}).catch(()=>{}); }
+
+/* ---------- 구글 시트·드라이브 동기화 ---------- */
+let cloud={url:"",pin:""};
+try{ cloud=Object.assign(cloud, JSON.parse(localStorage.getItem("cloud")||"{}")); }catch(e){}
+const ymKey=()=>`${tpl.year}-${pad(tpl.month)}`;
+async function api(body){
+  const r=await fetch(cloud.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({pin:cloud.pin},body)),redirect:"follow"});
+  const j=await r.json(); if(!j.ok) throw new Error(j.error||"서버 오류"); return j;
+}
+async function getPending(){ return (await get("pending"))||[]; }
+async function addPending(d){ const p=await getPending(); if(!p.includes(d)){ p.push(d); await put("pending",p); } }
+async function removePending(d){ const p=(await getPending()).filter(x=>x!==d); await put("pending",p); }
+function setCloud(state,txt){ const b=$("#cloudBtn"); b.className="cloud "+state; $("#cloudTxt").textContent=txt; }
+async function refreshCloudBadge(){
+  if(!cloud.url){ setCloud("","구글 연결"); return; }
+  const n=(await getPending()).length;
+  if(n) setCloud("wait",`구글 전송 대기 ${n}`); else setCloud("on","구글 저장됨");
+}
+function photoSlotsOf(r){
+  const a=[]; Object.keys(r.results||{}).forEach(k=>a.push(r.results[k])); (r.extra||[]).forEach(x=>a.push(x)); return a;
+}
+let pushT=null, pushing=false;
+function schedulePush(){ clearTimeout(pushT); pushT=setTimeout(pushPending,1500); }
+async function pushPending(){
+  if(!cloud.url||pushing) return; pushing=true;
+  try{
+    for(const d of await getPending()){
+      const local=await get("day:"+d);
+      if(!local){ await removePending(d); continue; }
+      const payload=JSON.parse(JSON.stringify(local)), sent=[];
+      photoSlotsOf(payload).forEach((o,i)=>{
+        if(o.photo && (o.photoNew || !o.photoId)){ sent[i]=o.photo; }
+        else if(o.photo){ o.photo="keep"; }
+        delete o.photoNew;
+      });
+      const st=stat(local); const status=st.any?(st.n===st.total?"done":"part"):"";
+      setCloud("wait","구글로 보내는 중…");
+      const j=await api({action:"save",date:d,record:payload,status});
+      // 보낸 뒤 바뀌지 않은 사진에만 드라이브 ID를 기록
+      const latest = (d===cur) ? rec : (await get("day:"+d));
+      const ids=j.photoIds||{};
+      Object.keys(latest.results||{}).forEach(k=>{ const o=latest.results[k]; const id=ids["m:"+k];
+        if(o.photo && o.photoNew && sent.includes(o.photo)){ o.photoId=id; o.photoNew=false; } else if(!o.photo){ o.photoId=null; } });
+      (latest.extra||[]).forEach((o,i)=>{ const id=ids["x:"+i];
+        if(o.photo && o.photoNew && sent.includes(o.photo)){ o.photoId=id; o.photoNew=false; } else if(!o.photo){ o.photoId=null; } });
+      await put("day:"+d, latest);
+      if((latest.updatedAt||0)===(local.updatedAt||0)) await removePending(d);
+    }
+    await refreshCloudBadge();
+  }catch(e){
+    setCloud("err", navigator.onLine===false ? "오프라인 · 휴대폰에 보관 중" : "구글 전송 실패 · 다시 시도");
+  }finally{ pushing=false; }
+}
+async function pullDay(k){
+  if(!cloud.url) return;
+  if((await getPending()).includes(k)) return;   // 아직 안 보낸 수정이 있으면 휴대폰 것을 쓴다
+  const before=rec&&rec.updatedAt;
+  try{
+    const j=await api({action:"get",date:k});
+    const r=j.record; if(!r || k!==cur) return;
+    if((r.updatedAt||0) <= (rec.updatedAt||0) && rec.updatedAt) return;
+    if(rec.updatedAt!==before) return;   // 불러오는 사이 입력이 있었으면 덮어쓰지 않는다
+    photoSlotsOf(r).forEach(o=>{ o.photoNew=false; });
+    rec=r; measureKeys().forEach(key=>{ if(!rec.results[key]) rec.results[key]={r:"",note:"",photo:null,caption:""}; });
+    await put("day:"+k, rec); const y=window.scrollY; renderAll(); window.scrollTo({top:y});
+    $("#save").textContent="구글에서 불러옴";
+  }catch(e){}
+}
+async function pullMonth(){
+  if(!cloud.url) return;
+  try{
+    const [t,sm]=await Promise.all([api({action:"getTpl",ym:ymKey()}), api({action:"summary",ym:ymKey()})]);
+    if(t.tpl){ tpl=t.tpl; await put("tpl:"+tpl.year+"-"+tpl.month, tpl); }
+    else api({action:"saveTpl",ym:ymKey(),tpl}).catch(()=>{});
+    Object.assign(summary, sm.summary||{}); renderDays();
+  }catch(e){}
+}
+$("#cloudBtn").addEventListener("click",()=>{ $("#cloudUrl").value=cloud.url; $("#cloudPin").value=cloud.pin; $("#cloudMsg").textContent=cloud.url?"연결되어 있어요.":""; $("#cloudSheet").hidden=false; });
+$("#cloudClose").addEventListener("click",()=>{ $("#cloudSheet").hidden=true; });
+$("#cloudOff").addEventListener("click",()=>{ cloud={url:"",pin:""}; try{localStorage.removeItem("cloud");}catch(e){} refreshCloudBadge(); $("#cloudMsg").textContent="연결을 끊었어요. 기록은 이 휴대폰에만 저장됩니다."; });
+$("#cloudForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const url=$("#cloudUrl").value.trim(), pin=$("#cloudPin").value.trim();
+  if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)){ $("#cloudMsg").textContent="URL은 https://script.google.com/ 으로 시작하고 /exec 로 끝나야 해요."; return; }
+  $("#cloudMsg").textContent="확인하는 중…";
+  const old=cloud; cloud={url,pin};
+  try{ await api({action:"ping"}); }
+  catch(err){ cloud=old; $("#cloudMsg").textContent = /PIN/.test(err.message||"") ? "PIN이 맞지 않아요. 스크립트 맨 위에 적은 PIN을 넣어 주세요." : "연결하지 못했어요. URL을 확인하고, 배포할 때 '액세스 권한: 모든 사용자'로 했는지 확인해 주세요."; return; }
+  try{ localStorage.setItem("cloud",JSON.stringify(cloud)); }catch(e2){}
+  $("#cloudMsg").textContent="연결됐어요. 이 휴대폰에 있던 기록도 구글로 보낼게요.";
+  // 이미 휴대폰에 있는 기록을 모두 전송 대기에 넣는다
+  for(let d=1; d<=lastDay(); d++){ const k=ymd(tpl.year,tpl.month,d); if(await get("day:"+k)) await addPending(k); }
+  await refreshCloudBadge(); pushPending(); pullMonth();
+  setTimeout(()=>{ $("#cloudSheet").hidden=true; },1200);
+});
+window.addEventListener("online",()=>pushPending());
 
 async function selectDay(k){
   if(saveT){ clearTimeout(saveT); await saveNow(); }
@@ -433,6 +550,7 @@ async function selectDay(k){
   renderAll();
   $("#save").textContent = r ? "저장됨" : "새 점검"; $("#save").classList.remove("dirty");
   window.scrollTo({top:0});
+  pullDay(k);
 }
 
 /* ---------- 사진: 긴 변 1600px JPEG로 줄여 저장 ---------- */
@@ -451,7 +569,8 @@ function shrink(file){
 }
 function setPhoto(id,val){
   const [t,k]=id.split(":");
-  if(t==="m") rec.results[k].photo=val; else rec.extra[+k].photo=val;
+  const o = t==="m" ? rec.results[k] : rec.extra[+k];
+  o.photo=val; o.photoNew=!!val;
 }
 async function onFile(e){
   const f=e.target.files&&e.target.files[0]; e.target.value="";
@@ -498,7 +617,7 @@ document.addEventListener("input",e=>{
 $("#clearBox").addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.id==="clearBtn"){ $("#clearBox").innerHTML=`<span>${dotDate(cur)} 기록을 지울까요?</span><button class="btn" id="clearYes" type="button" style="color:var(--bad)">지우기</button><button class="btn ghost" id="clearNo" type="button">취소</button>`; $("#botNote").hidden=true; $("#pdfBtn").hidden=true; return; }
-  if(b.id==="clearYes"){ rec=blankRec(cur); del("day:"+cur); delete summary[cur]; put("summary:"+tpl.year+"-"+tpl.month, summary); renderAll(); toast("비웠습니다"); }
+  if(b.id==="clearYes"){ rec=blankRec(cur); rec.updatedAt=Date.now(); saveNow(); renderAll(); toast("비웠습니다"); }
   $("#clearBox").innerHTML=`<button class="btn ghost" id="clearBtn" type="button">비우기</button>`; $("#botNote").hidden=false; $("#pdfBtn").hidden=false;
 });
 
@@ -544,6 +663,7 @@ $("#pdfSheet").addEventListener("click", e=>{ if(e.target.id==="pdfSheet") $("#p
 (async function start(){
   const saved=await get("tpl:"+DEFAULT_TPL.year+"-"+DEFAULT_TPL.month); if(saved) tpl=saved;
   summary = (await get("summary:"+tpl.year+"-"+tpl.month)) || {};
+  refreshCloudBadge(); if(cloud.url){ await pullMonth(); pushPending(); }
   const now=new Date();
   const d = (now.getFullYear()===tpl.year && now.getMonth()+1===tpl.month) ? now.getDate() : 1;
   await selectDay(ymd(tpl.year,tpl.month,d));
