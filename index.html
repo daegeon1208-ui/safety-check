@@ -213,6 +213,7 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
 <div class="sheet" id="pdfSheet" hidden>
   <div class="sheet-in" role="dialog" aria-modal="true" aria-labelledby="pdfTitle">
     <h3 id="pdfTitle">PDF 출력</h3>
+    <p class="slot" id="pdfVer"></p>
     <p id="pdfMsg">원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽)으로 만드는 중…</p>
     <div class="sheet-btns">
       <a class="primary" id="pdfSave" hidden>PDF 저장</a>
@@ -655,20 +656,21 @@ $("#clearBox").addEventListener("click",e=>{
 });
 
 /* ---------- PDF 출력: 원본 엑셀 양식 그대로 ---------- */
+const APP_VER="2026-11-09c";
 let pdfUrl=null, pdfFile=null, libs=null;
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
 async function loadLibs(){
   if(libs) return libs;
-  await loadScript("lib/pdf-lib.min.js"); await loadScript("lib/fontkit.umd.min.js"); await loadScript("print-pdf.js");
+  await loadScript("lib/pdf-lib.min.js"); await loadScript("lib/fontkit.umd.min.js"); await loadScript("print-pdf.js?v="+APP_VER);
   const [layout,B,M] = await Promise.all([
-    fetch("layout.json").then(r=>r.json()),
+    fetch("layout.json?v="+APP_VER,{cache:"no-cache"}).then(r=>r.json()),
     fetch("fonts/KoPubDotum-Bold.ttf").then(r=>r.arrayBuffer()),
     fetch("fonts/KoPubDotum-Medium.ttf").then(r=>r.arrayBuffer())]);
   libs={layout,fonts:{B:new Uint8Array(B),M:new Uint8Array(M)}}; return libs;
 }
 $("#pdfBtn").addEventListener("click", async ()=>{
   if(saveT){ clearTimeout(saveT); await saveNow(); }
-  const sh=$("#pdfSheet"); sh.hidden=false;
+  const sh=$("#pdfSheet"); sh.hidden=false; $("#pdfVer").textContent="앱 버전 "+APP_VER;
   ["#pdfSave","#pdfShare","#pdfOpen"].forEach(s=>$(s).hidden=true);
   $("#pdfMsg").textContent="원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽)으로 만드는 중…";
   try{
