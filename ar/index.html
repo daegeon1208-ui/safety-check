@@ -75,6 +75,12 @@ label.f{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
 .sheet h3{margin:0 0 10px;font-size:16px}
 .sheet .types button{opacity:.4}
 .sheet .types button.on{opacity:1;border-color:var(--ink)}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{padding:9px 0;font-weight:700;color:var(--muted)}
+.seg button.on[data-v="0"]{background:var(--brand);color:#fff}
+.seg button.on[data-v="1"]{background:#1E7A4B;color:#fff}
+.done-tag{font-size:11px;font-weight:700;border-radius:99px;padding:1px 7px;margin-left:4px;vertical-align:1px}
+.done-tag.y{background:#1E7A4B;color:#fff}.done-tag.n{background:var(--brand);color:#fff}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 
 /* 상세 보기 */
@@ -92,6 +98,18 @@ label.f{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
 .arBtns{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;align-items:center}
 .arBtns button{min-height:52px;border-radius:12px;font-weight:700;color:#fff;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.5)}
 .arBtns .place{background:var(--brand);border-color:var(--brand);font-size:17px}
+#cam{position:fixed;inset:0;z-index:50;background:#000;overflow:hidden;touch-action:none}
+#camVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#camPins{position:absolute;inset:0}
+.cpin{position:absolute;width:0;height:0;pointer-events:none}
+.cpin i{position:absolute;left:-17px;top:-52px;width:34px;height:34px;border-radius:50%;border:3px solid #fff;color:#fff;font:700 16px/28px var(--f);text-align:center;font-style:normal;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.cpin b{position:absolute;left:-8px;top:-22px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:22px solid}
+#camTop{position:absolute;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 10px) 12px 10px;background:linear-gradient(rgba(0,0,0,.6),transparent);color:#fff;display:flex;gap:8px;align-items:center}
+#camTop .msg{flex:1;font-size:13px;text-shadow:0 1px 2px #000}
+#camTop button{color:#fff;border:1px solid rgba(255,255,255,.6);border-radius:8px;padding:6px 10px;background:rgba(0,0,0,.3)}
+#camBottom{position:absolute;bottom:0;left:0;right:0;padding:10px 12px calc(env(safe-area-inset-bottom) + 14px);background:linear-gradient(transparent,rgba(0,0,0,.7))}
+#camBottom .types{margin-bottom:10px}
+#camBottom .arBtns button{font-size:14px}
 #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 90px);transform:translateX(-50%);background:rgba(20,20,20,.92);color:#fff;padding:10px 16px;border-radius:99px;font-size:14px;z-index:90;max-width:90vw;text-align:center}
 </style>
 </head>
@@ -107,15 +125,18 @@ label.f{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
       <div><label class="f" for="fFloor">층</label>
         <input id="fFloor" list="floors" placeholder="예: B1F" autocomplete="off">
         <datalist id="floors"><option>B4F</option><option>B3F</option><option>B2F</option><option>B1F</option><option>1F</option><option>2F</option><option>3F</option><option>RF</option></datalist></div>
+      <div class="full"><label class="f" for="fCompany">업체</label>
+        <select id="fCompany"><option>동우건설 (골조)</option><option>세모건설 (토목)</option><option>수우전기 (전기)</option><option>정진설비 (설비)</option><option>청오건설 (방수)</option><option>HK안전시스템 (안전시설물)</option><option>기타·미정</option></select></div>
       <div class="full"><label class="f" for="fPlace">위치·내용</label>
         <input id="fPlace" placeholder="예: X3~X5 / Y2 슬래브 하부" autocomplete="off"></div>
     </div>
     <div class="start">
-      <button class="btn primary" id="btnAR">AR로 마킹</button>
+      <button class="btn primary" id="btnCam">카메라로 마킹</button>
       <button class="btn dark" id="btnPhoto">사진으로 마킹</button>
+      <button class="btn line hidden" id="btnAR" style="grid-column:1/-1">AR로 마킹 (바닥·벽 인식, 안드로이드)</button>
     </div>
     <input type="file" id="filePhoto" accept="image/*" capture="environment" class="hidden">
-    <p class="note" id="arSupport">이 휴대폰에서 AR이 되는지 확인하는 중…</p>
+    <p class="note" id="arSupport">카메라로 마킹: 카메라 화면을 누르면 그 자리에 하자 번호가 붙고, 휴대폰을 돌려도 그 방향에 붙어 있습니다. 다 찍으면 촬영해서 저장합니다.</p>
   </section>
 
   <section class="card">
@@ -143,7 +164,9 @@ label.f{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
     <h3 id="msTitle">표시</h3>
     <div class="types" id="msTypes"></div>
     <label class="f" for="msMemo" style="margin-top:10px">메모</label>
-    <textarea id="msMemo" rows="2" placeholder="예: 안전난간 미설치, 철근 피복 부족"></textarea>
+    <textarea id="msMemo" rows="2" placeholder="예: 슬래브 하부 균열 0.3mm, 길이 약 1m"></textarea>
+    <label class="f" style="margin-top:10px">조치 상태</label>
+    <div class="seg" id="msDone"><button data-v="0">미조치</button><button data-v="1">조치완료</button></div>
     <div class="row2"><button class="btn line" id="msDel">표시 삭제</button><button class="btn primary" id="msOk">확인</button></div>
   </div>
 </div>
@@ -176,24 +199,42 @@ label.f{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
   </div>
 </div>
 
+<!-- 카메라로 마킹 (아이폰·안드로이드 공통) -->
+<div id="cam" class="hidden">
+  <video id="camVideo" playsinline muted autoplay></video>
+  <div id="camPins"></div>
+  <div id="camTop"><div class="msg" id="camMsg">하자 위치를 화면에서 누르세요.</div><button id="camExit">닫기</button></div>
+  <div id="camBottom">
+    <div class="types" id="camTypes"></div>
+    <div class="arBtns">
+      <button id="camUndo">되돌리기</button>
+      <button class="place" id="camShot">촬영·저장</button>
+      <button id="camGyro">방향고정 켬</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="hidden"></div>
 
 <script type="module">
 import * as THREE from "./lib/three.module.min.js";
 
-const VERSION = "v1";
+const VERSION = "v2";
 document.getElementById("ver").textContent = VERSION;
 const $ = id => document.getElementById(id);
 
 /* ---------- 표시 종류 ---------- */
 const TYPES = [
-  {k:"danger", name:"위험", color:"#D3162F"},
-  {k:"defect", name:"하자", color:"#E8730C"},
-  {k:"check",  name:"확인", color:"#1D4ED8"},
-  {k:"memo",   name:"메모", color:"#1E7A4B"},
+  {k:"crack",  name:"균열",     color:"#D3162F"},
+  {k:"leak",   name:"누수",     color:"#1D4ED8"},
+  {k:"rebar",  name:"철근·피복", color:"#E8730C"},
+  {k:"honey",  name:"곰보",     color:"#8B5CF6"},
+  {k:"dim",    name:"치수·변형", color:"#0E7490"},
+  {k:"finish", name:"마감",     color:"#A16207"},
+  {k:"etc",    name:"기타",     color:"#4B5563"},
 ];
 const typeOf = k => TYPES.find(t => t.k === k) || TYPES[0];
-let curType = "danger";
+let curType = "crack";
 
 function buildTypeButtons(box, getter, setter){
   box.innerHTML = "";
@@ -236,9 +277,9 @@ const fmtDate = ts => { const d=new Date(ts); return `${d.getFullYear()}-${pad(d
 const fileStamp = ts => { const d=new Date(ts); return `${String(d.getFullYear()).slice(2)}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`; };
 
 /* ---------- 입력값 기억 ---------- */
-function loadForm(){ try{ const v=JSON.parse(localStorage.getItem("ar-form")||"{}"); if(v.dong) $("fDong").value=v.dong; if(v.floor) $("fFloor").value=v.floor; }catch{} }
-function saveForm(){ try{ localStorage.setItem("ar-form", JSON.stringify({dong:$("fDong").value, floor:$("fFloor").value})); }catch{} }
-function formMeta(){ saveForm(); return {dong:$("fDong").value, floor:$("fFloor").value.trim(), place:$("fPlace").value.trim()}; }
+function loadForm(){ try{ const v=JSON.parse(localStorage.getItem("ar-form")||"{}"); if(v.dong) $("fDong").value=v.dong; if(v.floor) $("fFloor").value=v.floor; if(v.company) $("fCompany").value=v.company; }catch{} }
+function saveForm(){ try{ localStorage.setItem("ar-form", JSON.stringify({dong:$("fDong").value, floor:$("fFloor").value, company:$("fCompany").value})); }catch{} }
+function formMeta(){ saveForm(); return {dong:$("fDong").value, floor:$("fFloor").value.trim(), place:$("fPlace").value.trim(), company:$("fCompany").value}; }
 
 /* ---------- 위치(GPS) : 되면 넣고 안 되면 생략 ---------- */
 function getGPS(){
@@ -249,7 +290,7 @@ function getGPS(){
 }
 
 /* ---------- 사진에 표시 그리기 ---------- */
-function drawPin(ctx, x, y, n, color, R){
+function drawPin(ctx, x, y, n, color, R, done=false){
   ctx.save();
   ctx.beginPath(); ctx.moveTo(x, y);
   ctx.lineTo(x - R*0.55, y - R*1.3); ctx.lineTo(x + R*0.55, y - R*1.3); ctx.closePath();
@@ -260,6 +301,13 @@ function drawPin(ctx, x, y, n, color, R){
   ctx.fillStyle = "#fff"; ctx.font = `700 ${Math.round(R*1.15)}px ${getComputedStyle(document.body).fontFamily}`;
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
   ctx.fillText(String(n), x, y - R*1.9 + R*0.05);
+  if(done){
+    const cx = x + R*0.8, cy = y - R*2.7, r = R*0.55;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = "#1E7A4B"; ctx.fill();
+    ctx.lineWidth = Math.max(2, R*0.12); ctx.strokeStyle = "#fff"; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - r*0.45, cy); ctx.lineTo(cx - r*0.1, cy + r*0.35); ctx.lineTo(cx + r*0.45, cy - r*0.35);
+    ctx.lineWidth = Math.max(2, R*0.16); ctx.stroke();
+  }
   ctx.restore();
 }
 const pinR = img => Math.max(14, Math.round(Math.min(img.width, img.height) * 0.035));
@@ -270,8 +318,8 @@ async function composite(rec){
   const W = img.width, R = pinR(img);
   const fs = Math.max(16, Math.round(W * 0.026));
   const lineH = Math.round(fs * 1.5);
-  const lines = rec.marks.map((m,i) => `${i+1}. [${typeOf(m.type).name}] ${m.memo || ""}`);
-  const head = `${fmtDate(rec.created)}  ${rec.dong} ${rec.floor}  ${rec.place}`.trim();
+  const lines = rec.marks.map((m,i) => `${i+1}. [${typeOf(m.type).name}] ${m.memo || ""}  (${m.done ? "조치완료" : "미조치"})`);
+  const head = `${fmtDate(rec.created)}  ${rec.dong} ${rec.floor}  ${rec.place}`.trim() + (rec.company ? `  / ${rec.company}` : "");
   const ctx0 = document.createElement("canvas").getContext("2d");
   ctx0.font = `400 ${fs}px sans-serif`;
   const wrapped = [];
@@ -280,7 +328,7 @@ async function composite(rec){
   const c = document.createElement("canvas"); c.width = W; c.height = img.height + footH;
   const ctx = c.getContext("2d");
   ctx.drawImage(img, 0, 0);
-  rec.marks.forEach((m,i) => drawPin(ctx, m.x*W, m.y*img.height, i+1, typeOf(m.type).color, R));
+  rec.marks.forEach((m,i) => drawPin(ctx, m.x*W, m.y*img.height, i+1, typeOf(m.type).color, R, m.done));
   ctx.fillStyle = "#fff"; ctx.fillRect(0, img.height, W, footH);
   ctx.textBaseline = "top"; ctx.fillStyle = "#1D1E1A";
   let y = img.height + fs*0.7;
@@ -306,19 +354,23 @@ async function shrink(blob, max=2000){
 }
 
 /* ---------- 목록 ---------- */
-let filterDong = "전체";
+let filterDong = "전체", onlyOpen = false;
 async function renderList(){
   const recs = (await allRecs()).sort((a,b) => b.created - a.created);
   const dongs = ["전체", ...new Set(recs.map(r => r.dong))];
   if(!dongs.includes(filterDong)) filterDong = "전체";
   $("filter").innerHTML = "";
-  if(recs.length) for(const d of dongs){
-    const b = document.createElement("button"); b.textContent = d; b.className = d===filterDong ? "on" : "";
-    b.onclick = () => { filterDong = d; renderList(); }; $("filter").appendChild(b);
+  if(recs.length){
+    const o = document.createElement("button"); o.textContent = "미조치만"; o.className = onlyOpen ? "on" : ""; o.style.borderColor = "var(--brand)";
+    o.onclick = () => { onlyOpen = !onlyOpen; renderList(); }; $("filter").appendChild(o);
+    for(const d of dongs){
+      const b = document.createElement("button"); b.textContent = d; b.className = d===filterDong ? "on" : "";
+      b.onclick = () => { filterDong = d; renderList(); }; $("filter").appendChild(b);
+    }
   }
   const box = $("list"); box.innerHTML = "";
-  const shown = recs.filter(r => filterDong==="전체" || r.dong===filterDong);
-  if(!shown.length){ box.innerHTML = `<div class="empty">아직 기록이 없습니다.</div>`; return; }
+  const shown = recs.filter(r => (filterDong==="전체" || r.dong===filterDong) && (!onlyOpen || r.marks.some(m => !m.done)));
+  if(!shown.length){ box.innerHTML = `<div class="empty">${recs.length ? "조건에 맞는 기록이 없습니다." : "아직 기록이 없습니다."}</div>`; return; }
   for(const r of shown){
     const el = document.createElement("div"); el.className = "rec"; el.style.cursor = "pointer";
     const img = document.createElement("img"); img.alt = ""; img.src = URL.createObjectURL(r.thumb || r.photo);
@@ -326,7 +378,10 @@ async function renderList(){
     const counts = {}; r.marks.forEach(m => counts[m.type] = (counts[m.type]||0)+1);
     tx.innerHTML = `<div class="t"></div><div class="s"></div><div class="chips"></div>`;
     tx.querySelector(".t").textContent = `${r.dong} ${r.floor}`.trim() + (r.place ? ` · ${r.place}` : "");
-    tx.querySelector(".s").textContent = `${fmtDate(r.created)} · ${r.mode==="ar" ? "AR" : "사진"} · 표시 ${r.marks.length}개`;
+    tx.querySelector(".s").textContent = `${fmtDate(r.created)}` + (r.company ? ` · ${r.company}` : "") + ` · 하자 ${r.marks.length}개`;
+    const open = r.marks.filter(m => !m.done).length, done = r.marks.length - open;
+    if(open){ const c = document.createElement("span"); c.className="chip"; c.style.background="#1D1E1A"; c.textContent=`미조치 ${open}`; tx.querySelector(".chips").appendChild(c); }
+    if(done){ const c = document.createElement("span"); c.className="chip"; c.style.background="#1E7A4B"; c.textContent=`조치완료 ${done}`; tx.querySelector(".chips").appendChild(c); }
     for(const t of TYPES) if(counts[t.k]){ const c = document.createElement("span"); c.className="chip"; c.style.background=t.color; c.textContent=`${t.name} ${counts[t.k]}`; tx.querySelector(".chips").appendChild(c); }
     el.append(img, tx); el.onclick = () => openDetail(r.id);
     box.appendChild(el);
@@ -354,7 +409,7 @@ function drawEditor(){
   const ctx = edCanvas.getContext("2d");
   ctx.drawImage(img, 0, 0);
   const R = pinR(img);
-  rec.marks.forEach((m,i) => drawPin(ctx, m.x*img.width, m.y*img.height, i+1, typeOf(m.type).color, R));
+  rec.marks.forEach((m,i) => drawPin(ctx, m.x*img.width, m.y*img.height, i+1, typeOf(m.type).color, R, m.done));
 }
 function renderMarkList(){
   const box = $("markList"); box.innerHTML = "";
@@ -364,7 +419,7 @@ function renderMarkList(){
     el.innerHTML = `<span class="n"></span><span class="m"></span>`;
     el.querySelector(".n").textContent = i+1; el.querySelector(".n").style.background = t.color;
     el.querySelector(".m").innerHTML = `<b></b> <small></small>`;
-    el.querySelector("b").textContent = t.name; el.querySelector("small").textContent = m.memo || "메모 없음 (눌러서 입력)";
+    el.querySelector("b").textContent = t.name; el.querySelector("small").textContent = (m.memo || "메모 없음 (눌러서 입력)") + (m.done ? " · 조치완료" : "");
     el.onclick = () => openMarkSheet(i);
     box.appendChild(el);
   });
@@ -405,18 +460,21 @@ $("edSave").onclick = async () => {
 };
 
 /* 표시 메모 창 */
-let msIdx = -1, msType = "danger", msNew = false;
+let msIdx = -1, msType = "crack", msNew = false, msDoneV = false;
+function refreshDone(){ for(const b of $("msDone").children) b.classList.toggle("on", (b.dataset.v==="1") === msDoneV); }
+for(const b of $("msDone").children) b.onclick = () => { msDoneV = b.dataset.v==="1"; refreshDone(); };
 const refreshMsTypes = buildTypeButtons($("msTypes"), () => msType, k => msType = k);
 function openMarkSheet(i, isNew=false){
   msIdx = i; msNew = isNew; const m = ed.rec.marks[i];
   msType = m.type; refreshMsTypes();
   $("msTitle").textContent = `${i+1}번 표시`;
   $("msMemo").value = m.memo || "";
+  msDoneV = !!m.done; refreshDone();
   $("markSheet").classList.remove("hidden");
   if(!isNew) setTimeout(() => $("msMemo").focus(), 50);
 }
 $("msOk").onclick = () => {
-  const m = ed.rec.marks[msIdx]; m.type = msType; m.memo = $("msMemo").value.trim();
+  const m = ed.rec.marks[msIdx]; m.type = msType; m.memo = $("msMemo").value.trim(); m.done = msDoneV;
   $("markSheet").classList.add("hidden"); drawEditor(); renderMarkList();
 };
 $("msDel").onclick = () => { ed.rec.marks.splice(msIdx, 1); $("markSheet").classList.add("hidden"); drawEditor(); renderMarkList(); };
@@ -442,21 +500,29 @@ async function openDetail(id){
   $("dTitle").textContent = `${r.dong} ${r.floor}`.trim();
   const info = $("dInfo"); info.innerHTML = "";
   const p = document.createElement("div"); p.style.cssText = "font-size:13px;color:var(--muted);margin-bottom:6px";
-  p.textContent = `${fmtDate(r.created)} · ${r.mode==="ar"?"AR 촬영":"사진"}` + (r.place ? ` · ${r.place}` : "") + (r.gps ? ` · GPS ${r.gps.lat}, ${r.gps.lng} (±${r.gps.acc}m)` : "");
+  p.textContent = `${fmtDate(r.created)}` + (r.company ? ` · ${r.company}` : "") + (r.place ? ` · ${r.place}` : "") + (r.gps ? ` · GPS ${r.gps.lat}, ${r.gps.lng} (±${r.gps.acc}m)` : "");
   info.appendChild(p);
   if(!r.marks.length){ const e = document.createElement("div"); e.textContent = "표시 없음"; info.appendChild(e); }
+  else { const h = document.createElement("div"); h.style.cssText = "font-size:12px;color:var(--muted);margin-bottom:4px"; h.textContent = "오른쪽 상태를 누르면 미조치 ↔ 조치완료가 바뀝니다."; info.appendChild(h); }
   r.marks.forEach((m,i) => {
     const t = typeOf(m.type);
     const el = document.createElement("div"); el.className = "mk"; el.style.borderColor = "var(--line)";
-    el.innerHTML = `<span class="n"></span><span class="m"><b></b> <span></span></span>`;
+    el.innerHTML = `<span class="n"></span><span class="m"><b></b> <span></span></span><button class="done-tag"></button>`;
     el.querySelector(".n").textContent = i+1; el.querySelector(".n").style.background = t.color;
     el.querySelector("b").textContent = t.name; el.querySelector(".m span").textContent = m.memo || "";
+    const tag = el.querySelector(".done-tag"); tag.textContent = m.done ? "조치완료" : "미조치"; tag.classList.add(m.done ? "y" : "n");
+    tag.style.padding = "6px 10px"; tag.style.fontSize = "13px";
+    tag.onclick = async () => {
+      m.done = !m.done; if(m.done) m.doneAt = Date.now(); else delete m.doneAt;
+      r.updated = Date.now(); r.thumb = await shrink(await composite(r), 400);
+      await putRec(r); renderList(); openDetail(r.id);
+    };
     info.appendChild(el);
   });
   $("detail").classList.remove("hidden"); $("detail").scrollTop = 0;
   window._detailRec = r;
 }
-const detailName = () => { const r = window._detailRec; return `${fileStamp(r.created)} ${r.dong} ${r.floor} AR마킹.jpg`.replace(/\s+/g," "); };
+const detailName = () => { const r = window._detailRec; return `${fileStamp(r.created)} ${r.dong} ${r.floor} 하자검측.jpg`.replace(/\s+/g," "); };
 $("dBack").onclick = () => $("detail").classList.add("hidden");
 $("dSave").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(detailBlob); a.download = detailName(); a.click(); };
 $("dShare").onclick = async () => {
@@ -480,10 +546,7 @@ refreshArTypes = buildTypeButtons($("arTypes"), () => curType, k => { curType = 
 let arSupported = false;
 (async () => {
   try{ arSupported = !!(navigator.xr && await navigator.xr.isSessionSupported("immersive-ar")); }catch{ arSupported = false; }
-  $("btnAR").disabled = !arSupported;
-  $("arSupport").textContent = arSupported
-    ? "이 휴대폰은 AR이 됩니다. AR로 마킹하면 카메라 화면 속 바닥·벽에 표시를 세우고 사진으로 남깁니다."
-    : "이 휴대폰(브라우저)에서는 AR이 안 됩니다. AR은 안드로이드 크롬에서만 됩니다. 아이폰은 '사진으로 마킹'을 쓰세요.";
+  $("btnAR").classList.toggle("hidden", !arSupported);
 })();
 
 let ar = null;
@@ -673,6 +736,148 @@ async function finishAR(){
   if(lost) toast(`화면 밖에 있던 표시 ${lost}개는 사진에서 빠졌습니다`, 3500);
   openEditor({id: crypto.randomUUID(), created: Date.now(), mode: "ar", ...meta, gps, photo, marks}, true);
 }
+
+/* ======================================================================
+   카메라로 마킹 (아이폰·안드로이드 공통)
+   - 카메라 영상 위를 누르면 번호 표시
+   - 휴대폰 기울기 센서로 표시를 '방향'에 붙여 둠 (제자리에서 돌려 보는 정도까지 맞음)
+   ====================================================================== */
+const refreshCamTypes = buildTypeButtons($("camTypes"), () => curType, k => { curType = k; refreshEdTypes(); refreshArTypes(); });
+let cam = null;
+const LONG_FOV = 66 * Math.PI/180;   // 휴대폰 기본 후면 카메라 긴 변 화각(대략)
+
+function rotMatrix(a, b, g){   // 기기 → 세상 (W3C deviceorientation: Z-X'-Y'')
+  const d = Math.PI/180, ca=Math.cos(a*d), sa=Math.sin(a*d), cb=Math.cos(b*d), sb=Math.sin(b*d), cg=Math.cos(g*d), sg=Math.sin(g*d);
+  return [
+    ca*cg - sa*sb*sg, -cb*sa, ca*sg + cg*sa*sb,
+    cg*sa + ca*sb*sg,  ca*cb, sa*sg - ca*cg*sb,
+    -cb*sg,            sb,    cb*cg ];
+}
+const mulV = (M, v) => [M[0]*v[0]+M[1]*v[1]+M[2]*v[2], M[3]*v[0]+M[4]*v[1]+M[5]*v[2], M[6]*v[0]+M[7]*v[1]+M[8]*v[2]];
+const mulTV = (M, v) => [M[0]*v[0]+M[3]*v[1]+M[6]*v[2], M[1]*v[0]+M[4]*v[1]+M[7]*v[2], M[2]*v[0]+M[5]*v[1]+M[8]*v[2]];
+function screenAngle(){ return (screen.orientation && screen.orientation.angle) || window.orientation || 0; }
+
+/* 화면 좌표 ↔ 영상 좌표 (object-fit: cover) */
+function coverMap(){
+  const v = $("camVideo"), W = innerWidth, H = innerHeight, vw = v.videoWidth || W, vh = v.videoHeight || H;
+  const s = Math.max(W/vw, H/vh);
+  return {s, ox: (W - vw*s)/2, oy: (H - vh*s)/2, vw, vh, f: (Math.max(vw, vh)/2) / Math.tan(LONG_FOV/2)};
+}
+/* 영상 좌표 → 카메라 방향 (화면 기준: x 오른쪽, y 위, -z 앞) → 세상 방향 */
+function videoToDir(px, py, m){
+  const d = [(px - m.vw/2)/m.f, -(py - m.vh/2)/m.f, -1];
+  const ang = -screenAngle() * Math.PI/180, c = Math.cos(ang), sn = Math.sin(ang);
+  const dd = [d[0]*c - d[1]*sn, d[0]*sn + d[1]*c, d[2]];   // 화면 회전 보정 → 기기 좌표
+  return cam.R ? mulV(cam.R, dd) : dd;
+}
+function dirToVideo(w, m){
+  let d = cam.R ? mulTV(cam.R, w) : w;
+  const ang = screenAngle() * Math.PI/180, c = Math.cos(ang), sn = Math.sin(ang);
+  d = [d[0]*c - d[1]*sn, d[0]*sn + d[1]*c, d[2]];
+  if(d[2] >= -0.05) return null;   // 뒤쪽
+  return {x: m.vw/2 + m.f * d[0]/(-d[2]), y: m.vh/2 - m.f * d[1]/(-d[2])};
+}
+
+function onOrient(e){
+  if(!cam || e.alpha == null) return;
+  cam.R = rotMatrix(e.alpha, e.beta, e.gamma);
+  cam.gotGyro = true;
+}
+
+async function startCam(){
+  const meta = formMeta();
+  // 아이폰은 기울기 센서 권한을 버튼 누를 때 물어야 함
+  let gyroOK = true;
+  if(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === "function"){
+    try{ gyroOK = (await DeviceOrientationEvent.requestPermission()) !== "denied"; }catch{ gyroOK = true; }
+  }
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: "environment"}, width: {ideal: 1920}, height: {ideal: 1920}}, audio: false});
+  }catch(err){
+    alert("카메라를 열지 못했습니다. 브라우저 설정에서 카메라 권한을 허용해 주세요.\n(" + err.message + ")"); return;
+  }
+  cam = {stream, meta, pins: [], R: null, gyro: gyroOK, gotGyro: false, raf: 0};
+  const v = $("camVideo"); v.srcObject = stream; try{ await v.play(); }catch{}
+  $("cam").classList.remove("hidden"); refreshCamTypes();
+  $("camGyro").textContent = gyroOK ? "방향고정 켬" : "방향고정 끔";
+  if(gyroOK) window.addEventListener("deviceorientation", onOrient);
+  $("camMsg").textContent = "하자 위치를 화면에서 누르세요. 휴대폰을 돌려도 표시가 그 자리에 붙어 있습니다.";
+  const loop = () => { if(!cam) return; renderCamPins(); cam.raf = requestAnimationFrame(loop); };
+  loop();
+}
+function renderCamPins(){
+  const box = $("camPins"), m = coverMap();
+  while(box.children.length < cam.pins.length){
+    const d = document.createElement("div"); d.className = "cpin"; d.innerHTML = "<b></b><i></i>"; box.appendChild(d);
+  }
+  while(box.children.length > cam.pins.length) box.lastChild.remove();
+  cam.pins.forEach((p, i) => {
+    const el = box.children[i], col = typeOf(p.type).color;
+    const vp = cam.gyro && cam.gotGyro ? dirToVideo(p.dir, m) : p.v;
+    if(!vp){ el.style.display = "none"; return; }
+    el.style.display = ""; el.style.left = (m.ox + vp.x*m.s) + "px"; el.style.top = (m.oy + vp.y*m.s) + "px";
+    el.querySelector("i").textContent = i+1; el.querySelector("i").style.background = col; el.querySelector("b").style.borderTopColor = col;
+  });
+}
+$("cam").addEventListener("click", e => {
+  if(!cam || e.target.closest("#camTop,#camBottom")) return;
+  const m = coverMap();
+  const vx = (e.clientX - m.ox)/m.s, vy = (e.clientY - m.oy)/m.s;
+  cam.pins.push({type: curType, v: {x: vx, y: vy}, dir: videoToDir(vx, vy, m)});
+  if(navigator.vibrate) navigator.vibrate(25);
+  $("camMsg").textContent = `${cam.pins.length}개 표시함. 다 찍으면 '촬영·저장'을 누르세요.`;
+});
+$("camUndo").onclick = () => { if(cam && cam.pins.length){ cam.pins.pop(); $("camMsg").textContent = `${cam.pins.length}개 표시함.`; } };
+$("camGyro").onclick = () => {
+  if(!cam) return;
+  if(!cam.gyro){
+    // 현재 화면 위치를 기준으로 다시 방향을 잡음
+    cam.gyro = true; window.addEventListener("deviceorientation", onOrient);
+    const m = coverMap(); cam.pins.forEach(p => p.dir = videoToDir(p.v.x, p.v.y, m));
+  } else {
+    const m = coverMap(); cam.pins.forEach(p => { const q = cam.gotGyro ? dirToVideo(p.dir, m) : p.v; if(q) p.v = q; });
+    cam.gyro = false; window.removeEventListener("deviceorientation", onOrient);
+  }
+  $("camGyro").textContent = cam.gyro ? "방향고정 켬" : "방향고정 끔";
+  toast(cam.gyro ? "휴대폰을 돌려도 표시가 그 방향에 붙어 있습니다" : "표시가 화면에 고정됩니다");
+};
+function stopCam(){
+  if(!cam) return;
+  cancelAnimationFrame(cam.raf); window.removeEventListener("deviceorientation", onOrient);
+  cam.stream.getTracks().forEach(t => t.stop());
+  $("camVideo").srcObject = null; $("camPins").innerHTML = ""; $("cam").classList.add("hidden");
+  cam = null;
+}
+$("camExit").onclick = () => { if(cam.pins.length && !confirm("촬영하지 않고 닫을까요? 표시가 사라집니다.")) return; stopCam(); };
+$("camShot").onclick = async () => {
+  if(!cam) return;
+  const v = $("camVideo"), m = coverMap();
+  if(!v.videoWidth){ toast("카메라가 아직 준비되지 않았습니다"); return; }
+  // 지금 화면에 보이는 부분만 잘라서 사진으로 (화면에서 본 그대로)
+  const sx = Math.max(0, -m.ox/m.s), sy = Math.max(0, -m.oy/m.s);
+  const sw = Math.min(m.vw, innerWidth/m.s), sh = Math.min(m.vh, innerHeight/m.s);
+  const c = document.createElement("canvas"); c.width = Math.round(sw); c.height = Math.round(sh);
+  c.getContext("2d").drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  const marks = [];
+  let lost = 0;
+  for(const p of cam.pins){
+    const q = cam.gyro && cam.gotGyro ? dirToVideo(p.dir, m) : p.v;
+    const x = q ? (q.x - sx)/sw : -1, y = q ? (q.y - sy)/sh : -1;
+    if(x < 0 || x > 1 || y < 0 || y > 1){ lost++; continue; }
+    marks.push({x, y, type: p.type, memo: ""});
+  }
+  const meta = cam.meta;
+  stopCam();
+  const photo = await shrink(await new Promise(r => c.toBlob(r, "image/jpeg", 0.92)));
+  if(lost) toast(`화면 밖에 있던 표시 ${lost}개는 사진에서 빠졌습니다`, 3500);
+  const gps = await Promise.race([getGPS(), new Promise(r => setTimeout(() => r(null), 3000))]);
+  openEditor({id: crypto.randomUUID(), created: Date.now(), mode: "cam", ...meta, gps, photo, marks}, true);
+};
+$("btnCam").onclick = () => {
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast("이 브라우저는 카메라 화면을 지원하지 않습니다. '사진으로 마킹'을 쓰세요.", 4000); return; }
+  startCam();
+};
 
 /* ---------- 시작 ---------- */
 loadForm();
