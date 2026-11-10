@@ -68,6 +68,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .day.sun span{color:var(--brand)}
 .day[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .day[aria-pressed="true"] span{color:inherit;opacity:.8}
+.day.today,.day.today[aria-pressed="true"]{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
 .day .dot{position:absolute;top:4px;right:5px;width:6px;height:6px;border-radius:50%}
 .day .dot.part{background:var(--olive)} .day .dot.done{background:var(--ok)}
 .progress{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -316,7 +317,7 @@ const MONTHS = Object.keys(DEFAULT_TPLS).sort();
 /* 일일안전관리자 편성표 (11월 일일 안전관리자 활동 운영 지침, 2026.10.30) — 일요일은 비어 있음 */
 const ROSTERS = { "2026-11": {2:"배윤기",3:"김대건",4:"신상우",5:"배윤기",6:"신상우",7:"배윤기",9:"김용규",10:"최성기",11:"정병익",12:"김용규",13:"최성기",14:"신상우",16:"정병익",17:"김대건",18:"김용규",19:"정병익",20:"최성기",21:"김대건",23:"배윤기",24:"최성기",25:"김용규",26:"김대건",27:"정병익",28:"신상우",30:"김대건"} };
 function rosterOf(dateStr){ const [y,m,d]=dateStr.split("-").map(Number); const r=ROSTERS[`${y}-${String(m).padStart(2,"0")}`]; return r ? (r[d]||"") : ""; }
-const APP_VER="2026-11-10c";
+const APP_VER="2026-11-10d";
 const EXTRA_ROWS = 2; // 엑셀 19·20행
 const WD = ["일","월","화","수","목","금","토"];
 
@@ -370,9 +371,11 @@ function nl(s){return esc(s).replace(/\n\s*/g," ").replace(/\s+/g," ").trim();}
 /* ---------- 날짜 줄 ---------- */
 function renderDays(){
   const box=$("#days"); box.innerHTML="";
+  const t0=new Date(), todayK=ymd(t0.getFullYear(),t0.getMonth()+1,t0.getDate());
   for(let d=1; d<=lastDay(); d++){
     const k=ymd(tpl.year,tpl.month,d), w=new Date(tpl.year,tpl.month-1,d).getDay();
-    const b=document.createElement("button"); b.type="button"; b.className="day"+(w===0?" sun":"");
+    const b=document.createElement("button"); b.type="button"; b.className="day"+(w===0?" sun":"")+(k===todayK?" today":"");
+    if(k===todayK) b.title="오늘";
     b.setAttribute("aria-pressed", k===cur); b.dataset.k=k;
     const st=summary[k]; const dot = st ? `<i class="dot ${st==="done"?"done":"part"}"></i>`:"";
     b.innerHTML=`${dot}<b>${d}</b><span>${WD[w]}</span>`;
