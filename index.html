@@ -167,7 +167,9 @@ input[type=text]:focus,textarea:focus{outline:2px solid var(--focus);outline-off
 .extra-head b{font-family:var(--f-display)}
 footer.bot{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:5}
 .bot-in{max-width:720px;margin:0 auto;display:flex;gap:8px;align-items:center}
-.bot-in .note{flex:1;font-size:12px;color:var(--muted);min-width:0}
+.bot-in .note{flex:1;font-size:12px;color:var(--bad);min-width:0;text-align:center}
+.bot-in .btn.reset{color:var(--bad);min-height:44px;padding:0 16px}
+.reset-yes{background:var(--bad)!important;color:#fff!important}
 .primary{background:var(--ink);color:var(--bg);border:0;border-radius:9px;padding:12px 18px;font-weight:700;font-size:15px;cursor:pointer}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
@@ -238,7 +240,8 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
 </main>
 
 <footer class="bot"><div class="bot-in">
-  <span class="note" id="botNote">입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.</span>
+  <button class="btn ghost reset" id="resetBtn" type="button">초기화</button>
+  <span class="note" id="botNote"></span>
   <button class="primary" id="pdfBtn" type="button">PDF 출력</button>
 </div></footer>
 <div class="sheet" id="rosterSheet" hidden>
@@ -247,6 +250,16 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
     <p id="rosterSub"></p>
     <div class="roster-box"><table class="roster roster-head"><thead><tr><th class="d">일자</th><th class="w">요일</th><th>담당자</th></tr></thead></table><div class="roster-wrap" id="rosterBody"></div></div>
     <div class="sheet-btns"><button class="btn ghost" id="rosterClose" type="button" style="flex:1;justify-content:center">닫기</button></div>
+  </div>
+</div>
+<div class="sheet" id="resetSheet" hidden>
+  <div class="sheet-in" role="alertdialog" aria-modal="true" aria-labelledby="resetTitle">
+    <h3 id="resetTitle">이 날 기록을 모두 지울까요?</h3>
+    <p id="resetMsg"></p>
+    <div class="sheet-btns pdf-btns">
+      <button class="primary pdf-share reset-yes" id="resetYes" type="button">전부 지우기</button>
+      <button class="btn ghost" id="resetNo" type="button" style="grid-column:1 / -1">취소</button>
+    </div>
   </div>
 </div>
 <div class="sheet" id="warnSheet" hidden>
@@ -317,7 +330,7 @@ const MONTHS = Object.keys(DEFAULT_TPLS).sort();
 /* 일일안전관리자 편성표 (11월 일일 안전관리자 활동 운영 지침, 2026.10.30) — 일요일은 비어 있음 */
 const ROSTERS = { "2026-11": {2:"배윤기",3:"김대건",4:"신상우",5:"배윤기",6:"신상우",7:"배윤기",9:"김용규",10:"최성기",11:"정병익",12:"김용규",13:"최성기",14:"신상우",16:"정병익",17:"김대건",18:"김용규",19:"정병익",20:"최성기",21:"김대건",23:"배윤기",24:"최성기",25:"김용규",26:"김대건",27:"정병익",28:"신상우",30:"김대건"} };
 function rosterOf(dateStr){ const [y,m,d]=dateStr.split("-").map(Number); const r=ROSTERS[`${y}-${String(m).padStart(2,"0")}`]; return r ? (r[d]||"") : ""; }
-const APP_VER="2026-11-10d";
+const APP_VER="2026-11-10e";
 const EXTRA_ROWS = 2; // 엑셀 19·20행
 const WD = ["일","월","화","수","목","금","토"];
 
@@ -482,7 +495,7 @@ function stat(r){
 function renderProgress(){
   const s=stat(rec);
   const bad = measureKeys().filter(k=>rec.results[k].r==="불량").length;
-  $("#botNote").textContent = bad ? `불량 ${bad}건 · 점검 의견에 조치 내용을 적어주세요.` : (cloud.url ? "입력 내용과 사진은 구글에 자동 저장됩니다." : "입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.");
+  $("#botNote").textContent = bad ? `불량 ${bad}건 · 점검 의견에 조치 내용을 적어주세요.` : "";
 }
 function renderAll(){ renderInfo(); renderRisks(); renderExtras(); renderProgress(); renderDays(); }
 
@@ -739,6 +752,19 @@ async function loadLibs(ym){
 let skipInspector=false;
 $("#warnFill").addEventListener("click",()=>{ $("#warnSheet").hidden=true; const el=$("#inspector"); el.scrollIntoView({block:"center"}); el.focus(); });
 $("#warnGo").addEventListener("click",()=>{ $("#warnSheet").hidden=true; skipInspector=true; $("#pdfBtn").click(); });
+$("#resetBtn").addEventListener("click",()=>{
+  $("#resetTitle").textContent=`${dotDate(cur)} 기록을 모두 지울까요?`;
+  $("#resetMsg").textContent="점검 결과, 의견, 사진, 추가위험발굴 내용이 모두 지워지고 되돌릴 수 없어요."+(cloud.url?" 구글에 저장된 이 날 기록도 빈 상태로 바뀌어요.":"");
+  $("#resetSheet").hidden=false;
+});
+$("#resetNo").addEventListener("click",()=>{ $("#resetSheet").hidden=true; });
+$("#resetSheet").addEventListener("click",e=>{ if(e.target.id==="resetSheet") $("#resetSheet").hidden=true; });
+$("#resetYes").addEventListener("click",async()=>{
+  $("#resetSheet").hidden=true;
+  rec=blankRec(cur); rec.updatedAt=Date.now();
+  const y=window.scrollY; renderAll(); window.scrollTo({top:y});
+  await saveNow(); toast(`${dotDate(cur)} 기록을 초기화했어요`);
+});
 $("#warnSheet").addEventListener("click",e=>{ if(e.target.id==="warnSheet") $("#warnSheet").hidden=true; });
 $("#pdfBtn").addEventListener("click", async ()=>{
   if(saveT){ clearTimeout(saveT); await saveNow(); }
