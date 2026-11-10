@@ -357,7 +357,7 @@ const MONTHS = Object.keys(DEFAULT_TPLS).sort();
 /* 일일안전관리자 편성표 (11월 일일 안전관리자 활동 운영 지침, 2026.10.30) — 일요일은 비어 있음 */
 const ROSTERS = { "2026-11": {2:"배윤기",3:"김대건",4:"신상우",5:"배윤기",6:"신상우",7:"배윤기",9:"김용규",10:"최성기",11:"정병익",12:"김용규",13:"최성기",14:"신상우",16:"정병익",17:"김대건",18:"김용규",19:"정병익",20:"최성기",21:"김대건",23:"배윤기",24:"최성기",25:"김용규",26:"김대건",27:"정병익",28:"신상우",30:"김대건"} };
 function rosterOf(dateStr){ const [y,m,d]=dateStr.split("-").map(Number); const r=ROSTERS[`${y}-${String(m).padStart(2,"0")}`]; return r ? (r[d]||"") : ""; }
-const APP_VER="2026-11-10f";
+const APP_VER="2026-11-10g";
 const EXTRA_ROWS = 2; // 엑셀 19·20행
 const WD = ["일","월","화","수","목","금","토"];
 
@@ -433,6 +433,7 @@ function photoBlock(id, slotLabel, p, caption){
       <div class="btns">
         <button class="btn" type="button" data-cam="${id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>촬영</button>
         <button class="btn" type="button" data-lib="${id}">앨범</button>
+        <button class="btn" type="button" data-paste="${id}">붙여넣기</button>
         ${p?`<button class="btn" type="button" data-rot="${id}" aria-label="사진 오른쪽으로 90도 회전"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>회전</button><button class="btn ghost" type="button" data-rm="${id}">삭제</button>`:""}
       </div>
       ${id.startsWith("m:") ? `<span class="slot">사진대지 내용 칸에는 점검 의견이 들어가요.</span>` : `<input type="text" data-cap="${id}" value="${esc(caption)}" placeholder="사진 내용">`}
@@ -723,6 +724,34 @@ async function onFile(e){
   catch(err){ toast("사진을 읽지 못했습니다. 다른 사진으로 다시 시도해 주세요."); }
 }
 function rerenderFor(id){ const y=window.scrollY; if(id.startsWith("m")) renderRisks(); else renderExtras(); renderProgress(); window.scrollTo({top:y}); }
+/* 복사한 사진 붙여넣기: 휴대폰은 버튼으로 클립보드를 읽고, PC는 Ctrl+V 도 받는다 */
+async function putPhoto(id, blob){
+  try{ setPhoto(id, await shrink(blob)); rerenderFor(id); markDirty(); toast("사진을 붙여넣었습니다"); }
+  catch(err){ toast("사진을 읽지 못했습니다. 다른 사진으로 다시 시도해 주세요."); }
+}
+async function pasteFromClipboard(id){
+  photoTarget=id;
+  if(!(navigator.clipboard && navigator.clipboard.read)){ toast("이 브라우저는 붙여넣기 버튼을 지원하지 않아요. 앨범에서 골라 주세요."); return; }
+  try{
+    const items=await navigator.clipboard.read();
+    for(const it of items){
+      const t=it.types.find(x=>x.startsWith("image/"));
+      if(t){ await putPhoto(id, await it.getType(t)); return; }
+    }
+    toast("복사한 사진이 없어요. 사진을 길게 눌러 '복사'한 뒤 다시 눌러 주세요.");
+  }catch(err){
+    toast(err && err.name==="NotAllowedError" ? "클립보드 사용을 허용해야 붙여넣을 수 있어요." : "복사한 사진을 읽지 못했어요. 사진을 다시 복사해 주세요.");
+  }
+}
+document.addEventListener("paste",e=>{
+  const f=Array.from((e.clipboardData&&e.clipboardData.files)||[]).find(x=>x.type.startsWith("image/"));
+  if(!f) return;   // 글자 붙여넣기는 그대로
+  const blk=document.activeElement && document.activeElement.closest && document.activeElement.closest(".photo");
+  const btn=blk && blk.querySelector("[data-paste]");
+  const id=(btn && btn.dataset.paste) || photoTarget;
+  if(!id){ toast("사진을 넣을 칸의 '붙여넣기'를 먼저 눌러 주세요."); return; }
+  e.preventDefault(); putPhoto(id, f);
+});
 $("#fileCam").addEventListener("change",onFile);
 $("#fileLib").addEventListener("change",onFile);
 
@@ -740,6 +769,7 @@ document.addEventListener("click",e=>{
     b.parentElement.querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed", z.dataset.v===x[f])); markDirty(); return; }
   if(b.dataset.cam){ photoTarget=b.dataset.cam; $("#fileCam").click(); return; }
   if(b.dataset.lib){ photoTarget=b.dataset.lib; $("#fileLib").click(); return; }
+  if(b.dataset.paste){ pasteFromClipboard(b.dataset.paste); return; }
   if(b.dataset.rot){ queueRotate(b.dataset.rot, b); return; }
   if(b.dataset.rm){ setPhoto(b.dataset.rm,null); rerenderFor(b.dataset.rm); markDirty(); return; }
   if(b.dataset.edit!==undefined){ const c=b.closest(".card"); const on=c.classList.toggle("editing");
