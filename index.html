@@ -166,9 +166,23 @@ input[type=text]:focus,textarea:focus{outline:2px solid var(--focus);outline-off
 .extra-head{display:flex;justify-content:space-between;align-items:center}
 .extra-head b{font-family:var(--f-display)}
 footer.bot{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:5}
-.bot-in{max-width:720px;margin:0 auto;display:flex;gap:8px;align-items:center}
-.bot-in .note{flex:1;font-size:12px;color:var(--bad);min-width:0;text-align:center}
-.bot-in .btn.reset{color:var(--bad);min-height:44px;padding:0 16px}
+.bot-in{max-width:720px;margin:0 auto;display:grid;gap:8px}
+.bot-in .note{font-size:12px;color:var(--bad);text-align:center}
+.bot-btns{display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:8px}
+.bot-btns > *{min-height:46px;justify-content:center;font-size:15px}
+.bot-btns .btn.reset{color:var(--bad)}
+.fmt{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;background:var(--bg)}
+.fmt button{border:0;background:none;border-radius:8px;min-height:42px;font-size:15px;font-weight:700;color:var(--muted);cursor:pointer}
+.fmt button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+#pdfSheet .pdf-btns{grid-template-columns:1fr 1fr}
+.pv{position:fixed;inset:0;z-index:40;background:#3b3d38;display:flex;flex-direction:column}
+.pv-top{display:flex;align-items:center;gap:8px;background:var(--surface);color:var(--ink);padding:calc(8px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.pv-top b{flex:1;font-family:var(--f-display);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-top .btn{min-height:40px}
+.pv-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:12px;touch-action:pan-x pan-y pinch-zoom}
+.pv-body canvas{display:block;width:100%;height:auto;margin:0 auto 12px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.pv-body.zoom canvas{width:250%;max-width:none}
+.pv-msg{color:#eee;text-align:center;font-size:14px;padding:40px 16px}
 .reset-yes{background:var(--bad)!important;color:#fff!important}
 .primary{background:var(--ink);color:var(--bg);border:0;border-radius:9px;padding:12px 18px;font-weight:700;font-size:15px;cursor:pointer}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none}
@@ -240,9 +254,12 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
 </main>
 
 <footer class="bot"><div class="bot-in">
-  <button class="btn ghost reset" id="resetBtn" type="button">초기화</button>
-  <span class="note" id="botNote"></span>
-  <button class="primary" id="pdfBtn" type="button">PDF 출력</button>
+  <span class="note" id="botNote" hidden></span>
+  <div class="bot-btns">
+    <button class="btn ghost reset" id="resetBtn" type="button">초기화</button>
+    <button class="primary" id="pdfBtn" type="button">내보내기</button>
+    <button class="btn" id="viewBtn" type="button">미리보기</button>
+  </div>
 </div></footer>
 <div class="sheet" id="rosterSheet" hidden>
   <div class="sheet-in" role="dialog" aria-modal="true" aria-labelledby="rosterTitle">
@@ -274,15 +291,25 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
 </div>
 <div class="sheet" id="pdfSheet" hidden>
   <div class="sheet-in" role="dialog" aria-modal="true" aria-labelledby="pdfTitle">
-    <h3 id="pdfTitle">PDF 출력</h3>
-    <p id="pdfMsg">원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽)으로 만드는 중…</p>
+    <h3 id="pdfTitle">내보내기</h3>
+    <div class="fmt" role="group" aria-label="파일 형식">
+      <button type="button" data-fmt="pdf" aria-pressed="true">PDF</button>
+      <button type="button" data-fmt="xlsx" aria-pressed="false">엑셀</button>
+    </div>
+    <p id="pdfMsg"></p>
     <div class="sheet-btns pdf-btns">
       <button class="primary pdf-share" id="pdfShare" type="button" hidden>카톡 등으로 보내기</button>
-      <a class="btn" id="pdfSave" hidden>PDF 저장</a>
-      <a class="btn" id="pdfOpen" target="_blank" rel="noopener" hidden>열어보기</a>
+      <a class="btn" id="pdfSave" hidden>저장</a>
       <button class="btn ghost" id="pdfClose" type="button">닫기</button>
     </div>
   </div>
+</div>
+<div class="pv" id="pvSheet" hidden role="dialog" aria-modal="true" aria-labelledby="pvTitle">
+  <div class="pv-top"><b id="pvTitle">미리보기</b>
+    <button class="btn" id="pvZoom" type="button">크게</button>
+    <button class="btn" id="pvExport" type="button">내보내기</button>
+    <button class="btn ghost" id="pvClose" type="button">닫기</button></div>
+  <div class="pv-body" id="pvBody"></div>
 </div>
 <div class="toast" id="toast" role="status"></div>
 
@@ -330,7 +357,7 @@ const MONTHS = Object.keys(DEFAULT_TPLS).sort();
 /* 일일안전관리자 편성표 (11월 일일 안전관리자 활동 운영 지침, 2026.10.30) — 일요일은 비어 있음 */
 const ROSTERS = { "2026-11": {2:"배윤기",3:"김대건",4:"신상우",5:"배윤기",6:"신상우",7:"배윤기",9:"김용규",10:"최성기",11:"정병익",12:"김용규",13:"최성기",14:"신상우",16:"정병익",17:"김대건",18:"김용규",19:"정병익",20:"최성기",21:"김대건",23:"배윤기",24:"최성기",25:"김용규",26:"김대건",27:"정병익",28:"신상우",30:"김대건"} };
 function rosterOf(dateStr){ const [y,m,d]=dateStr.split("-").map(Number); const r=ROSTERS[`${y}-${String(m).padStart(2,"0")}`]; return r ? (r[d]||"") : ""; }
-const APP_VER="2026-11-10e";
+const APP_VER="2026-11-10f";
 const EXTRA_ROWS = 2; // 엑셀 19·20행
 const WD = ["일","월","화","수","목","금","토"];
 
@@ -496,6 +523,7 @@ function renderProgress(){
   const s=stat(rec);
   const bad = measureKeys().filter(k=>rec.results[k].r==="불량").length;
   $("#botNote").textContent = bad ? `불량 ${bad}건 · 점검 의견에 조치 내용을 적어주세요.` : "";
+  $("#botNote").hidden = !bad;
 }
 function renderAll(){ renderInfo(); renderRisks(); renderExtras(); renderProgress(); renderDays(); }
 
@@ -766,33 +794,100 @@ $("#resetYes").addEventListener("click",async()=>{
   await saveNow(); toast(`${dotDate(cur)} 기록을 초기화했어요`);
 });
 $("#warnSheet").addEventListener("click",e=>{ if(e.target.id==="warnSheet") $("#warnSheet").hidden=true; });
+/* 내보내기: PDF 또는 엑셀(원본 양식에 채움) */
+let expFmt = (()=>{ try{ return localStorage.getItem("expFmt")==="xlsx"?"xlsx":"pdf"; }catch(e){ return "pdf"; } })();
+let xlsxLibs=null;
+const XLSX_TYPE="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+async function makeFile(fmt){
+  if(saveT){ clearTimeout(saveT); await saveNow(); }
+  const L=await loadLibs(ymKey());
+  const m=SafetyPrint.mapRecord(tpl, rec);
+  const base=`${cur.slice(2).replace(/-/g,"")} 일일안전보건점검표`;
+  if(fmt==="xlsx"){
+    if(!xlsxLibs){ await loadScript("lib/jszip.min.js"); await loadScript("xlsx-export.js?v="+APP_VER); xlsxLibs={}; }
+    const ym=ymKey();
+    if(!xlsxLibs[ym]) xlsxLibs[ym]=await fetch(`templates/tpl-${ym}.xlsx?v=`+APP_VER,{cache:"no-cache"}).then(r=>{ if(!r.ok) throw new Error("양식 없음"); return r.arrayBuffer(); });
+    const bytes=await SafetyXlsx.buildXlsx(JSZip, xlsxLibs[ym], L.layout, m.values, m.photos);
+    return {bytes, name:base+".xlsx", type:XLSX_TYPE};
+  }
+  const bytes=await SafetyPrint.buildPdf(PDFLib, fontkit, L.fonts, L.layout, m.values, m.photos);
+  return {bytes, name:base+".pdf", type:"application/pdf"};
+}
+function setFmtButtons(){ document.querySelectorAll("#pdfSheet [data-fmt]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.fmt===expFmt)); }
+let expJob=0;
+async function prepareExport(){
+  const job=++expJob, fmt=expFmt;
+  setFmtButtons();
+  ["#pdfSave","#pdfShare"].forEach(s=>$(s).hidden=true);
+  $("#pdfMsg").textContent = fmt==="xlsx" ? "원본 엑셀 양식(점검표 + 사진대지 시트)에 채우는 중…" : "원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽) PDF로 만드는 중…";
+  try{
+    const f=await makeFile(fmt);
+    if(job!==expJob) return;
+    const blob=new Blob([f.bytes],{type:f.type});
+    if(pdfUrl) URL.revokeObjectURL(pdfUrl);
+    pdfUrl=URL.createObjectURL(blob);
+    pdfFile = (typeof File!=="undefined") ? new File([blob],f.name,{type:f.type}) : null;
+    const a=$("#pdfSave"); a.href=pdfUrl; a.download=f.name; a.textContent=(fmt==="xlsx"?"엑셀":"PDF")+" 저장"; a.hidden=false;
+    const canShare = !!(pdfFile && navigator.canShare && navigator.canShare({files:[pdfFile]}));
+    $("#pdfShare").hidden = !canShare;
+    a.classList.toggle("primary-alt", !canShare);   // 보내기가 안 되는 기기에서는 저장 버튼을 강조
+    $("#pdfMsg").textContent=`${f.name} (${Math.max(1,Math.round(f.bytes.length/1024))} KB) 준비됐어요.`;
+  }catch(err){
+    if(job!==expJob) return;
+    $("#pdfMsg").textContent = fmt==="xlsx" ? "엑셀 파일을 만들지 못했어요. 인터넷에 연결된 상태에서 다시 눌러 주세요." : "PDF를 만들지 못했어요. 인터넷에 연결된 상태에서 한 번 열어 글꼴을 받은 뒤 다시 눌러 주세요.";
+  }
+}
 $("#pdfBtn").addEventListener("click", async ()=>{
   if(saveT){ clearTimeout(saveT); await saveNow(); }
   if(!(rec.inspector||"").trim() && !skipInspector){ $("#warnSheet").hidden=false; return; }
   skipInspector=false;
-  const sh=$("#pdfSheet"); sh.hidden=false;
-  ["#pdfSave","#pdfShare","#pdfOpen"].forEach(s=>$(s).hidden=true);
-  $("#pdfMsg").textContent="원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽)으로 만드는 중…";
+  $("#pvSheet").hidden=true;
+  $("#pdfSheet").hidden=false;
+  prepareExport();
+});
+document.querySelectorAll("#pdfSheet [data-fmt]").forEach(b=>b.addEventListener("click",()=>{
+  if(expFmt===b.dataset.fmt) return;
+  expFmt=b.dataset.fmt; try{ localStorage.setItem("expFmt",expFmt); }catch(e){}
+  prepareExport();
+}));
+/* 미리보기: PDF를 만들어 앱 안에서 바로 그려 보여준다 */
+let pdfjsReady=null;
+function loadPdfjs(){
+  if(!pdfjsReady) pdfjsReady=loadScript("lib/pdfjs.min.js").then(()=>{ pdfjsLib.GlobalWorkerOptions.workerSrc="lib/pdfjs.worker.min.js"; });
+  return pdfjsReady;
+}
+let pvJob=0;
+$("#viewBtn").addEventListener("click", async ()=>{
+  const job=++pvJob, body=$("#pvBody");
+  $("#pvTitle").textContent=`미리보기 · ${dotDate(cur)}`;
+  body.classList.remove("zoom"); $("#pvZoom").textContent="크게";
+  body.innerHTML=`<div class="pv-msg">원본 양식으로 그리는 중…</div>`;
+  $("#pvSheet").hidden=false;
   try{
-    const L=await loadLibs(ymKey());
-    const m=SafetyPrint.mapRecord(tpl, rec);
-    const bytes=await SafetyPrint.buildPdf(PDFLib, fontkit, L.fonts, L.layout, m.values, m.photos);
-    const name=`${cur.slice(2).replace(/-/g,"")} 일일안전보건점검표.pdf`;
-    const blob=new Blob([bytes],{type:"application/pdf"});
-    if(pdfUrl) URL.revokeObjectURL(pdfUrl);
-    pdfUrl=URL.createObjectURL(blob);
-    pdfFile = (typeof File!=="undefined") ? new File([blob],name,{type:"application/pdf"}) : null;
-    const a=$("#pdfSave"); a.href=pdfUrl; a.download=name; a.hidden=false;
-    $("#pdfOpen").href=pdfUrl; $("#pdfOpen").hidden=false;
-    const canShare = !!(pdfFile && navigator.canShare && navigator.canShare({files:[pdfFile]}));
-    $("#pdfShare").hidden = !canShare;
-    a.classList.toggle("primary-alt", !canShare);   // 보내기가 안 되는 기기에서는 저장 버튼을 강조
-    $("#pdfMsg").textContent=`${name} (${Math.max(1,Math.round(bytes.length/1024))} KB) 준비됐어요.`;
+    const [f]=await Promise.all([makeFile("pdf"), loadPdfjs()]);
+    const pdf=await pdfjsLib.getDocument({data:f.bytes}).promise;
+    if(job!==pvJob) return;
+    body.innerHTML="";
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    for(let i=1;i<=pdf.numPages;i++){
+      const page=await pdf.getPage(i);
+      const w0=page.getViewport({scale:1}).width;
+      const scale=Math.max(1, (body.clientWidth-24)*2.5*dpr/w0);   // 크게 보기에서도 또렷하도록
+      const vp=page.getViewport({scale:Math.min(scale,4)});
+      const cv=document.createElement("canvas"); cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+      body.appendChild(cv);
+      await page.render({canvasContext:cv.getContext("2d"), viewport:vp}).promise;
+      if(job!==pvJob) return;
+    }
   }catch(err){
-    $("#pdfMsg").textContent="PDF를 만들지 못했어요. 인터넷에 연결된 상태에서 한 번 열어 글꼴을 받은 뒤 다시 눌러 주세요.";
+    if(job===pvJob) body.innerHTML=`<div class="pv-msg">미리보기를 만들지 못했어요. 인터넷에 연결된 상태에서 다시 눌러 주세요.</div>`;
   }
 });
+$("#pvZoom").addEventListener("click",()=>{ const z=$("#pvBody").classList.toggle("zoom"); $("#pvZoom").textContent=z?"작게":"크게"; });
+$("#pvClose").addEventListener("click",()=>{ pvJob++; $("#pvSheet").hidden=true; $("#pvBody").innerHTML=""; });
+$("#pvExport").addEventListener("click",()=>{ $("#pdfBtn").click(); });
 $("#pdfShare").addEventListener("click", async ()=>{ try{ await navigator.share({files:[pdfFile], title:pdfFile.name}); }catch(e){} });
+$("#pdfClose").addEventListener("click", ()=>{ expJob++; });
 $("#pdfClose").addEventListener("click", ()=>{ $("#pdfSheet").hidden=true; });
 $("#pdfSheet").addEventListener("click", e=>{ if(e.target.id==="pdfSheet") $("#pdfSheet").hidden=true; });
 
