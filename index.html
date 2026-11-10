@@ -57,7 +57,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .mlabel{font-weight:700;color:var(--ink);padding:0 6px}
 .ver{font-size:10px;color:var(--muted);opacity:.75;font-weight:400;margin-left:4px;font-variant-numeric:tabular-nums}
 .hdr-r{display:grid;justify-items:end;gap:3px}
-.cloud{border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:11px;font-weight:600;padding:2px 9px 2px 7px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)}
+.cloud{white-space:nowrap;flex-shrink:0;border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:11px;font-weight:600;padding:2px 9px 2px 7px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)}
 .cloud i{width:7px;height:7px;border-radius:50%;background:var(--olive)}
 .cloud.on i{background:var(--ok)} .cloud.wait i{background:#D9A400} .cloud.err i{background:var(--bad)}
 .days{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;scroll-snap-type:x proximity}
@@ -93,7 +93,10 @@ table.roster td.w{white-space:nowrap;color:var(--muted)}
 table.roster tr.sun td{background:var(--sunk);color:var(--muted)}
 table.roster tr.sun td.w{color:var(--brand)}
 table.roster tr.sel td{background:var(--ok-soft)}
-table.roster tr.sel td.n::after{content:"선택한 날";margin-left:8px;font-size:11px;font-weight:600;color:var(--ok)}
+table.roster .tg{font-style:normal;margin-left:8px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;vertical-align:2px;letter-spacing:.03em}
+table.roster .tg.sel{color:var(--ok);background:transparent;border:1px solid var(--ok)}
+table.roster .tg.today{color:#fff;background:var(--brand)}
+table.roster tr.today td.d{color:var(--brand)}
 .roster-sum{display:flex;flex-wrap:wrap;gap:6px}
 .roster-sum span{font-size:12px;background:var(--sunk);border-radius:6px;padding:3px 8px}
 nav.jump a{flex:0 0 auto;font-size:13px;font-weight:500;color:var(--ink);text-decoration:none;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
@@ -241,7 +244,6 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
   <div class="sheet-in" role="dialog" aria-modal="true" aria-labelledby="rosterTitle">
     <h3 id="rosterTitle">일일안전관리자 편성표</h3>
     <p id="rosterSub"></p>
-    <div class="roster-sum" id="rosterSum"></div>
     <div class="roster-box"><table class="roster roster-head"><thead><tr><th class="d">일자</th><th class="w">요일</th><th>담당자</th></tr></thead></table><div class="roster-wrap" id="rosterBody"></div></div>
     <div class="sheet-btns"><button class="btn ghost" id="rosterClose" type="button" style="flex:1;justify-content:center">닫기</button></div>
   </div>
@@ -314,7 +316,7 @@ const MONTHS = Object.keys(DEFAULT_TPLS).sort();
 /* 일일안전관리자 편성표 (11월 일일 안전관리자 활동 운영 지침, 2026.10.30) — 일요일은 비어 있음 */
 const ROSTERS = { "2026-11": {2:"배윤기",3:"김대건",4:"신상우",5:"배윤기",6:"신상우",7:"배윤기",9:"김용규",10:"최성기",11:"정병익",12:"김용규",13:"최성기",14:"신상우",16:"정병익",17:"김대건",18:"김용규",19:"정병익",20:"최성기",21:"김대건",23:"배윤기",24:"최성기",25:"김용규",26:"김대건",27:"정병익",28:"신상우",30:"김대건"} };
 function rosterOf(dateStr){ const [y,m,d]=dateStr.split("-").map(Number); const r=ROSTERS[`${y}-${String(m).padStart(2,"0")}`]; return r ? (r[d]||"") : ""; }
-const APP_VER="2026-11-10b";
+const APP_VER="2026-11-10c";
 const EXTRA_ROWS = 2; // 엑셀 19·20행
 const WD = ["일","월","화","수","목","금","토"];
 
@@ -773,19 +775,19 @@ function updateInspHint(){
 function openRoster(){
   const ym=ymKey(), R=ROSTERS[ym];
   $("#rosterTitle").textContent=`${tpl.month}월 일일안전관리자 편성표`;
-  if(!R){ $("#rosterSub").textContent=`${tpl.year}년 ${tpl.month}월 편성표가 아직 등록되지 않았어요. 편성표를 보내주시면 넣어 드려요.`; $("#rosterSum").innerHTML=""; $("#rosterBody").innerHTML=""; $(".roster-box").hidden=true; $("#rosterSheet").hidden=false; return; }
+  if(!R){ $("#rosterSub").textContent=`${tpl.year}년 ${tpl.month}월 편성표가 아직 등록되지 않았어요. 편성표를 보내주시면 넣어 드려요.`; $("#rosterBody").innerHTML=""; $(".roster-box").hidden=true; $("#rosterSheet").hidden=false; return; }
   $(".roster-box").hidden=false;
   $("#rosterSub").textContent="일요일은 휴무. 개인 사정으로 바뀌면 점검자 칸에서 바로 고치면 돼요.";
-  const cnt={}; Object.values(R).forEach(n=>cnt[n]=(cnt[n]||0)+1);
-  $("#rosterSum").innerHTML=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).map(n=>`<span>${esc(n)} ${cnt[n]}회</span>`).join("");
+  const t=new Date(), todayK=ymd(t.getFullYear(),t.getMonth()+1,t.getDate());
   let rows="";
   for(let d=1; d<=lastDay(); d++){
     const k=ymd(tpl.year,tpl.month,d), w=new Date(tpl.year,tpl.month-1,d).getDay(), n=R[d]||"";
-    rows+=`<tr class="${w===0?"sun":""} ${k===cur?"sel":""}"><td class="d">${tpl.month}/${d}</td><td class="w">${WD[w]}</td><td class="n">${n?esc(n):(w===0?"휴무":"-")}</td></tr>`;
+    const tags=(k===todayK?`<i class="tg today">TODAY</i>`:"")+(k===cur?`<i class="tg sel">선택한 날</i>`:"");
+    rows+=`<tr class="${w===0?"sun":""} ${k===cur?"sel":""} ${k===todayK?"today":""}"><td class="d">${tpl.month}/${d}</td><td class="w">${WD[w]}</td><td class="n">${n?esc(n):(w===0?"휴무":"-")}${tags}</td></tr>`;
   }
   $("#rosterBody").innerHTML=`<table class="roster"><tbody>${rows}</tbody></table>`;
   $("#rosterSheet").hidden=false;
-  const sel=$("#rosterBody tr.sel"); if(sel) sel.scrollIntoView({block:"center"});
+  const sel=$("#rosterBody tr.sel")||$("#rosterBody tr.today"); if(sel) sel.scrollIntoView({block:"center"});
 }
 document.addEventListener("click",e=>{ if(e.target.closest("[data-roster]")) openRoster(); });
 $("#rosterClose").addEventListener("click",()=>{ $("#rosterSheet").hidden=true; });
