@@ -76,6 +76,26 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 
 nav.jump{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:14px 0 4px}
 nav.jump::-webkit-scrollbar{display:none}
+nav.jump .chip-btn{flex:0 0 auto;font-size:13px;font-weight:600;padding:6px 12px;border:1px solid var(--ink);border-radius:999px;background:var(--ink);color:var(--bg);cursor:pointer}
+.insp-hint{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-top:-6px}
+.linkish{border:0;background:none;color:var(--ink);font-size:12px;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:4px 0;cursor:pointer}
+.roster-box{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.roster-wrap{max-height:56vh;overflow:auto}
+table.roster{table-layout:fixed}
+table.roster-head th{border-bottom:1px solid var(--line)}
+table.roster th.d,table.roster td.d{width:72px} table.roster th.w,table.roster td.w{width:52px}
+table.roster{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;font-variant-numeric:tabular-nums}
+table.roster th{white-space:nowrap;background:var(--sunk);font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)}
+table.roster td{padding:9px 12px;border-bottom:1px solid var(--line)}
+table.roster tr:last-child td{border-bottom:0}
+table.roster td.d{font-weight:600}
+table.roster td.w{white-space:nowrap;color:var(--muted)}
+table.roster tr.sun td{background:var(--sunk);color:var(--muted)}
+table.roster tr.sun td.w{color:var(--brand)}
+table.roster tr.sel td{background:var(--ok-soft)}
+table.roster tr.sel td.n::after{content:"선택한 날";margin-left:8px;font-size:11px;font-weight:600;color:var(--ok)}
+.roster-sum{display:flex;flex-wrap:wrap;gap:6px}
+.roster-sum span{font-size:12px;background:var(--sunk);border-radius:6px;padding:3px 8px}
 nav.jump a{flex:0 0 auto;font-size:13px;font-weight:500;color:var(--ink);text-decoration:none;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
 
 section{margin-top:22px;display:grid;gap:10px;scroll-margin-top:150px}
@@ -184,7 +204,7 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
 
 <main class="wrap">
   <nav class="jump" aria-label="바로가기">
-    <a href="#s-info">기본정보</a><a href="#s-check">중점관리 점검</a><a href="#s-extra">추가위험발굴</a>
+    <a href="#s-info">기본정보</a><a href="#s-check">중점관리 점검</a><a href="#s-extra">추가위험발굴</a><button class="chip-btn" type="button" data-roster>일일안전관리자 편성표</button>
   </nav>
 
   <section id="s-info">
@@ -197,6 +217,7 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
         <dt>협력업체</dt><dd id="v-partner"></dd>
       </dl>
       <label class="f">점검자<input type="text" id="inspector" placeholder="예: 김대건" autocomplete="name"></label>
+      <div class="insp-hint"><span id="inspHint"></span><button class="linkish" type="button" data-roster>편성표 보기</button></div>
     </div>
   </section>
 
@@ -216,6 +237,15 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
   <span class="note" id="botNote">입력 내용과 사진은 이 휴대폰에 자동 저장됩니다.</span>
   <button class="primary" id="pdfBtn" type="button">PDF 출력</button>
 </div></footer>
+<div class="sheet" id="rosterSheet" hidden>
+  <div class="sheet-in" role="dialog" aria-modal="true" aria-labelledby="rosterTitle">
+    <h3 id="rosterTitle">일일안전관리자 편성표</h3>
+    <p id="rosterSub"></p>
+    <div class="roster-sum" id="rosterSum"></div>
+    <div class="roster-box"><table class="roster roster-head"><thead><tr><th class="d">일자</th><th class="w">요일</th><th>담당자</th></tr></thead></table><div class="roster-wrap" id="rosterBody"></div></div>
+    <div class="sheet-btns"><button class="btn ghost" id="rosterClose" type="button" style="flex:1;justify-content:center">닫기</button></div>
+  </div>
+</div>
 <div class="sheet" id="warnSheet" hidden>
   <div class="sheet-in" role="alertdialog" aria-modal="true" aria-labelledby="warnTitle">
     <h3 id="warnTitle">점검자란이 비어 있어요</h3>
@@ -281,7 +311,10 @@ const DEFAULT_TPL = {
 };
 const DEFAULT_TPLS = { "2026-10": TPL_2026_10, "2026-11": DEFAULT_TPL };
 const MONTHS = Object.keys(DEFAULT_TPLS).sort();
-const APP_VER="2026-11-10a";
+/* 일일안전관리자 편성표 (11월 일일 안전관리자 활동 운영 지침, 2026.10.30) — 일요일은 비어 있음 */
+const ROSTERS = { "2026-11": {2:"배윤기",3:"김대건",4:"신상우",5:"배윤기",6:"신상우",7:"배윤기",9:"김용규",10:"최성기",11:"정병익",12:"김용규",13:"최성기",14:"신상우",16:"정병익",17:"김대건",18:"김용규",19:"정병익",20:"최성기",21:"김대건",23:"배윤기",24:"최성기",25:"김용규",26:"김대건",27:"정병익",28:"신상우",30:"김대건"} };
+function rosterOf(dateStr){ const [y,m,d]=dateStr.split("-").map(Number); const r=ROSTERS[`${y}-${String(m).padStart(2,"0")}`]; return r ? (r[d]||"") : ""; }
+const APP_VER="2026-11-10b";
 const EXTRA_ROWS = 2; // 엑셀 19·20행
 const WD = ["일","월","화","수","목","금","토"];
 
@@ -429,7 +462,10 @@ function renderInfo(){
   $("#v-partner").textContent=tpl.partner;
   const ym=ymKey(), mi=MONTHS.indexOf(ym);
   $("#sub").innerHTML=`<button class="mnav" type="button" data-month="-1" aria-label="이전 달" ${mi<=0?"disabled":""}>‹</button><b class="mlabel">${tpl.year}년 ${tpl.month}월</b><button class="mnav" type="button" data-month="1" aria-label="다음 달" ${mi>=MONTHS.length-1?"disabled":""}>›</button> · 공사팀 <span class="ver">v${APP_VER}</span>`;
+  // 점검자: 직접 고친 적이 없으면 편성표 담당자로 채운다
+  if(!rec.inspectorSet && !rec.inspector) rec.inspector = rosterOf(cur);
   $("#inspector").value=rec.inspector||"";
+  updateInspHint();
 }
 
 function stat(r){
@@ -667,7 +703,7 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("input",e=>{
   const t=e.target;
-  if(t.id==="inspector"){ rec.inspector=t.value; markDirty(); }
+  if(t.id==="inspector"){ rec.inspector=t.value; rec.inspectorSet=true; markDirty(); updateInspHint(); }
   else if(t.dataset.note){ rec.results[t.dataset.note].note=t.value; markDirty(); }
   else if(t.dataset.cap){ const [ty,k]=t.dataset.cap.split(":"); if(ty==="m") rec.results[k].caption=t.value; else rec.extra[+k].caption=t.value; markDirty(); }
   else if(t.dataset.x!==undefined){ rec.extra[+t.dataset.x][t.dataset.f]=t.value; markDirty(); }
@@ -728,6 +764,32 @@ $("#pdfBtn").addEventListener("click", async ()=>{
 $("#pdfShare").addEventListener("click", async ()=>{ try{ await navigator.share({files:[pdfFile], title:pdfFile.name}); }catch(e){} });
 $("#pdfClose").addEventListener("click", ()=>{ $("#pdfSheet").hidden=true; });
 $("#pdfSheet").addEventListener("click", e=>{ if(e.target.id==="pdfSheet") $("#pdfSheet").hidden=true; });
+
+/* ---------- 편성표 ---------- */
+function updateInspHint(){
+  const r=rosterOf(cur), v=($("#inspector").value||"").trim();
+  $("#inspHint").textContent = !ROSTERS[ymKey()] ? "이 달 편성표가 아직 없어요" : !r ? "편성표: 이 날은 담당자 없음" : (v===r ? `편성표 담당자 자동 입력 · 수정 가능` : `편성표 담당자: ${r}`);
+}
+function openRoster(){
+  const ym=ymKey(), R=ROSTERS[ym];
+  $("#rosterTitle").textContent=`${tpl.month}월 일일안전관리자 편성표`;
+  if(!R){ $("#rosterSub").textContent=`${tpl.year}년 ${tpl.month}월 편성표가 아직 등록되지 않았어요. 편성표를 보내주시면 넣어 드려요.`; $("#rosterSum").innerHTML=""; $("#rosterBody").innerHTML=""; $(".roster-box").hidden=true; $("#rosterSheet").hidden=false; return; }
+  $(".roster-box").hidden=false;
+  $("#rosterSub").textContent="일요일은 휴무. 개인 사정으로 바뀌면 점검자 칸에서 바로 고치면 돼요.";
+  const cnt={}; Object.values(R).forEach(n=>cnt[n]=(cnt[n]||0)+1);
+  $("#rosterSum").innerHTML=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).map(n=>`<span>${esc(n)} ${cnt[n]}회</span>`).join("");
+  let rows="";
+  for(let d=1; d<=lastDay(); d++){
+    const k=ymd(tpl.year,tpl.month,d), w=new Date(tpl.year,tpl.month-1,d).getDay(), n=R[d]||"";
+    rows+=`<tr class="${w===0?"sun":""} ${k===cur?"sel":""}"><td class="d">${tpl.month}/${d}</td><td class="w">${WD[w]}</td><td class="n">${n?esc(n):(w===0?"휴무":"-")}</td></tr>`;
+  }
+  $("#rosterBody").innerHTML=`<table class="roster"><tbody>${rows}</tbody></table>`;
+  $("#rosterSheet").hidden=false;
+  const sel=$("#rosterBody tr.sel"); if(sel) sel.scrollIntoView({block:"center"});
+}
+document.addEventListener("click",e=>{ if(e.target.closest("[data-roster]")) openRoster(); });
+$("#rosterClose").addEventListener("click",()=>{ $("#rosterSheet").hidden=true; });
+$("#rosterSheet").addEventListener("click",e=>{ if(e.target.id==="rosterSheet") $("#rosterSheet").hidden=true; });
 
 /* ---------- 달 바꾸기 ---------- */
 async function openMonth(ym, day){
