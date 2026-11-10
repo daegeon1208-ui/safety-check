@@ -156,8 +156,8 @@
       });
     });
     (rec.extra || []).forEach((x, i) => {
-      const r = 19 + i;
-      if (r <= 20) Object.assign(v1, { ["A" + r]: x.sub, ["C" + r]: x.loc, ["D" + r]: x.risk, ["I" + r]: x.action, ["N" + r]: x.fix, ["O" + r]: x.fb, ["P" + r]: x.reflect, ["W" + r]: x.partner });
+      const r = 10 + tpl.items.length * 2 + 3 + i;   // 추가위험발굴 행: 중점관리 항목 수에 따라 달라짐 (11월 19행, 10월 27행)
+      if (i < 2) Object.assign(v1, { ["A" + r]: x.sub, ["C" + r]: x.loc, ["D" + r]: x.risk, ["I" + r]: x.action, ["N" + r]: x.fix, ["O" + r]: x.fb, ["P" + r]: x.reflect, ["W" + r]: x.partner });
       const s = x.photo ? EXTRA_SLOTS[xi++] : null;
       if (s) { ph[s[0]] = x.photo; v2[s[1]] = (i + 1) + ". 추가위험발굴"; v2[s[2]] = x.caption || ""; }
     });

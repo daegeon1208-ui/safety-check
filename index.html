@@ -51,6 +51,10 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .title-row small{display:block;font-size:12px;color:var(--muted);font-weight:500}
 .save{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
 .save.dirty{color:var(--brand)}
+#sub{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.mnav{border:1px solid var(--line);background:var(--surface);border-radius:6px;width:26px;height:24px;font-size:16px;line-height:1;cursor:pointer;color:var(--ink);padding:0}
+.mnav:disabled{opacity:.3;cursor:default}
+.mlabel{font-weight:700;color:var(--ink);padding:0 6px}
 .ver{font-size:10px;color:var(--muted);opacity:.75;font-weight:400;margin-left:4px;font-variant-numeric:tabular-nums}
 .hdr-r{display:grid;justify-items:end;gap:3px}
 .cloud{border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:11px;font-weight:600;padding:2px 9px 2px 7px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)}
@@ -257,7 +261,8 @@ a.primary{color:var(--bg);display:inline-flex;align-items:center}
 
 <script>
 (function(){
-/* ---------- 양식 기본값 (26. 11월 일일안전보건점검표 공사팀.xlsx 기준) ---------- */
+/* ---------- 월별 양식 기본값 (각 달 일일안전보건점검표 공사팀.xlsx 기준) ---------- */
+const TPL_2026_10 = {"site": "온천제2공영아파트일원 가로주택정비사업", "year": 2026, "month": 10, "partner": "동우건설", "items": [{"work": "골조", "sub": "시스템\n동바리", "loc": "101동\n102동", "risk": "시스템 동바리 설치 작업 시 상부 작업자 안전벨트 고리 \n미체결로 추락 위험", "when": "10.01\n~\n10.31", "owner": "쌍용 김대건 기사\n동우 박찬섭 차장", "measures": ["1. 고소작업 시 안전고리 체결 철저", "2. 시스템동바리 작업발판은 슬라브를 포함하여 \n    전수 설치 할 것"]}, {"work": "골조", "sub": "시스템\n동바리", "loc": "101동\n102동", "risk": "시스템 동바리 U헤드와 멍에제 간 유격이 발생하여 \n흔들리며 편하중이 발생하여 붕괴 위험", "when": "10.01\n~\n10.31", "owner": "쌍용 배윤기 대리\n동우 박찬섭 차장", "measures": ["1. 멍에재 설치 시 U헤드 멍에 고정전용 철물 설치", "2. 시스템 동바리 1.725M 이내 마다 수평재 설치하고\n    유닛 간 수평재는 4M 이내로 클램프 체결 할 것"]}, {"work": "골조", "sub": "거푸집\n설치", "loc": "101동\n~\n103동", "risk": "대형거푸집 설치 작업 시 전용핀 설치 누락으로 인한\n낙하물 발생으로 근로자 낙하물 맞음 위험", "when": "10.01\n~\n10.31", "owner": "쌍용 김대건 기사\n동우 이경국 과장", "measures": ["1. 대형거푸집 인양 전 낙하물 전수 제거 후 인양", "2. 대형거푸집 설치 시 전용핀 사용 및 인양 시 \n    신호수 배치 철저"]}, {"work": "전기", "sub": "배관공사\n배선공사", "loc": "101동\n102동\n103동\n지하층", "risk": "작업자가 사다리 위에서 몸을 과도하게 옆으로 내밀거나 \n무리한 자세로 작업하던 중 사다리 전도 위험", "when": "10.01\n~\n10.31", "owner": "쌍용 정병익 대리\n동우 송나현 대리", "measures": ["1. 사다리 최상단 발판에서의 작업을 금지하고 작업 전\n    사다리 점검, 아웃트리거 전개 후 작업 진행", "2. 작업 전 사다리 사용 장소 바닥 평탄화 확인 후 작업 실시"]}, {"work": "설비", "sub": "배관설치\n공사", "loc": "B4F 주차장\n102동 B2F", "risk": "고소작업대를 사용한 스리브, 배관 설치 작업 중  \n작업반경이 부족하여, 난간 밖으로 상체를 내밀어 \n작업하다, 순간적으로 중심을 잃으면서 추락 위험", "when": "10.01\n~\n10.31", "owner": "쌍용 최외섭 부장\n동우 조영식 소장", "measures": ["1. 작업위치 확인 후, 고소작업대 배치하여 작업진행", "2. 지정된 T/L 작업자만 교육 후 사용"]}, {"work": "설비", "sub": "배관설치\n공사", "loc": "B4F 주차장\n102동 B2F", "risk": "고소작업대 상승·이동 중 작업자가 상부 천장 또는 \n벽체 구조물과 작업대 난간 사이에 신체가 끼이는 위험", "when": "10.01\n~\n10.31", "owner": "쌍용 최외섭 부장\n동우 조영식 소장", "measures": ["1. 과상승방지봉 필히 설치 및 유지관리 철저", "2. 작업 전 과상승방지 장치의 작동여부를 확인하고 \n    과상승방지봉은 60CM 이상 높이로 설치 할 것"]}, {"work": "설비", "sub": "타워크레인\n자재양중", "loc": "현장 내", "risk": "타워크레인으로 배관을 양중하는 과정에서, 다발로 \n묶여오는 배관을 고정한 결속끈이 풀림, 파단 되거나 \n다발 내 배관이 고르게 결속되지 않아 일부 배관이 \n이탈·낙하하는 위험", "when": "10.01\n~\n10.31", "owner": "쌍용 최외섭 부장\n동우 조영식 소장", "measures": ["1. 양중 시 밴딩 상태 철저히 점검 후 양중 할 것", "2. 인양 자재는 2점이상 결속하고, 근로자의 출입을 통제하여 \n    인양 자재가 근로자의 머리위로 지나지 않도록 할 것"]}]};
 const DEFAULT_TPL = {
   site:"온천제2공영아파트일원 가로주택정비사업",
   year:2026, month:11,
@@ -274,7 +279,9 @@ const DEFAULT_TPL = {
      measures:["1. 샵장 내부 불티방지포 설치 및 소화기 비치","2. 샵장 내 확산소화기 설치 및 휀스 설치하여 격리 작업 할 것"]}
   ]
 };
-const APP_VER="2026-11-09l";
+const DEFAULT_TPLS = { "2026-10": TPL_2026_10, "2026-11": DEFAULT_TPL };
+const MONTHS = Object.keys(DEFAULT_TPLS).sort();
+const APP_VER="2026-11-10a";
 const EXTRA_ROWS = 2; // 엑셀 19·20행
 const WD = ["일","월","화","수","목","금","토"];
 
@@ -395,7 +402,7 @@ function renderRisks(){
 function renderExtras(){
   const box=$("#extras");
   box.innerHTML = rec.extra.map((x,i)=>`<article class="card">
-    <div class="extra-head"><b>추가위험 ${i+1}</b><span class="slot">출력표 ${19+i}행</span></div>
+    <div class="extra-head"><b>추가위험 ${i+1}</b><span class="slot">출력표 ${10+tpl.items.length*2+3+i}행</span></div>
     <div class="grid2">
       <label class="f">중공종<input type="text" data-x="${i}" data-f="sub" value="${esc(x.sub)}" placeholder="예: 철근조립"></label>
       <label class="f">작업위치<input type="text" data-x="${i}" data-f="loc" value="${esc(x.loc)}" placeholder="예: 102동 B2F"></label>
@@ -420,7 +427,8 @@ function renderInfo(){
   $("#v-date").textContent=`${dotDate(cur)} (${WD[w]})`;
   $("#v-period").textContent=`${tpl.year}.${pad(tpl.month)}.01 ~ ${tpl.year}.${pad(tpl.month)}.${pad(lastDay())}`;
   $("#v-partner").textContent=tpl.partner;
-  $("#sub").innerHTML=`${tpl.year}년 ${tpl.month}월 · 공사팀 <span class="ver">v${APP_VER}</span>`;
+  const ym=ymKey(), mi=MONTHS.indexOf(ym);
+  $("#sub").innerHTML=`<button class="mnav" type="button" data-month="-1" aria-label="이전 달" ${mi<=0?"disabled":""}>‹</button><b class="mlabel">${tpl.year}년 ${tpl.month}월</b><button class="mnav" type="button" data-month="1" aria-label="다음 달" ${mi>=MONTHS.length-1?"disabled":""}>›</button> · 공사팀 <span class="ver">v${APP_VER}</span>`;
   $("#inspector").value=rec.inspector||"";
 }
 
@@ -674,14 +682,17 @@ document.addEventListener("input",e=>{
 /* ---------- PDF 출력: 원본 엑셀 양식 그대로 ---------- */
 let pdfUrl=null, pdfFile=null, libs=null;
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
-async function loadLibs(){
-  if(libs) return libs;
-  await loadScript("lib/pdf-lib.min.js"); await loadScript("lib/fontkit.umd.min.js"); await loadScript("print-pdf.js?v="+APP_VER);
-  const [layout,B,M] = await Promise.all([
-    fetch("layout.json?v="+APP_VER,{cache:"no-cache"}).then(r=>r.json()),
-    fetch("fonts/KoPubDotum-Bold.ttf").then(r=>r.arrayBuffer()),
-    fetch("fonts/KoPubDotum-Medium.ttf").then(r=>r.arrayBuffer())]);
-  libs={layout,fonts:{B:new Uint8Array(B),M:new Uint8Array(M)}}; return libs;
+async function loadLibs(ym){
+  if(!libs){
+    await loadScript("lib/pdf-lib.min.js"); await loadScript("lib/fontkit.umd.min.js"); await loadScript("print-pdf.js?v="+APP_VER);
+    const [B,M] = await Promise.all([
+      fetch("fonts/KoPubDotum-Bold.ttf").then(r=>r.arrayBuffer()),
+      fetch("fonts/KoPubDotum-Medium.ttf").then(r=>r.arrayBuffer())]);
+    libs={layouts:{},fonts:{B:new Uint8Array(B),M:new Uint8Array(M)}};
+  }
+  // 달마다 엑셀 양식(행 수)이 달라서 그 달의 칸 배치를 쓴다
+  if(!libs.layouts[ym]) libs.layouts[ym] = await fetch(`layout-${ym}.json?v=`+APP_VER,{cache:"no-cache"}).then(r=>r.json());
+  libs.layout=libs.layouts[ym]; return libs;
 }
 /* 점검자 미입력 알림 */
 let skipInspector=false;
@@ -696,7 +707,7 @@ $("#pdfBtn").addEventListener("click", async ()=>{
   ["#pdfSave","#pdfShare","#pdfOpen"].forEach(s=>$(s).hidden=true);
   $("#pdfMsg").textContent="원본 엑셀 양식(A4 가로, 점검표 + 사진대지 2쪽)으로 만드는 중…";
   try{
-    const L=await loadLibs();
+    const L=await loadLibs(ymKey());
     const m=SafetyPrint.mapRecord(tpl, rec);
     const bytes=await SafetyPrint.buildPdf(PDFLib, fontkit, L.fonts, L.layout, m.values, m.photos);
     const name=`${cur.slice(2).replace(/-/g,"")} 일일안전보건점검표.pdf`;
@@ -718,14 +729,31 @@ $("#pdfShare").addEventListener("click", async ()=>{ try{ await navigator.share(
 $("#pdfClose").addEventListener("click", ()=>{ $("#pdfSheet").hidden=true; });
 $("#pdfSheet").addEventListener("click", e=>{ if(e.target.id==="pdfSheet") $("#pdfSheet").hidden=true; });
 
+/* ---------- 달 바꾸기 ---------- */
+async function openMonth(ym, day){
+  if(saveT){ clearTimeout(saveT); await saveNow(); }
+  const base=DEFAULT_TPLS[ym]; const [y,m]=ym.split("-").map(Number);
+  const saved=await get("tpl:"+y+"-"+m);
+  tpl = JSON.parse(JSON.stringify(saved || base));
+  summary = (await get("summary:"+y+"-"+m)) || {};
+  if(cloud.url) await pullMonth();
+  const now=new Date();
+  const d = day || ((now.getFullYear()===y && now.getMonth()+1===m) ? now.getDate() : 1);
+  await selectDay(ymd(y,m,d));
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-month]"); if(!b||b.disabled) return;
+  const i=MONTHS.indexOf(ymKey())+Number(b.dataset.month);
+  if(i>=0 && i<MONTHS.length) openMonth(MONTHS[i]);
+});
+
 /* ---------- 시작 ---------- */
 (async function start(){
-  const saved=await get("tpl:"+DEFAULT_TPL.year+"-"+DEFAULT_TPL.month); if(saved) tpl=saved;
-  summary = (await get("summary:"+tpl.year+"-"+tpl.month)) || {};
-  refreshCloudBadge(); if(cloud.url){ await pullMonth(); pushPending(); }
-  const now=new Date();
-  const d = (now.getFullYear()===tpl.year && now.getMonth()+1===tpl.month) ? now.getDate() : 1;
-  await selectDay(ymd(tpl.year,tpl.month,d));
+  refreshCloudBadge();
+  const now=new Date(), nowYm=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  const ym = MONTHS.includes(nowYm) ? nowYm : MONTHS[MONTHS.length-1];
+  await openMonth(ym);
+  if(cloud.url) pushPending();
 })();
 })();
 </script>
