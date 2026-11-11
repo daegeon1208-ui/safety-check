@@ -95,6 +95,14 @@ textarea.inp{min-height:90px;resize:vertical}
 .viewer-img .bar{display:flex;gap:8px;padding:12px 12px calc(env(safe-area-inset-bottom) + 12px)}
 .viewer-img .bar button{flex:1;padding:12px;border-radius:12px;background:#374151;color:#fff;font-weight:600}
 .viewer-img .bar .del{color:#FCA5A5}
+header .cloud{display:flex;align-items:center;gap:6px}
+header .cloud i{width:8px;height:8px;border-radius:50%;background:#9CA3AF}
+header .cloud[data-state="on"] i{background:#4ADE80}
+header .cloud[data-state="wait"] i{background:#FBBF24}
+header .cloud[data-state="err"] i{background:#F87171}
+.sync{font-size:12px;color:#D1D5DB;white-space:nowrap}
+.sync[data-state="on"]{color:#86EFAC} .sync[data-state="wait"]{color:#FDE68A} .sync[data-state="err"]{color:#FCA5A5}
+.photos .phw{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--sub)}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 90px);transform:translateX(-50%);background:rgba(31,41,55,.95);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:30;max-width:90%;text-align:center}
 .exp a,.exp button{display:block;width:100%;text-align:center;padding:14px;border-radius:12px;background:var(--accent);color:#fff;font-weight:600;text-decoration:none;margin-top:10px}
 .exp .sec{background:var(--chip);color:var(--ink)}
@@ -105,7 +113,7 @@ textarea.inp{min-height:90px;resize:vertical}
 
 <!-- 도면 목록 -->
 <section id="home" class="screen">
-  <header><h1>도면 하자 핀</h1><button class="hbtn" id="helpBtn">사용법</button></header>
+  <header><h1>도면 하자 핀</h1><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">구글 공유</span></button><button class="hbtn" id="helpBtn">사용법</button></header>
   <main id="dlist"></main>
   <button class="fab" id="importBtn">＋ 도면 PDF 불러오기</button>
   <input type="file" id="pdfInput" accept="application/pdf,.pdf" hidden>
@@ -115,7 +123,7 @@ textarea.inp{min-height:90px;resize:vertical}
 <section id="viewer" class="screen" hidden>
   <header>
     <button class="hbtn" id="backBtn">‹ 목록</button>
-    <h1 id="vTitle"></h1>
+    <h1 id="vTitle"></h1><span class="sync" id="syncTxt" hidden></span>
     <div class="pager" id="pager"><button class="hbtn" id="prevPg">‹</button><span id="pgTxt"></span><button class="hbtn" id="nextPg">›</button></div>
   </header>
   <div id="vp">
@@ -169,6 +177,23 @@ textarea.inp{min-height:90px;resize:vertical}
   <div class="sb exp" id="expBody"></div>
 </div>
 
+<!-- 구글 공유 연결 -->
+<div class="sheet" id="cloudSheet" hidden>
+  <div class="sh"><h2>구글 공유 연결</h2><button class="x" data-close>✕</button></div>
+  <div class="sb exp">
+    <p>같은 웹 앱 URL과 PIN을 넣은 휴대폰끼리 도면과 핀을 함께 보고 고칩니다. 핀·메모는 구글 시트 「도면 하자 핀」에, 도면 PDF와 사진은 구글 드라이브 「도면 하자 핀」 폴더에 저장됩니다. 다른 사람이 고친 내용은 몇 초 안에 들어옵니다.</p>
+    <div class="lbl">웹 앱 URL</div>
+    <input class="inp" id="cUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="lbl">PIN</div>
+    <input class="inp" id="cPin" inputmode="numeric" autocomplete="off" placeholder="스크립트에 적은 PIN">
+    <div class="lbl">내 이름 (핀에 작성자로 표시)</div>
+    <input class="inp" id="cName" autocomplete="off" placeholder="예: 김대건">
+    <p id="cMsg" style="color:var(--open);min-height:1.4em;margin-top:10px"></p>
+    <button id="cOn">연결</button>
+    <button id="cOff" class="sec" hidden>연결 끊기</button>
+  </div>
+</div>
+
 <!-- 사용법 -->
 <div class="sheet" id="helpSheet" hidden>
   <div class="sh"><h2>사용법</h2><button class="x" data-close>✕</button></div>
@@ -179,7 +204,8 @@ textarea.inp{min-height:90px;resize:vertical}
     <p>4. 핀 창에서 상태(미조치/조치완료), 업체, 내용, 사진을 넣습니다. 적는 즉시 저장됩니다.</p>
     <p>5. 이미 찍은 핀을 누르면 다시 열립니다. <b>목록</b>에서 핀을 고르면 그 위치로 이동합니다.</p>
     <p>6. <b>내보내기</b>를 누르면 핀이 표시된 도면과 하자 목록(사진 포함)을 PDF 한 파일로 만들어 카톡 등으로 보낼 수 있습니다.</p>
-    <p style="margin-top:12px">기록은 이 휴대폰 브라우저 안에만 저장됩니다. 사파리 방문 기록을 지우면 함께 지워질 수 있으니, 공유 → <b>홈 화면에 추가</b>로 앱처럼 쓰시고 중요한 기록은 PDF로 내보내 두세요.</p>
+    <p>7. 위쪽 <b>구글 공유</b>에 웹 앱 URL·PIN·이름을 넣으면 같은 설정을 한 사람들과 도면과 핀을 함께 씁니다.</p>
+    <p style="margin-top:12px">구글 공유를 켜지 않으면 기록은 이 휴대폰 브라우저 안에만 저장됩니다. 사파리 방문 기록을 지우면 함께 지워질 수 있으니, 공유 → <b>홈 화면에 추가</b>로 앱처럼 쓰시고 중요한 기록은 PDF로 내보내 두세요.</p>
   </div>
 </div>
 
@@ -191,7 +217,7 @@ textarea.inp{min-height:90px;resize:vertical}
 
 <script>
 "use strict";
-const APP_VER="1.0";
+const APP_VER="1.1";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -232,7 +258,7 @@ function loadPdfjs(){
 }
 
 /* ---------- 창 열고 닫기 ---------- */
-const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet"];
+const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet"];
 let onSheetClose=null;
 function openSheet(id){sheets.forEach(s=>$(s).hidden=(s!==id));$("#sheetBg").hidden=false;}
 function closeSheets(){const cb=onSheetClose;onSheetClose=null;sheets.forEach(s=>$(s).hidden=true);$("#sheetBg").hidden=true;if(cb)cb();}
@@ -241,30 +267,56 @@ document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",
 $("#helpBtn").addEventListener("click",()=>openSheet("#helpSheet"));
 
 /* ---------- 도면 목록 ---------- */
+let remoteOnly=[];   // 구글에는 있지만 이 휴대폰에는 아직 없는 도면
 async function renderHome(){
   const [ds,ps]=await Promise.all([dbAll("drawings"),dbAll("pins")]);
   ds.sort((a,b)=>(b.opened||b.created)-(a.opened||a.created));
   const box=$("#dlist");
-  if(!ds.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 PDF 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF를 고르세요.</div>`;return;}
+  const rem=remoteOnly.filter(r=>!ds.some(d=>d.id===r.id));
+  if(!ds.length&&!rem.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 PDF 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF를 고르세요.</div>`;return;}
   box.innerHTML=ds.map(d=>{
-    const mine=ps.filter(p=>p.drawingId===d.id), o=mine.filter(p=>p.status!=="done").length, dn=mine.length-o;
+    const mine=ps.filter(p=>p.drawingId===d.id&&!p.deleted), o=mine.filter(p=>p.status!=="done").length, dn=mine.length-o;
     return `<div class="dcard" data-id="${d.id}"><div class="meta"><div class="nm">${esc(d.name)}</div>
-      <div class="sm"><span class="cnt o">미조치 ${o}</span><span class="cnt d">완료 ${dn}</span> ${d.pages}쪽 · ${fmtDate(d.created).slice(0,10)}</div></div>
-      <button class="more" data-more="${d.id}">⋯</button></div>`;}).join("");
+      <div class="sm"><span class="cnt o">미조치 ${o}</span><span class="cnt d">완료 ${dn}</span> ${d.pages}쪽 · ${fmtDate(d.created).slice(0,10)}${d.cloud&&cloudOn()?" · 공유":""}</div></div>
+      <button class="more" data-more="${d.id}">⋯</button></div>`;}).join("")
+  +rem.map(d=>`<div class="dcard remote" data-remote="${d.id}"><div class="meta"><div class="nm">${esc(d.name)}</div>
+      <div class="sm"><span class="cnt o">미조치 ${d.open||0}</span><span class="cnt d">완료 ${d.done||0}</span> ${d.pages}쪽${d.by?" · "+esc(d.by):""}</div>
+      <div class="sm" style="color:var(--accent);font-weight:600">구글 공유 도면 · 눌러서 받기</div></div></div>`).join("");
+}
+async function removeLocalDrawing(id){
+  for(const p of await pinsOf(id)) await dbDel("pins",p.id);
+  await dbDel("files",id); await dbDel("drawings",id);
 }
 $("#dlist").addEventListener("click",async e=>{
   const more=e.target.closest("[data-more]");
   if(more){
-    const d=await dbGet("drawings",more.dataset.more);
-    const act=prompt(`「${d.name}」\n1 = 이름 바꾸기\n2 = 도면과 핀 모두 삭제\n번호를 입력하세요`,"");
-    if(act==="1"){const nm=prompt("새 이름",d.name);if(nm&&nm.trim()){d.name=nm.trim();await dbPut("drawings",d);renderHome();}}
-    else if(act==="2"){
-      const ps=await pinsOf(d.id);
-      if(confirm(`「${d.name}」 도면과 핀 ${ps.length}개를 삭제할까요? 되돌릴 수 없습니다.`)){
-        for(const p of ps) await dbDel("pins",p.id);
-        await dbDel("files",d.id); await dbDel("drawings",d.id); renderHome(); toast("삭제했습니다");
+    const d=await dbGet("drawings",more.dataset.more), shared=cloudOn()&&d.cloud;
+    const act=prompt(`「${d.name}」\n1 = 이름 바꾸기\n2 = 도면과 핀 모두 삭제${shared?" (함께 쓰는 사람 모두에게서 삭제)":""}\n번호를 입력하세요`,"");
+    try{
+      if(act==="1"){const nm=prompt("새 이름",d.name);if(nm&&nm.trim()){
+        if(shared) await api({action:"renameDrawing",id:d.id,name:nm.trim()});
+        d.name=nm.trim();await dbPut("drawings",d);renderHome();}}
+      else if(act==="2"){
+        const ps=(await pinsOf(d.id)).filter(p=>!p.deleted);
+        if(confirm(`「${d.name}」 도면과 핀 ${ps.length}개를 삭제할까요?${shared?"\n함께 쓰는 사람들 휴대폰에서도 사라집니다. (구글 드라이브의 PDF·사진 파일은 남겨 둡니다)":" 되돌릴 수 없습니다."}`)){
+          if(shared) await api({action:"deleteDrawing",id:d.id});
+          await removeLocalDrawing(d.id); renderHome(); toast("삭제했습니다");
+        }
       }
-    }
+    }catch(err){toast("구글에 반영하지 못했습니다: "+err.message,4000);}
+    return;
+  }
+  const rc=e.target.closest("[data-remote]");
+  if(rc){
+    const r=remoteOnly.find(x=>x.id===rc.dataset.remote); if(!r) return;
+    toast("구글에서 도면을 받는 중…",120000);
+    try{
+      const j=await api({action:"drawingFile",id:r.id});
+      await dbPut("files",{id:r.id,data:b64ToBuf(j.data)});
+      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true});
+      remoteOnly=remoteOnly.filter(x=>x.id!==r.id);
+      $("#toast").hidden=true; openDrawing(r.id);
+    }catch(err){toast("도면을 받지 못했습니다: "+err.message,4000);}
     return;
   }
   const card=e.target.closest(".dcard"); if(card) openDrawing(card.dataset.id);
@@ -286,6 +338,143 @@ $("#pdfInput").addEventListener("change",async e=>{
   }catch(err){console.error(err);toast("PDF를 열 수 없습니다: "+err.message,4000);}
 });
 
+/* ---------- 구글 공유 (시트·드라이브) ---------- */
+let cloud={url:"",pin:"",name:""};
+try{cloud=Object.assign(cloud,JSON.parse(localStorage.getItem("pinsCloud")||"{}"));}catch(e){}
+const cloudOn=()=>!!(cloud.url&&cloud.pin);
+async function api(body){
+  const r=await fetch(cloud.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({pin:cloud.pin},body)),redirect:"follow"});
+  let j; try{j=await r.json();}catch(e){throw new Error("서버 응답을 읽지 못했습니다");}
+  if(!j.ok) throw new Error(j.error||"서버 오류"); return j;
+}
+function bufToB64(buf){const a=new Uint8Array(buf);let s="";for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode.apply(null,a.subarray(i,i+32768));return btoa(s);}
+function b64ToBuf(b){const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a.buffer;}
+function setSync(state,txt){
+  const b=$("#cloudBtn"); b.dataset.state=cloudOn()?state:""; $("#cloudTxt").textContent=cloudOn()?txt:"구글 공유";
+  const v=$("#syncTxt"); v.hidden=!cloudOn(); v.dataset.state=state; v.textContent=txt;
+}
+/* 핀을 고치면 휴대폰에 먼저 저장하고, 공유 중이면 곧 구글로 보낸다 */
+async function savePin(p){
+  p.updated=Date.now(); p.editor=cloud.name||p.editor||"";
+  if(cloudOn()&&V.drawing&&V.drawing.cloud) p.dirty=true;
+  await dbPut("pins",p); schedulePush();
+}
+let pushT=null;
+function schedulePush(){ if(!cloudOn()) return; clearTimeout(pushT); pushT=setTimeout(syncPins,1200); }
+async function uploadDrawing(d){
+  const f=await dbGet("files",d.id);
+  setSync("wait","도면 올리는 중…");
+  await api({action:"uploadDrawing",drawing:{id:d.id,name:d.name,pages:d.pages,created:d.created},data:bufToB64(f.data),by:cloud.name});
+  d.cloud=true; await dbPut("drawings",d);
+  for(const p of await pinsOf(d.id)){ p.dirty=true; if(!p.by)p.by=cloud.name; p.photos.forEach(x=>{if(!x.k)x.k=uid();}); await dbPut("pins",p); }   // 이전에 찍은 핀도 함께 올린다
+}
+let homeSyncing=false;
+async function syncDrawings(){
+  if(!cloudOn()||homeSyncing) return; homeSyncing=true;
+  try{
+    setSync("wait","구글 확인 중…");
+    const j=await api({action:"drawings"}), locals=await dbAll("drawings");
+    const live=j.drawings.filter(d=>!d.deleted);
+    for(const r of j.drawings){
+      const l=locals.find(d=>d.id===r.id); if(!l) continue;
+      if(r.deleted){ await removeLocalDrawing(r.id); continue; }
+      if(l.name!==r.name||!l.cloud){ l.name=r.name; l.cloud=true; await dbPut("drawings",l); }
+    }
+    remoteOnly=live.filter(r=>!locals.some(d=>d.id===r.id));
+    await renderHome();
+    for(const l of locals) if(!l.cloud&&!j.drawings.some(r=>r.id===l.id)){ await uploadDrawing(l); }
+    for(const l of await dbAll("drawings")) if(l.cloud) await pushDirty(l.id);
+    await renderHome();
+    setSync("on","공유 중");
+  }catch(err){ setSync("err",navigator.onLine===false?"오프라인":"구글 연결 실패"); }
+  finally{ homeSyncing=false; }
+}
+/* 1) 보내기: 고친 핀 */
+let pushLock=Promise.resolve();
+function pushDirty(id){ const r=pushLock.then(()=>pushDirty_(id)); pushLock=r.catch(()=>{}); return r; }
+async function pushDirty_(drawingId){
+    const dirty=(await pinsOf(drawingId)).filter(p=>p.dirty);
+    if(dirty.length) setSync("wait",`보내는 중 ${dirty.length}`);
+    for(const p0 of dirty){
+      if(p0.deleted){ await api({action:"deletePin",id:p0.id,by:cloud.name}); await dbDel("pins",p0.id); continue; }
+      const photos={}, pin={...p0,photos:p0.photos.map(x=>{ if(!x.k)x.k=uid(); if(!x.id&&x.data) photos[x.k]=bufToB64(x.data); return {k:x.k,id:x.id||null,w:x.w,h:x.h}; })};
+      delete pin.dirty; delete pin.serverUpdated;
+      const j=await api({action:"savePin",item:pin,photos});
+      const cur=V.pins.find(q=>q.id===p0.id)||await dbGet("pins",p0.id); if(!cur) continue;
+      if(j.pin.deleted){ V.pins=V.pins.filter(q=>q.id!==cur.id); await dbDel("pins",cur.id); toast(`${cur.no}번 핀은 다른 사람이 삭제했습니다`); continue; }
+      if(cur.no!==j.pin.no) toast(`다른 사람과 번호가 겹쳐 ${cur.no}번 → ${j.pin.no}번으로 바꿨습니다`,3500);
+      cur.no=j.pin.no; cur.serverUpdated=j.pin.updated;
+      for(const sp of j.pin.photos||[]){ const lp=cur.photos.find(x=>x.k===sp.k); if(lp) lp.id=sp.id; }
+      if(cur.updated===p0.updated) cur.dirty=false;
+      await dbPut("pins",cur);
+    }
+}
+let syncing=false, syncAgain=false;
+async function syncPins(){
+  if(!cloudOn()||!V.drawing||$("#viewer").hidden) return;
+  if(syncing){syncAgain=true;return;} syncing=true;
+  const d=V.drawing;
+  try{
+    if(!d.cloud) await uploadDrawing(d);
+    await pushDirty(d.id);
+    // 2) 받기: 다른 사람이 찍거나 고친 핀
+    const j=await api({action:"pins",drawingId:d.id});
+    if(V.drawing!==d) return;
+    const all=await pinsOf(d.id); let changed=false;
+    for(const sp of j.pins){
+      const l=all.find(p=>p.id===sp.id);
+      if(l&&(l.dirty||l.id===V.sel)) continue;
+      if(sp.deleted){ if(l){ await dbDel("pins",l.id); V.pins=V.pins.filter(q=>q.id!==l.id); changed=true; } continue; }
+      if(l&&l.serverUpdated===sp.updated) continue;
+      const np={...sp,deleted:false,dirty:false,serverUpdated:sp.updated,
+        photos:(sp.photos||[]).map(x=>{const lp=l&&l.photos.find(y=>y.id===x.id);return lp||{...x,type:"image/jpeg"};})};
+      await dbPut("pins",np);
+      const i=V.pins.findIndex(q=>q.id===np.id); if(i>=0) V.pins[i]=np; else V.pins.push(np);
+      changed=true;
+    }
+    if(changed){ drawPins(); if(!$("#listSheet").hidden) renderList(); }
+    const left=(await pinsOf(d.id)).filter(p=>p.dirty).length;
+    setSync(left?"wait":"on", left?`보낼 것 ${left}`:"공유 중");
+  }catch(err){
+    console.error(err); setSync("err",navigator.onLine===false?"오프라인 · 휴대폰에 보관":"구글 연결 실패");
+  }finally{
+    syncing=false; if(syncAgain){syncAgain=false;schedulePush();}
+  }
+}
+setInterval(()=>{ if(document.visibilityState==="visible"&&!$("#viewer").hidden) syncPins(); },8000);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState!=="visible") return; if($("#viewer").hidden) syncDrawings(); else syncPins(); });
+window.addEventListener("online",()=>{ if($("#viewer").hidden) syncDrawings(); else syncPins(); });
+/* 사진은 필요할 때 구글에서 받아 휴대폰에 보관 */
+async function ensurePhoto(p,x){
+  if(x.data||!x.id||!cloudOn()) return !!x.data;
+  try{ const j=await api({action:"photo",id:x.id}); x.data=b64ToBuf(j.data); x.type="image/jpeg";
+    const cur=await dbGet("pins",p.id); if(cur){ const c=cur.photos.find(y=>y.id===x.id); if(c){c.data=x.data;c.type=x.type;} await dbPut("pins",cur); }
+    return true; }catch(e){ return false; }
+}
+/* 연결 설정 창 */
+$("#cloudBtn").addEventListener("click",()=>{
+  $("#cUrl").value=cloud.url; $("#cPin").value=cloud.pin; $("#cName").value=cloud.name;
+  $("#cMsg").textContent=cloudOn()?"연결되어 있습니다.":""; $("#cOff").hidden=!cloudOn();
+  openSheet("#cloudSheet");
+});
+$("#cOn").addEventListener("click",async()=>{
+  const old={...cloud};
+  cloud={url:$("#cUrl").value.trim(),pin:$("#cPin").value.trim(),name:$("#cName").value.trim()};
+  if(!/^https:\/\/script\.google\.com\//.test(cloud.url)){ $("#cMsg").textContent="웹 앱 URL은 https://script.google.com/ 으로 시작해야 합니다."; cloud=old; return; }
+  if(!cloud.pin||!cloud.name){ $("#cMsg").textContent="PIN과 이름을 넣어 주세요."; cloud=old; return; }
+  $("#cMsg").textContent="연결하는 중…";
+  try{ await api({action:"ping"}); }
+  catch(err){ cloud=old; $("#cMsg").textContent=/PIN/.test(err.message)?"PIN이 맞지 않습니다. 스크립트 맨 위에 적은 PIN을 넣어 주세요.":"연결하지 못했습니다. URL과, 배포할 때 '액세스 권한: 모든 사용자'로 했는지 확인해 주세요."; return; }
+  try{localStorage.setItem("pinsCloud",JSON.stringify(cloud));}catch(e){}
+  $("#cMsg").textContent="연결됐습니다. 이 휴대폰의 도면과 핀도 구글로 올립니다.";
+  setTimeout(()=>{closeSheets();syncDrawings();},900);
+});
+$("#cOff").addEventListener("click",()=>{
+  if(!confirm("구글 공유 연결을 끊을까요? 이 휴대폰의 도면과 핀은 그대로 남습니다.")) return;
+  cloud={url:"",pin:"",name:cloud.name}; try{localStorage.setItem("pinsCloud",JSON.stringify(cloud));}catch(e){}
+  remoteOnly=[]; setSync("",""); closeSheets(); renderHome();
+});
+
 /* ---------- 도면 보기 ---------- */
 const vp=$("#vp"), base=$("#base"), detail=$("#detail"), pinLayer=$("#pinLayer");
 const V={drawing:null,pdf:null,page:null,pageNo:1,pw:0,ph:0,ps:1,tx:0,ty:0,k:1,pins:[],mode:"view",sel:null,renderTask:null,detailTask:null,detailJob:0};
@@ -303,8 +492,10 @@ async function openDrawing(id){
   await loadPdfjs();
   if(V.pdf){V.pdf.destroy();V.pdf=null;}
   V.pdf=await pdfjsLib.getDocument({data:f.data.slice(0)}).promise;
-  V.pins=await pinsOf(id);
+  V.pins=(await pinsOf(id)).filter(p=>!p.deleted);
+  for(const p of V.pins) if(p.photos.some(x=>!x.k)){ p.photos.forEach(x=>{if(!x.k)x.k=uid();}); await dbPut("pins",p); }
   await showPage(1);
+  syncPins();
 }
 async function showPage(n){
   V.pageNo=n; $("#pgTxt").textContent=`${n}/${V.drawing.pages}`;
@@ -435,16 +626,16 @@ function pdfPoint(nx,ny){   // 원본 PDF 좌표 (내보내기에서 핀을 정�
   const v=V.page.getViewport({scale:1}); const [x,y]=v.convertToPdfPoint(nx*V.pw,ny*V.ph); return {px:x,py:y};
 }
 async function addPin(nx,ny){
-  const no=V.pins.reduce((m,p)=>Math.max(m,p.no),0)+1, now=Date.now();
-  const pin={id:uid(),drawingId:V.drawing.id,page:V.pageNo,nx,ny,...pdfPoint(nx,ny),no,status:"open",trade:"",text:"",photos:[],created:now,updated:now};
-  V.pins.push(pin); await dbPut("pins",pin);
+  const no=(await pinsOf(V.drawing.id)).reduce((m,p)=>Math.max(m,p.no),0)+1, now=Date.now();
+  const pin={id:uid(),drawingId:V.drawing.id,page:V.pageNo,nx,ny,...pdfPoint(nx,ny),no,status:"open",trade:"",text:"",photos:[],by:cloud.name||"",created:now,updated:now};
+  V.pins.push(pin); await savePin(pin);
   V.mode="view"; updateModeUI(); openPin(pin.id);
 }
 async function movePin(nx,ny){
   const p=V.pins.find(q=>q.id===V.sel); V.mode="view"; updateModeUI();
   if(!p) return;
-  Object.assign(p,{nx,ny,...pdfPoint(nx,ny),page:V.pageNo,updated:Date.now()});
-  await dbPut("pins",p); drawPins(); toast(`${p.no}번 핀을 옮겼습니다`);
+  Object.assign(p,{nx,ny,...pdfPoint(nx,ny),page:V.pageNo});
+  await savePin(p); drawPins(); toast(`${p.no}번 핀을 옮겼습니다`);
 }
 function updateModeUI(){
   $("#addBtn").classList.toggle("on",V.mode==="add");
@@ -459,7 +650,7 @@ $("#backBtn").addEventListener("click",()=>{
   $("#viewer").hidden=true; $("#home").hidden=false; V.mode="view";
   if(V.renderTask){try{V.renderTask.cancel();}catch(e){}} V.page=null;
   if(V.pdf){V.pdf.destroy();V.pdf=null;}
-  renderHome();
+  V.drawing=null; V.pins=[]; renderHome(); syncDrawings();
 });
 $("#prevPg").addEventListener("click",()=>{if(V.pageNo>1)showPage(V.pageNo-1);});
 $("#nextPg").addEventListener("click",()=>{if(V.pageNo<V.drawing.pages)showPage(V.pageNo+1);});
@@ -479,39 +670,44 @@ async function openPin(id){
   $("#tradeList").innerHTML=trades.map(t=>`<option value="${esc(t)}">`).join("");
   renderPhotos(p);
   openSheet("#pinSheet");
-  onSheetClose=()=>{V.sel=null;freeUrls();drawPins();};
+  onSheetClose=()=>{flushSave();V.sel=null;freeUrls();drawPins();schedulePush();};
 }
 function setStatusUI(p){
   document.querySelectorAll("#pStatus button").forEach(b=>b.classList.toggle("on",b.dataset.v===(p.status||"open")));
   $("#pBadge").classList.toggle("done",p.status==="done");
-  $("#pDates").innerHTML=`등록 ${fmtDate(p.created)}`+(p.status==="done"&&p.doneAt?`<br>조치완료 ${fmtDate(p.doneAt)}`:"");
+  $("#pDates").innerHTML=`등록 ${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}`+(p.status==="done"&&p.doneAt?`<br>조치완료 ${fmtDate(p.doneAt)}`:"")+(p.editor&&p.editor!==p.by?`<br>마지막 수정 ${esc(p.editor)}`:"");
 }
 function renderPhotos(p){
   freeUrls();
-  $("#pPhotos").innerHTML=p.photos.map((ph,i)=>`<div class="ph" data-i="${i}"><img src="${photoUrl(ph)}" alt=""></div>`).join("")
+  $("#pPhotos").innerHTML=p.photos.map((ph,i)=>`<div class="ph" data-i="${i}">${ph.data?`<img src="${photoUrl(ph)}" alt="">`:`<div class="phw">받는 중…</div>`}</div>`).join("")
     +`<button class="add" id="addPhoto"><b>＋</b>사진 추가</button>`;
+  p.photos.forEach((ph,i)=>{ if(ph.data) return;
+    ensurePhoto(p,ph).then(ok=>{ const el=document.querySelector(`#pPhotos .ph[data-i="${i}"]`);
+      if(el&&V.sel===p.id) el.innerHTML=ok?`<img src="${photoUrl(ph)}" alt="">`:`<div class="phw">사진을 받지 못함</div>`; }); });
 }
 const selPin=()=>V.pins.find(q=>q.id===V.sel);
 let saveT=null;
-function saveSoon(){clearTimeout(saveT);saveT=setTimeout(()=>{const p=selPin();if(p){p.updated=Date.now();dbPut("pins",p);}},300);}
+let saveP=null;
+function saveSoon(){saveP=selPin();clearTimeout(saveT);saveT=setTimeout(flushSave,400);}
+function flushSave(){clearTimeout(saveT);if(saveP){const p=saveP;saveP=null;savePin(p);}}
 $("#pTrade").addEventListener("input",e=>{const p=selPin();if(p){p.trade=e.target.value;saveSoon();}});
 $("#pText").addEventListener("input",e=>{const p=selPin();if(p){p.text=e.target.value;saveSoon();}});
 $("#pStatus").addEventListener("click",e=>{
   const b=e.target.closest("button"),p=selPin(); if(!b||!p) return;
-  p.status=b.dataset.v; p.doneAt=p.status==="done"?Date.now():null; p.updated=Date.now();
-  dbPut("pins",p); setStatusUI(p); drawPins();
+  p.status=b.dataset.v; p.doneAt=p.status==="done"?Date.now():null;
+  savePin(p); setStatusUI(p); drawPins();
 });
 $("#pPhotos").addEventListener("click",e=>{
   if(e.target.closest("#addPhoto")){$("#photoInput").click();return;}
   const ph=e.target.closest(".ph"); if(!ph) return;
-  const p=selPin(), i=+ph.dataset.i;
+  const p=selPin(), i=+ph.dataset.i; if(!p.photos[i].data) return;
   $("#imgViewImg").src=photoUrl(p.photos[i]); $("#imgView").hidden=false; $("#imgView").dataset.i=i;
 });
 $("#imgClose").addEventListener("click",()=>$("#imgView").hidden=true);
 $("#imgDel").addEventListener("click",async()=>{
   const p=selPin(), i=+$("#imgView").dataset.i;
   if(!p||!confirm("이 사진을 삭제할까요?")) return;
-  p.photos.splice(i,1); p.updated=Date.now(); await dbPut("pins",p);
+  p.photos.splice(i,1); await savePin(p);
   $("#imgView").hidden=true; renderPhotos(p);
 });
 function loadImage(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();
@@ -526,8 +722,8 @@ async function shrinkPhoto(file){   // 긴 변 1600px JPEG로 줄여 저장 (휴
 $("#photoInput").addEventListener("change",async e=>{
   const files=[...e.target.files]; e.target.value=""; const p=selPin(); if(!p||!files.length) return;
   toast("사진 넣는 중…",30000);
-  try{ for(const f of files) p.photos.push(await shrinkPhoto(f));
-    p.updated=Date.now(); await dbPut("pins",p); renderPhotos(p); $("#toast").hidden=true;
+  try{ for(const f of files) p.photos.push({k:uid(),...await shrinkPhoto(f)});
+    await savePin(p); renderPhotos(p); $("#toast").hidden=true;
   }catch(err){toast(err.message,3000);}
 });
 $("#moveBtn").addEventListener("click",()=>{
@@ -535,7 +731,9 @@ $("#moveBtn").addEventListener("click",()=>{
 });
 $("#delPin").addEventListener("click",async()=>{
   const p=selPin(); if(!p||!confirm(`${p.no}번 핀을 삭제할까요?`)) return;
-  V.pins=V.pins.filter(q=>q.id!==p.id); await dbDel("pins",p.id); closeSheets(); toast(`${p.no}번 핀을 삭제했습니다`);
+  V.pins=V.pins.filter(q=>q.id!==p.id);
+  if(cloudOn()&&V.drawing.cloud){p.deleted=true;p.photos=[];await savePin(p);} else await dbDel("pins",p.id);
+  closeSheets(); toast(`${p.no}번 핀을 삭제했습니다`);
 });
 
 /* ---------- 핀 목록 ---------- */
@@ -549,7 +747,7 @@ function renderList(){
   $("#lItems").innerHTML=list.length?list.map(p=>`<div class="li" data-id="${p.id}">
     <span class="badge${p.status==="done"?" done":""}">${p.no}</span>
     <div class="t"><div class="t1">${esc(p.trade||"업체 미입력")}</div><div class="t2">${esc(p.text||"(내용 없음)")}</div>
-    <div class="t3">${V.drawing.pages>1?p.page+"쪽 · ":""}${fmtDate(p.created)}${p.photos.length?" · 사진 "+p.photos.length:""}</div></div></div>`).join("")
+    <div class="t3">${V.drawing.pages>1?p.page+"쪽 · ":""}${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}${p.photos.length?" · 사진 "+p.photos.length:""}</div></div></div>`).join("")
     :`<div class="empty" style="padding:30px">핀이 없습니다</div>`;
 }
 $("#listBtn").addEventListener("click",()=>{renderList();openSheet("#listSheet");});
@@ -598,6 +796,7 @@ async function buildExport(){
   const num=await doc.embedFont(StandardFonts.HelveticaBold);
   const RED=rgb(0.83,0.09,0.18), GREEN=rgb(0.08,0.5,0.24), WHITE=rgb(1,1,1), INK=rgb(0.12,0.16,0.22), SUB=rgb(0.42,0.45,0.5), LINE=rgb(0.85,0.86,0.88);
   const pins=[...V.pins].sort((a,b)=>a.no-b.no);
+  for(const p of pins) for(const x of p.photos) await ensurePhoto(p,x);
 
   // 1) 도면 위에 번호 핀 (원본 도면은 그대로, 선명함 유지)
   for(const p of pins){
@@ -637,13 +836,14 @@ async function buildExport(){
     text(st,M+30,y-17,11,col);
     const head=`${p.trade||"업체 미입력"}${V.drawing.pages>1?`   ·   ${p.page}쪽`:""}`;
     text(head,M+30+kor.widthOfTextAtSize(st,11)+10,y-17,11);
-    const dt=`등록 ${fmtDate(p.created)}`+(p.status==="done"&&p.doneAt?`  /  완료 ${fmtDate(p.doneAt)}`:"");
+    const dt=`등록 ${fmtDate(p.created)}${p.by?" "+p.by:""}`+(p.status==="done"&&p.doneAt?`  /  완료 ${fmtDate(p.doneAt)}`:"");
     text(dt,W-M-kor.widthOfTextAtSize(dt,8.5),y-16,8.5,SUB);
     y-=30;
     for(const l of lines){ if(y-15<M){newPage();} text(l,M+30,y-11,10.5); y-=15; }
     for(let i=0;i<p.photos.length;i+=3){
       if(y-PH-6<M) newPage();
       for(let j=0;j<3&&i+j<p.photos.length;j++){
+        if(!p.photos[i+j].data) continue;
         const img=await doc.embedJpg(p.photos[i+j].data);
         const sc=Math.min(PW/img.width,PH/img.height), w=img.width*sc, h=img.height*sc;
         const x0=M+j*(PW+10);
@@ -658,7 +858,7 @@ async function buildExport(){
 }
 
 /* ---------- 시작 ---------- */
-renderHome();
+renderHome(); setSync("",""); syncDrawings();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
