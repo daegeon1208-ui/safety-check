@@ -15,6 +15,7 @@
  *   - 도면 쪽마다 이름(예: 지하 4층)을 붙이면 사진대지의 위치에 함께 나온다.
  *   - 다른 사람의 핀은 관리자만 고치거나 지울 수 있다. 다른 사람은 조치완료(되돌리기 포함)만 할 수 있고,
  *     완료를 누른 사람 이름과 시각이 저장된다.
+ *   - 핀마다 팀(공사·안전·품질)이 저장되고, 앱에서 팀별 색으로 보인다. 사진마다 대표 사진(★) 표시가 저장된다.
  */
 const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세요. 함께 쓸 사람에게만 알려 주세요.
 
@@ -206,8 +207,9 @@ function pinOut_(o) {
 }
 function pins_(drawingId) { return rows_('핀').list.filter(o => o.drawingId === drawingId).map(pinOut_); }
 function pinRow_(p) {
-  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '',
-    photos: (p.photos || []).map(x => ({ k: x.k, id: x.id, w: x.w, h: x.h })), donePhotos: (p.donePhotos || []).map(x => ({ k: x.k, id: x.id, w: x.w, h: x.h })) };
+  const ph = x => { const o = { k: x.k, id: x.id, w: x.w, h: x.h }; if (x.rep) o.rep = true; return o; };
+  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '', team: p.team || '',
+    photos: (p.photos || []).map(ph), donePhotos: (p.donePhotos || []).map(ph) };
   return Object.assign({}, p, { deleted: p.deleted ? 'true' : 'false', doneAt: p.doneAt || '', 'data(JSON)': JSON.stringify(extra) });
 }
 // 사진 묶음(list) 정리: 새로 온 사진은 드라이브에 저장, 앱에서 지운 사진은 휴지통으로
@@ -217,7 +219,8 @@ function syncPhotos_(list, before, photos, folderParts, prefix) {
       const blob = Utilities.newBlob(Utilities.base64Decode(photos[x.k]), 'image/jpeg', prefix + ' ' + (i + 1) + '.jpg');
       x.id = folder_(folderParts).createFile(blob).getId();
     }
-    return { k: x.k, id: x.id, w: x.w, h: x.h };
+    const o = { k: x.k, id: x.id, w: x.w, h: x.h }; if (x.rep) o.rep = true;
+    return o;
   }).filter(x => x.id);
   const keep = out.map(x => x.id);
   (before || []).forEach(x => { if (x.id && keep.indexOf(x.id) < 0) { try { DriveApp.getFileById(x.id).setTrashed(true); } catch (e) {} } });
@@ -242,7 +245,7 @@ function savePin_(p, photos, me) {
     const q = Object.assign({}, old);
     setDone(q, p.status);
     const dp = syncPhotos_(p.donePhotos, old.donePhotos, photos, ['사진', dname], old.no + '번 핀 조치완료');
-    const dpChanged = JSON.stringify(dp.map(x => x.id)) !== JSON.stringify((old.donePhotos || []).map(x => x.id));
+    const dpChanged = JSON.stringify(dp.map(x => [x.id, !!x.rep])) !== JSON.stringify((old.donePhotos || []).map(x => [x.id, !!x.rep]));
     q.donePhotos = dp;
     if (q.status !== old.status || dpChanged) { q.editor = me.name; q.updated = now; }
     writeRow_(sh, P_COLS, ex._row, pinRow_(q));

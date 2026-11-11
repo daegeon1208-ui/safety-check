@@ -54,6 +54,15 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .pin span{position:relative;display:block;text-align:center;line-height:28px;color:#fff;font-weight:700;font-size:13px}
 .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:15px;pointer-events:none}
 .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(31,41,55,.9);color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;width:max-content;max-width:calc(100% - 24px);text-align:center;pointer-events:none}
+.teambar{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--card);border-bottom:1px solid var(--line);flex:none;overflow-x:auto}
+.teambar small{font-size:12px;color:var(--sub);flex:none}
+.tchip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;font-size:13px;font-weight:600;background:var(--chip);color:var(--sub);flex:none;border:1.5px solid transparent}
+.tchip i{width:10px;height:10px;border-radius:50%;background:var(--tc);opacity:.35}
+.tchip.on{background:#fff;color:var(--ink);border-color:var(--tc)}
+.tchip.on i{opacity:1}
+.tchips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.seg.team button.on{background:var(--tc);color:#fff}
+.photos .ph .star{position:absolute;left:4px;top:4px;background:rgba(17,24,39,.75);color:#FACC15;font-size:12px;font-weight:700;padding:2px 6px;border-radius:9px}
 .pgbar{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--card);border-bottom:1px solid var(--line);flex:none}
 .pgbar>button:not(.pgmid){width:48px;height:40px;border-radius:10px;background:var(--chip);font-size:24px;font-weight:700;line-height:1;color:var(--ink);flex:none}
 .pgbar>button:disabled{opacity:.3}
@@ -169,6 +178,8 @@ header .cloud[data-state="err"] i{background:#F87171}
 .actsub{font-size:13px;color:var(--sub);margin:-4px 2px 8px}
 .alist{background:var(--chip);border-radius:14px;overflow:hidden;margin-bottom:12px}
 .exp button.arow{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:11px 14px;border-radius:0;background:none;color:var(--ink);text-align:left;font-weight:600;font-size:15.5px;border-bottom:1px solid rgba(0,0,0,.06)}
+.exp button.tchip{display:inline-flex;width:auto;margin:0;padding:7px 12px;border-radius:16px;background:var(--chip);color:var(--sub);font-weight:600;font-size:14px;text-align:left}
+.exp button.tchip.on{background:#fff;color:var(--ink)}
 .exp button.arow:last-child{border-bottom:none}
 .exp button.arow:active{background:rgba(0,0,0,.06)}
 .arow .ic{width:34px;height:34px;border-radius:9px;background:var(--card);color:var(--accent);display:grid;place-items:center;flex:none;font-size:14px;font-weight:700}
@@ -201,6 +212,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <h1 id="vTitle" title="눌러서 도면 정보"></h1><span class="sync" id="syncTxt" hidden></span>
   </header>
   <div class="pgbar" id="pager" hidden><button id="prevPg" aria-label="이전 쪽">‹</button><button class="pgmid" id="pgMid"><b id="pgTxt"></b><small id="pgNum"></small></button><button id="nextPg" aria-label="다음 쪽">›</button></div>
+  <div class="teambar" id="teamBar"></div>
   <div id="vp">
     <canvas id="base"></canvas>
     <canvas id="detail" hidden></canvas>
@@ -226,6 +238,8 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p id="pLock" hidden style="margin:2px 0 8px;font-size:13px;color:var(--sub)"></p>
     <div class="lbl" style="margin-top:4px">상태</div>
     <div class="seg" id="pStatus"><button data-v="open" class="o">미조치</button><button data-v="done" class="d">조치완료</button></div>
+    <div class="lbl">팀</div>
+    <div class="seg team" id="pTeam"></div>
     <div id="pDoneBox" hidden><div class="lbl" style="color:var(--done)">조치완료 사진</div><div class="photos" id="pDonePhotos"></div></div>
     <div class="lbl">업체 / 공종</div>
     <input class="inp" id="pTrade" list="tradeList" placeholder="예: 동우건설 골조" autocomplete="off">
@@ -245,6 +259,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 <div class="sheet" id="listSheet" hidden>
   <div class="sh"><h2 id="lTitle">핀 목록</h2><button class="x" data-close>✕</button></div>
   <div class="sb">
+    <div class="tchips" id="lTeams"></div>
     <div class="seg" id="lFilter"><button data-v="all" class="a on">전체</button><button data-v="open" class="o">미조치</button><button data-v="done" class="d">조치완료</button></div>
     <div id="lItems" style="margin-top:6px"></div>
   </div>
@@ -319,8 +334,10 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>4. 핀 창에서 상태(미조치/조치완료), 업체, 내용, 사진을 넣습니다. 적는 즉시 저장됩니다.</p>
     <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀도 꾹 눌러 끌거나, 핀 창의 위치 옮기기로 옮깁니다. 위치를 맞춘 뒤 가운데 <b>핀 버튼</b>을 눌러야 고정되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다. 사각형은 끌어 그린 뒤 모서리 손잡이로, 다각형은 점을 차례로 누른 뒤 점을 꾹 누르거나 바깥 손잡이를 끌어 다듬고 핀 버튼으로 고정합니다.</p>
     <p>· 찍힌 핀을 누르면 위에는 그 핀이 가운데 오게 도면이, 아래에는 핀 내용이 반씩 보입니다. 손잡이를 위로 올리면 내용이 크게, 내리면 다시 반반, 한 번 더 내리면 닫힙니다.</p>
-    <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(핀 번호·상태·업체·내용·사진·위치도)를 PDF 한 파일로 보낼 수 있습니다.</p>
-    <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 참여자(사람별 핀 색)를 봅니다. 핀 색은 사람마다 다르고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
+    <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(한 쪽에 핀 2개: 조치 전·후 대표 사진, 내용, 위치도)를 PDF 한 파일로 보낼 수 있습니다. 내보낼 팀을 먼저 고릅니다.</p>
+    <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
+    <p>· <b>대표 사진</b>: 사진이 여러 장이면 사진을 눌러 크게 본 뒤 <b>☆ 대표 사진으로</b>를 누르세요. 사진대지에는 조치 전·조치 후 대표 사진이 한 장씩 들어갑니다(안 고르면 첫 사진).</p>
+    <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 팀별 핀 수, 참여자를 봅니다. 핀 색은 팀별이고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
     <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
     <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 손가락으로 끌어 그리고, 다각형은 꼭짓점을 차례로 누릅니다. 다 됐으면 핀 버튼으로 고정합니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
     <p>· <b>캡처</b>: 내보내기 → 부분 캡처를 누르고 한 손가락으로 영역을 끌어 그리면 그 부분이 그림으로 만들어집니다. 핀 표시 스위치로 핀을 넣거나 뺄 수 있고, 보내기·복사·저장할 수 있습니다.</p>
@@ -335,13 +352,13 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <div class="viewer-img" id="imgView" hidden>
   <img id="imgViewImg" alt="">
-  <div class="bar"><button class="del" id="imgDel">사진 삭제</button><button id="imgClose">닫기</button></div>
+  <div class="bar"><button class="del" id="imgDel">사진 삭제</button><button id="imgRep">☆ 대표 사진으로</button><button id="imgClose">닫기</button></div>
 </div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
 "use strict";
-const APP_VER="3.1";
+const APP_VER="3.2";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -575,7 +592,7 @@ async function copyDrawing(d){
     await dbPut("drawings",{id,name:nm.trim(),pages:d.pages,pageNames:(d.pageNames||[]).slice(),created:now,opened:now,by:cloud.name||""});
     if(how==="pins"){
       for(const p of (await pinsOf(d.id)).filter(q=>!q.deleted)){
-        const cp=async l=>{ const out=[]; for(const x of l||[]){ await ensurePhoto(p,x); if(x.data) out.push({k:uid(),type:x.type||"image/jpeg",data:x.data.slice(0),w:x.w,h:x.h}); } return out; };
+        const cp=async l=>{ const out=[]; for(const x of l||[]){ await ensurePhoto(p,x); if(x.data) out.push({k:uid(),type:x.type||"image/jpeg",data:x.data.slice(0),w:x.w,h:x.h,rep:x.rep||undefined}); } return out; };
         const np={...JSON.parse(JSON.stringify({...p,photos:[],donePhotos:[]})),id:uid(),drawingId:id,photos:await cp(p.photos),donePhotos:await cp(p.donePhotos),
           dirty:false,serverUpdated:null,by:p.by,created:p.created,updated:now};
         await dbPut("pins",np);
@@ -588,7 +605,7 @@ async function copyDrawing(d){
 
 /* 도면 정보: 올린 사람·시각, 최근 핀 변경, 참여자(사람별 핀 색) */
 async function showInfo(d){
-  const pins=(await pinsOf(d.id)).filter(p=>!p.deleted), cOf=colorsOf(pins);
+  const pins=(await pinsOf(d.id)).filter(p=>!p.deleted), cOf=()=>"#9CA3AF";
   const o=pins.filter(p=>p.status!=="done").length, zones=pins.filter(p=>p.shape).length;
   const last=pins.reduce((m,p)=>(p.updated||0)>(m?m.updated||0:-1)?p:m,null);
   const ppl={};
@@ -604,9 +621,12 @@ async function showInfo(d){
     <div class="kv"><b>공유</b><span>${shared?"구글 공유 중":"이 휴대폰에만 저장"}</span></div>
     <div class="kv"><b>핀</b><span>전체 ${pins.length} · 미조치 ${o} · 완료 ${pins.length-o}${zones?` · 구역 ${zones}`:""}</span></div>
     <div class="kv"><b>최근 핀 변경</b><span>${last?`${fmtDate(last.updated)} · ${last.no}번${(last.editor||last.by)?" · "+esc(last.editor||last.by):""}`:"-"}</span></div>
-    <div class="lbl">참여자 (핀 색)</div>
+    <div class="lbl">팀별 핀 (핀 색)</div>
+    ${TEAMS.map(([v,n,c])=>{const l=pins.filter(p=>p.team===v), lo=l.filter(p=>p.status!=="done").length; return `<div class="who"><i style="background:${c}"></i>${n}<small>핀 ${l.length}개 · 미조치 ${lo}</small></div>`;}).join("")}
+    ${pins.some(p=>!p.team)?`<div class="who"><i style="background:${NO_TEAM}"></i>팀 없음<small>핀 ${pins.filter(p=>!p.team).length}개</small></div>`:""}
+    <div class="lbl">참여자</div>
     ${rows.length?rows.map(r=>`<div class="who"><i style="background:${r.col}"></i>${esc(r.n||"이름 없음")}<small>${r.made?`핀 ${r.made}개`:"수정만"}<br>${r.last?fmtDate(r.last):""}</small></div>`).join(""):`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}
-    <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 처음 찍은 사람별로 정해집니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
+    <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 팀별(공사팀 파랑 · 안전팀 주황 · 품질팀 보라)입니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
   $("#infoPages").onclick=()=>editPages(d);
   $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").textContent=d.name+" ⓘ";} showInfo(d); renderHome(); } };
   openSheet("#infoSheet");
@@ -712,7 +732,7 @@ async function pushDirty_(drawingId){
     if(dirty.length) setSync("wait",`보내는 중 ${dirty.length}`);
     for(const p0 of dirty){
       if(p0.deleted){ await api({action:"deletePin",id:p0.id}); await dbDel("pins",p0.id); continue; }
-      const photos={}, out=l=>(l||[]).map(x=>{ if(!x.k)x.k=uid(); if(!x.id&&x.data) photos[x.k]=bufToB64(x.data); return {k:x.k,id:x.id||null,w:x.w,h:x.h}; });
+      const photos={}, out=l=>(l||[]).map(x=>{ if(!x.k)x.k=uid(); if(!x.id&&x.data) photos[x.k]=bufToB64(x.data); return {k:x.k,id:x.id||null,w:x.w,h:x.h,rep:x.rep?true:undefined}; });
       const pin={...p0,photos:out(p0.photos),donePhotos:out(p0.donePhotos)};
       delete pin.dirty; delete pin.serverUpdated;
       const j=await api({action:"savePin",item:pin,photos});
@@ -748,13 +768,13 @@ async function syncPins(){
       if(sp.deleted){ if(l){ await dbDel("pins",l.id); V.pins=V.pins.filter(q=>q.id!==l.id); changed=true; } continue; }
       if(l&&l.serverUpdated===sp.updated) continue;
       const np={...sp,deleted:false,dirty:false,serverUpdated:sp.updated,
-        photos:(sp.photos||[]).map(x=>{const lp=l&&l.photos.find(y=>y.id===x.id);return lp||{...x,type:"image/jpeg"};}),
-        donePhotos:(sp.donePhotos||[]).map(x=>{const lp=l&&(l.donePhotos||[]).find(y=>y.id===x.id);return lp||{...x,type:"image/jpeg"};})};
+        photos:(sp.photos||[]).map(x=>{const lp=l&&l.photos.find(y=>y.id===x.id);return lp?Object.assign(lp,{rep:x.rep||undefined}):{...x,type:"image/jpeg"};}),
+        donePhotos:(sp.donePhotos||[]).map(x=>{const lp=l&&(l.donePhotos||[]).find(y=>y.id===x.id);return lp?Object.assign(lp,{rep:x.rep||undefined}):{...x,type:"image/jpeg"};})};
       await dbPut("pins",np);
       const i=V.pins.findIndex(q=>q.id===np.id); if(i>=0) V.pins[i]=np; else V.pins.push(np);
       changed=true;
     }
-    if(changed){ drawPins(); if(!$("#listSheet").hidden) renderList(); }
+    if(changed){ renderTeamBar(); drawPins(); if(!$("#listSheet").hidden) renderList(); }
     const left=(await pinsOf(d.id)).filter(p=>p.dirty).length;
     setSync(left?"wait":"on", left?`보낼 것 ${left}`:"공유 중");
   }catch(err){
@@ -956,6 +976,7 @@ async function openDrawing(id,pageNo){
   if(V.pdf.numPages!==d.pages){ d.pages=V.pdf.numPages; dbPut("drawings",d); }
   V.pins=(await pinsOf(id)).filter(p=>!p.deleted);
   for(const p of V.pins) if(p.photos.some(x=>!x.k)){ p.photos.forEach(x=>{if(!x.k)x.k=uid();}); await dbPut("pins",p); }
+  renderTeamBar();
   await showPage(Math.min(pageNo||1,d.pages));
   syncPins();
 }
@@ -1007,7 +1028,27 @@ function apply(){
 }
 /* 사람별 핀 색: 도면에서 처음 핀을 찍은 순서대로 색을 정한다 */
 const PALETTE=["#D3162F","#2563EB","#9333EA","#EA580C","#0891B2","#DB2777","#4D7C0F","#92400E","#0F766E","#4338CA"];
-function colorsOf(pins){
+/* 팀: 핀 색은 팀별로. 팀 없는 예전 핀은 회색 */
+const TEAMS=[["공사","공사팀","#2563EB"],["안전","안전팀","#EA580C"],["품질","품질팀","#9333EA"]], NO_TEAM="#6B7280";
+const teamColor=t=>(TEAMS.find(x=>x[0]===t)||[0,0,NO_TEAM])[2];
+const teamName=t=>(TEAMS.find(x=>x[0]===t)||[0,"팀 없음"])[1];
+let teamFilter=new Set(TEAMS.map(x=>x[0]).concat([""]));
+try{ const f=JSON.parse(localStorage.getItem("teamFilter")||"null"); if(Array.isArray(f)&&f.length) teamFilter=new Set(f); }catch(e){}
+const saveTeamFilter=()=>{ try{localStorage.setItem("teamFilter",JSON.stringify([...teamFilter]));}catch(e){} };
+const teamShown=p=>p.id==="temp"||teamFilter.has(p.team||"")||V.sel===p.id||(V.pending&&V.pending.pin===p);
+const visPins=()=>V.pins.filter(teamShown);
+/* 팀 고르기 칩: sel은 Set, 바뀌면 onChange */
+function teamChips(sel,withNone){ return TEAMS.map(([v,n,c])=>[v,n,c]).concat(withNone?[["","팀 없음",NO_TEAM]]:[])
+  .map(([v,n,c])=>`<button class="tchip${sel.has(v)?" on":""}" data-team="${v}" style="--tc:${c}"><i></i>${n}</button>`).join(""); }
+function toggleTeam(sel,v){ if(sel.has(v)){ if(sel.size>1) sel.delete(v); } else sel.add(v); }
+function renderTeamBar(){
+  const none=V.pins.some(p=>p.id!=="temp"&&!p.team);
+  $("#teamBar").innerHTML=`<small>보기</small>`+teamChips(teamFilter,none);
+}
+$("#teamBar").addEventListener("click",e=>{ const b=e.target.closest("[data-team]"); if(!b) return;
+  toggleTeam(teamFilter,b.dataset.team); saveTeamFilter(); renderTeamBar(); drawPins(); });
+function colorsOf(pins){ return p=>teamColor(p.team); }
+function colorsOfPeople(pins){
   const first={}; pins.forEach(p=>{const n=p.by||""; if(!(n in first)||p.created<first[n]) first[n]=p.created||0;});
   const m={}; Object.keys(first).sort((a,b)=>first[a]-first[b]).forEach((n,i)=>m[n]=PALETTE[i%PALETTE.length]);
   return p=>m[p.by||""]||PALETTE[0];
@@ -1018,7 +1059,7 @@ const scr=([nx,ny])=>[V.tx+nx*V.pw*V.k, V.ty+ny*V.ph*V.k];
 function drawShapes(){
   colorOf=colorsOf(V.pins.filter(q=>q.id!=="temp"));
   const svg=$("#shapeLayer"); let h="";
-  for(const p of V.pins){ if(p.page!==V.pageNo||!p.shape) continue;
+  for(const p of visPins()){ if(p.page!==V.pageNo||!p.shape) continue;
     const col=colorOf(p), done=p.status==="done", sel=V.sel===p.id||(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p);
     if(p.shape.type==="sketch"){
       strokesOf(p.shape).forEach(st=>{ h+=`<polyline points="${st.map(q=>scr(q).join(",")).join(" ")}" fill="none" stroke="${sel?"#FBBF24":col}" stroke-opacity="${done&&!sel?0.5:0.95}" stroke-width="${sel?4:3}" stroke-linecap="round" stroke-linejoin="round"/>`; });
@@ -1079,7 +1120,7 @@ function inShape(sh,[x,y],tol){
 }
 function drawPins(){
   drawShapes();
-  const list=V.pins.filter(p=>p.page===V.pageNo).sort((a,b)=>a.no-b.no);
+  const list=visPins().filter(p=>p.page===V.pageNo).sort((a,b)=>a.no-b.no);
   pinLayer.innerHTML=list.map(p=>{
     const x=V.tx+p.nx*V.pw*V.k, y=V.ty+p.ny*V.ph*V.k;
     return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p)?" drag":""}" style="left:${x}px;top:${y}px;--pc:${p.id==="temp"?"#D3162F":colorOf(p)}"><span>${p.no}</span>${p.status==="done"?'<i class="ck">✓</i>':""}</div>`;
@@ -1117,13 +1158,13 @@ let lpTimer=null;
 function clearLP(){clearTimeout(lpTimer);lpTimer=null;}
 function pinAt(p){   // 손가락 아래(핀 머리까지 넉넉하게) 있는 핀
   let best=null,bd=1e9;
-  for(const q of V.pins){ if(q.page!==V.pageNo) continue;
+  for(const q of visPins()){ if(q.page!==V.pageNo) continue;
     const x=V.tx+q.nx*V.pw*V.k, y=V.ty+q.ny*V.ph*V.k-18, d=Math.hypot(p.x-x,p.y-y);
     if(d<bd){bd=d;best=q;} }
   if(best&&bd<30) return best;
   const n=[(p.x-V.tx)/(V.pw*V.k),(p.y-V.ty)/(V.ph*V.k)];   // 구역 안쪽을 눌러도 그 핀
   const tol=14/(Math.max(V.pw,V.ph)*V.k);
-  const inside=V.pins.filter(q=>q.page===V.pageNo&&q.shape&&inShape(q.shape,n,tol));
+  const inside=visPins().filter(q=>q.page===V.pageNo&&q.shape&&inShape(q.shape,n,tol));
   return inside.length?inside[inside.length-1]:null;
 }
 /* 꾹 누르기(0.45초): 핀 위면 그 핀을 들어 옮기고, 핀 찍기 중이면 새 핀을 손가락 위에 띄워 끌어 맞춘다 */
@@ -1317,7 +1358,10 @@ function setGeom(p){
 }
 async function addPin(nx,ny,shape){
   const no=(await pinsOf(V.drawing.id)).reduce((m,p)=>Math.max(m,p.no),0)+1, now=Date.now();
-  const pin={id:uid(),drawingId:V.drawing.id,page:V.pageNo,nx,ny,no,status:"open",trade:"",text:"",photos:[],by:cloud.name||"",created:now,updated:now};
+  let team=""; try{ team=localStorage.getItem("lastTeam")||""; }catch(e){}
+  const shownTeams=TEAMS.map(x=>x[0]).filter(t=>teamFilter.has(t));
+  if(shownTeams.length===1) team=shownTeams[0]; else if(!TEAMS.some(x=>x[0]===team)) team=TEAMS[0][0];   // 한 팀만 보고 있으면 그 팀으로
+  const pin={id:uid(),drawingId:V.drawing.id,page:V.pageNo,nx,ny,no,status:"open",team,trade:"",text:"",photos:[],by:cloud.name||"",created:now,updated:now};
   if(shape) pin.shape=shape;
   setGeom(pin);
   V.pins.push(pin); await savePin(pin);
@@ -1423,7 +1467,7 @@ async function openPin(id){
   const ed=canEdit(p);
   $("#pTrade").readOnly=$("#pText").readOnly=!ed; $("#moveBtn").hidden=$("#delPin").hidden=!ed; $("#imgDel").hidden=!ed;
   $("#pLock").hidden=ed; $("#pLock").textContent=`${p.by}님이 만든 핀입니다. 조치완료만 바꿀 수 있고, 내용은 만든 사람과 관리자만 고칠 수 있습니다.`;
-  setStatusUI(p);
+  setStatusUI(p); setTeamUI(p);
   const trades=[...new Set((await dbAll("pins")).map(q=>(q.trade||"").trim()).filter(Boolean))];
   $("#tradeList").innerHTML=trades.map(t=>`<option value="${esc(t)}">`).join("");
   renderPhotos(p);
@@ -1433,9 +1477,17 @@ async function openPin(id){
   V.split=true; requestAnimationFrame(()=>centerOnPin(p));
   onSheetClose=()=>{flushSave();V.sel=null;V.split=false;freeUrls();apply();schedulePush();};
 }
+function setTeamUI(p){
+  const ed=canEdit(p);
+  $("#pTeam").innerHTML=TEAMS.map(([v,n,c])=>`<button data-v="${v}" style="--tc:${c}" class="${p.team===v?"on":""}" ${ed?"":"disabled"}>${n}</button>`).join("");
+  $("#pBadge").style.background=p.status==="done"?"":teamColor(p.team);
+}
+$("#pTeam").addEventListener("click",e=>{ const b=e.target.closest("button"), p=selPin(); if(!b||!p||!canEdit(p)||p.team===b.dataset.v) return;
+  p.team=b.dataset.v; try{localStorage.setItem("lastTeam",p.team);}catch(_){}
+  savePin(p); setTeamUI(p); drawPins(); renderTeamBar(); });
 function setStatusUI(p){
   document.querySelectorAll("#pStatus button").forEach(b=>b.classList.toggle("on",b.dataset.v===(p.status||"open")));
-  $("#pBadge").classList.toggle("done",p.status==="done");
+  $("#pBadge").classList.toggle("done",p.status==="done"); $("#pBadge").style.background=p.status==="done"?"":teamColor(p.team);
   $("#pDates").innerHTML=`등록 ${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}`+(p.status==="done"&&p.doneAt?`<br>조치완료 ${fmtDate(p.doneAt)}${p.doneBy?" · "+esc(p.doneBy):""}`:"")+(p.editor&&p.editor!==p.by?`<br>마지막 수정 ${esc(p.editor)}`:"");
 }
 /* 사진은 두 묶음: photos(조치 전·하자 사진), donePhotos(조치완료 사진) */
@@ -1444,7 +1496,8 @@ function renderPhotos(p){
   freeUrls();
   if(!p.donePhotos) p.donePhotos=[];
   const one=(list,box,canAdd,addId,label)=>{
-    $(box).innerHTML=p[list].map((ph,i)=>`<div class="ph" data-i="${i}">${ph.data?`<img src="${photoUrl(ph)}" alt="">`:`<div class="phw">받는 중…</div>`}</div>`).join("")
+    const rep=p[list].length>1?(p[list].find(x=>x.rep)||p[list][0]):null;   // 사진대지에 들어갈 대표 사진
+    $(box).innerHTML=p[list].map((ph,i)=>`<div class="ph" data-i="${i}">${ph.data?`<img src="${photoUrl(ph)}" alt="">`:`<div class="phw">받는 중…</div>`}${ph===rep?'<span class="star">★ 대표</span>':""}</div>`).join("")
       +(canAdd?`<button class="add" id="${addId}"><b>＋</b>${label}</button>`:"");
     p[list].forEach((ph,i)=>{ if(ph.data) return;
       ensurePhoto(p,ph).then(ok=>{ const el=document.querySelector(`${box} .ph[data-i="${i}"]`);
@@ -1474,8 +1527,15 @@ function photoBoxClick(list,addId){ return e=>{
   const ph=e.target.closest(".ph"); if(!ph) return;
   const p=selPin(), i=+ph.dataset.i; if(!p[list][i].data) return;
   $("#imgViewImg").src=photoUrl(p[list][i]); $("#imgView").hidden=false; $("#imgView").dataset.i=i; $("#imgView").dataset.list=list;
-  $("#imgDel").hidden=!(list==="photos"?canEdit(p):canDonePhoto(p));
+  const can=list==="photos"?canEdit(p):canDonePhoto(p), isRep=(p[list].find(x=>x.rep)||p[list][0])===p[list][i];
+  $("#imgDel").hidden=!can; $("#imgRep").hidden=!can||p[list].length<2;
+  $("#imgRep").textContent=isRep?"★ 대표 사진":"☆ 대표 사진으로"; $("#imgRep").disabled=isRep;
 }; }
+$("#imgRep").addEventListener("click",async()=>{
+  const p=selPin(), i=+$("#imgView").dataset.i, list=$("#imgView").dataset.list||"photos"; if(!p||!p[list][i]) return;
+  p[list].forEach((x,j)=>{ if(j===i) x.rep=true; else delete x.rep; });
+  await savePin(p); $("#imgRep").textContent="★ 대표 사진"; $("#imgRep").disabled=true; renderPhotos(p); toast("사진대지에 이 사진이 들어갑니다");
+});
 $("#pPhotos").addEventListener("click",photoBoxClick("photos","addPhoto"));
 $("#pDonePhotos").addEventListener("click",photoBoxClick("donePhotos","addDonePhoto"));
 $("#imgClose").addEventListener("click",()=>$("#imgView").hidden=true);
@@ -1519,14 +1579,17 @@ function renderList(){
   const o=all.filter(p=>p.status!=="done").length;
   $("#lTitle").textContent=`핀 목록 (미조치 ${o} · 완료 ${all.length-o})`;
   document.querySelectorAll("#lFilter button").forEach(b=>b.classList.toggle("on",b.dataset.v===lFilter));
-  const list=all.filter(p=>lFilter==="all"||(lFilter==="done")===(p.status==="done"));
+  $("#lTeams").innerHTML=teamChips(teamFilter,all.some(p=>!p.team));
+  const list=all.filter(p=>teamFilter.has(p.team||"")).filter(p=>lFilter==="all"||(lFilter==="done")===(p.status==="done"));
   $("#lItems").innerHTML=list.length?list.map(p=>`<div class="li" data-id="${p.id}">
-    <span class="badge${p.status==="done"?" done":""}">${p.no}</span>
+    <span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${p.no}</span>
     <div class="t"><div class="t1">${esc(p.trade||"업체 미입력")}</div><div class="t2">${esc(p.text||"(내용 없음)")}</div>
-    <div class="t3">${pgLabel(V.drawing,p.page)?esc(pgLabel(V.drawing,p.page))+" · ":""}${p.shape?kindLabel(p)+" · ":""}${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}${p.photos.length?" · 사진 "+p.photos.length:""}</div></div></div>`).join("")
+    <div class="t3"><b style="color:${teamColor(p.team)}">${teamName(p.team)}</b> · ${pgLabel(V.drawing,p.page)?esc(pgLabel(V.drawing,p.page))+" · ":""}${p.shape?kindLabel(p)+" · ":""}${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}${p.photos.length?" · 사진 "+p.photos.length:""}</div></div></div>`).join("")
     :`<div class="empty" style="padding:30px">핀이 없습니다</div>`;
 }
 $("#listBtn").addEventListener("click",()=>{renderList();openSheet("#listSheet");});
+$("#lTeams").addEventListener("click",e=>{ const b=e.target.closest("[data-team]"); if(!b) return;
+  toggleTeam(teamFilter,b.dataset.team); saveTeamFilter(); renderTeamBar(); drawPins(); renderList(); });
 $("#lFilter").addEventListener("click",e=>{const b=e.target.closest("button");if(b){lFilter=b.dataset.v;renderList();}});
 $("#lItems").addEventListener("click",async e=>{
   const it=e.target.closest(".li"); if(!it) return;
@@ -1562,12 +1625,12 @@ async function openCapture(pts,keep){
     // 핀 크기: 캡처할 때 화면에서 보이던 크기 정도, 그림 긴 변의 1.4~3.5% 사이
     const long=Math.max(cv.width,cv.height), perScreenPx=cv.width/(w*V.k);
     const r=Math.min(Math.max(11*perScreenPx,long*0.014),long*0.035), unit=r/30;
-    for(const p of V.pins){ if(!withPins||p.page!==V.pageNo||!p.shape) continue;
+    for(const p of visPins()){ if(!withPins||p.page!==V.pageNo||!p.shape) continue;
       const col=hexRgb(colorOf(p)).join(","), closed=traceShape(ctx,p.shape,P);
       ctx.lineCap=ctx.lineJoin="round";
       ctx.setLineDash(p.status==="done"&&closed?[14*unit,10*unit]:[]); if(closed){ ctx.fillStyle=`rgba(${col},.15)`; ctx.fill(); }
       ctx.strokeStyle=`rgba(${col},${closed?.9:p.status==="done"?.5:.95})`; ctx.lineWidth=(closed?5:7)*unit; ctx.stroke(); ctx.setLineDash([]); }
-    for(const p of [...V.pins].sort((a,b)=>a.no-b.no)){ if(!withPins||p.page!==V.pageNo) continue;
+    for(const p of visPins().sort((a,b)=>a.no-b.no)){ if(!withPins||p.page!==V.pageNo) continue;
       const [x,y]=P([p.nx,p.ny]); if(x<-2*r||y<-2*r||x>cv.width+2*r||y>cv.height+2*r) continue;
       drawPinMark(ctx,x,y,r,p.no,colorOf(p),p.status==="done"); }
     CAP.base=cv;
@@ -1665,14 +1728,28 @@ $("#expBtn").addEventListener("click",async()=>{
   if(v==="cap") setMode("capture"); else if(v==="pdf") showExport(V.drawing,V.pins);
 });
 /* 핀 표시 도면 + 사진대지 PDF를 만들어 보내기·저장 창을 띄운다 (도면 화면 내보내기, 목록 ⋯ 공유하기 공용) */
-async function showExport(drawing,pinList){
+async function showExport(drawing,allPins){
   const body=$("#expBody");
   openSheet("#expSheet");
-  if(!pinList.length){body.innerHTML=`<p>아직 찍은 핀이 없습니다.</p>`;return;}
+  allPins=allPins.filter(p=>p.id!=="temp"&&!p.deleted);
+  if(!allPins.length){body.innerHTML=`<p>아직 찍은 핀이 없습니다.</p>`;return;}
+  // 1) 어느 팀 것을 낼지 고르기 (처음엔 지금 보고 있는 팀)
+  const sel=new Set([...teamFilter]), none=allPins.some(p=>!p.team);
+  const pick=()=>new Promise(res=>{
+    const draw=()=>{ const n=allPins.filter(p=>sel.has(p.team||"")).length;
+      body.innerHTML=`<div class="lbl">넣을 팀 (여러 팀 고를 수 있음)</div><div class="tchips" id="expTeams">${teamChips(sel,none)}</div>
+        <p>핀 ${n}개 · 핀 표시 도면 + 사진대지 (A4 한 장에 핀 2개)</p><button id="expGo" ${n?"":"disabled"}>PDF 만들기</button>`;
+      $("#expTeams").onclick=e=>{ const b=e.target.closest("[data-team]"); if(!b) return; toggleTeam(sel,b.dataset.team); draw(); };
+      $("#expGo").onclick=()=>res(true); };
+    draw(); });
+  await pick();
+  const pinList=allPins.filter(p=>sel.has(p.team||""));
+  const teamsTxt=TEAMS.filter(t=>sel.has(t[0])).map(t=>t[1]).join("·")||"팀 없음";
   const msg=t=>{body.innerHTML=`<p>${esc(t)}</p>`;};
   msg("핀이 표시된 도면과 사진대지를 PDF로 만드는 중…");
   try{
-    const bytes=await buildExport(drawing,pinList,msg);
+    const allSel=TEAMS.every(t=>sel.has(t[0]))&&(!none||sel.has(""));
+    const bytes=await buildExport(drawing,pinList,msg,allSel?"":teamsTxt);
     let name="";
     const makeFile=()=>{
       const base=($("#expName").value.trim()||`${drawing.name}_사진대지_${dayStr(Date.now())}`).replace(/\.pdf$/i,"");
@@ -1683,7 +1760,7 @@ async function showExport(drawing,pinList){
     };
     const o=pinList.filter(p=>p.status!=="done").length;
     const canShare=navigator.canShare&&navigator.canShare({files:[new File([bytes],"a.pdf",{type:"application/pdf"})]});
-    body.innerHTML=`<p>핀 ${pinList.length}개 (미조치 ${o} · 완료 ${pinList.length-o}) · 도면 + 사진대지</p>
+    body.innerHTML=`<p>${esc(teamsTxt)} · 핀 ${pinList.length}개 (미조치 ${o} · 완료 ${pinList.length-o}) · 도면 + 사진대지</p>
       <div class="lbl">파일 이름</div><input class="inp" id="expName" autocomplete="off" value="${esc(`${drawing.name}_사진대지_${dayStr(Date.now())}`)}">`
       +(canShare?`<button id="expShare">보내기 (카톡·메일·파일에 저장)</button>`:"")
       +`<a id="expOpen" class="${canShare?"sec":""}" target="_blank">PDF 열기·저장</a>`;
@@ -1736,7 +1813,7 @@ async function locCrop(full,pin,pins,aspect){
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.88));
   return await blob.arrayBuffer();
 }
-async function buildExport(drawing,pinList,progress){
+async function buildExport(drawing,pinList,progress,teamsTxt){
   if(!pdfLibReady) pdfLibReady=Promise.all([loadScript("../lib/pdf-lib.min.js"),loadScript("../lib/fontkit.umd.min.js")]);
   await pdfLibReady;
   if(!fontBytes) fontBytes=await fetch("../fonts/KoPubDotum-Medium.ttf").then(r=>{if(!r.ok)throw new Error("글꼴을 받지 못했습니다");return r.arrayBuffer();});
@@ -1774,83 +1851,72 @@ async function buildExport(drawing,pinList,progress){
     pg.drawText(s,{x:p.px+ox*Math.cos(a)-oy*Math.sin(a),y:p.py+ox*Math.sin(a)+oy*Math.cos(a),size:fs,font:num,color:WHITE,rotate:degrees(rot)});
   }
 
-  // 2) 사진대지 (A4 세로, 한 쪽에 3칸: 왼쪽 사진, 오른쪽 핀 번호·상태·업체·내용·위치도)
+  // 2) 사진대지 (A4 세로, 한 쪽에 핀 2개. 핀마다 대표 사진 하나씩: 조치 전 | 조치 후, 아래에 내용 | 위치도)
   const fulls=await pageImages(drawing,pins,progress);
-  const W=595.28,H=841.89,M=32, TOP=86, ROWS=3, GAP=10;
-  const bh=(H-TOP-M-GAP*(ROWS-1))/ROWS, PWID=(W-2*M)*0.56, IW=W-2*M-PWID, LW=50;
+  const W=595.28,H=841.89,M=30, TOP=78, PER=2, GAP=14;
+  const bh=(H-TOP-M-GAP*(PER-1))/PER;
   const wrap=(t,size,maxW)=>{const out=[];String(t||"").split(/\n/).forEach(par=>{let line="";
     for(const ch of par){ if(kor.widthOfTextAtSize(line+ch,size)>maxW&&line){out.push(line);line=ch.trimStart();} else line+=ch; }
     out.push(line);});return out;};
-  // 칸 목록: 사진마다 한 칸, 사진 없는 핀도 한 칸. 조치완료 사진이 있으면 한 칸에 '조치 전 | 조치 후'를 나란히
-  const cells=[]; pins.forEach(p=>{ const ph=p.photos.filter(x=>x.data), dp=(p.donePhotos||[]).filter(x=>x.data);
-    const n=Math.max(ph.length,dp.length,1);
-    for(let i=0;i<n;i++) cells.push({p,ph:ph[i]||null,dph:dp.length?(dp[i]||null):undefined,i,n:n>1?n:0}); });
-  const o=pins.filter(p=>p.status!=="done").length, total=Math.ceil(cells.length/ROWS);
+  const repOf=list=>{ const l=(list||[]).filter(x=>x.data); return l.find(x=>x.rep)||l[0]||null; };   // 대표 사진 (없으면 첫 사진)
+  const o=pins.filter(p=>p.status!=="done").length, total=Math.ceil(pins.length/PER);
   let page=null, crops={};
-  for(let ci=0;ci<cells.length;ci++){
-    const slot=ci%ROWS, {p,ph,i,n}=cells[ci];
+  for(let ci=0;ci<pins.length;ci++){
+    const slot=ci%PER, p=pins[ci];
     if(slot===0){
-      progress&&progress(`사진대지 만드는 중… (${ci/ROWS+1}/${total}쪽)`);
+      progress&&progress(`사진대지 만드는 중… (${ci/PER+1}/${total}쪽)`);
       page=doc.addPage([W,H]);
       const t="사 진 대 지", tw=kor.widthOfTextAtSize(t,20);
       page.drawText(t,{x:(W-tw)/2,y:H-M-20,size:20,font:kor,color:INK});
-      const nm=wrap(drawing.name,9,W-2*M-200)[0];
-      page.drawText(nm,{x:M,y:H-M-38,size:9,font:kor,color:SUB});
-      const rt=`${fmtDate(Date.now()).slice(0,10)}  ·  핀 ${pins.length} (미조치 ${o} / 완료 ${pins.length-o})  ·  ${ci/ROWS+1}/${total}`;
+      page.drawText(wrap(drawing.name,9,W-2*M-220)[0],{x:M,y:H-M-38,size:9,font:kor,color:SUB});
+      const rt=`${teamsTxt?teamsTxt+"  ·  ":""}${fmtDate(Date.now()).slice(0,10)}  ·  핀 ${pins.length} (미조치 ${o} / 완료 ${pins.length-o})  ·  ${ci/PER+1}/${total}`;
       page.drawText(rt,{x:W-M-kor.widthOfTextAtSize(rt,9),y:H-M-38,size:9,font:kor,color:SUB});
       page.drawLine({start:{x:M,y:H-TOP+8},end:{x:W-M,y:H-TOP+8},thickness:1.2,color:INK});
     }
-    const top=H-TOP-slot*(bh+GAP), bot=top-bh, col=p.status==="done"?GREEN:RED, pcol=pc(p);
-    // 바깥 테두리와 사진 칸
-    page.drawRectangle({x:M,y:bot,width:W-2*M,height:bh,borderColor:LINE,borderWidth:0.8});
-    page.drawLine({start:{x:M+PWID,y:bot},end:{x:M+PWID,y:top},thickness:0.8,color:LINE});
-    const putPhoto=async(x,bx,bwid,label)=>{   // bx~bx+bwid 칸에 사진(가운데 맞춤), label이 있으면 위에 작은 제목
-      const pad=6, lh=label?14:0, bw=bwid-2*pad, bhh=bh-2*pad-lh;
-      if(label) page.drawText(label,{x:bx+pad,y:top-pad-9,size:8.5,font:kor,color:label==="조치 후"?GREEN:SUB});
+    const top=H-TOP-slot*(bh+GAP), bot=top-bh, xl=M, xr=W-M, CW=xr-xl, done=p.status==="done", col=done?GREEN:RED, pcol=pc(p);
+    page.drawRectangle({x:xl,y:bot,width:CW,height:bh,borderColor:LINE,borderWidth:0.8});
+    // 머리줄: 번호 · 상태 · 종류 · 위치 / 업체
+    const HH=24; let yy=top;
+    page.drawRectangle({x:xl,y:yy-HH,width:CW,height:HH,color:HEAD});
+    page.drawLine({start:{x:xl,y:yy-HH},end:{x:xr,y:yy-HH},thickness:0.6,color:LINE});
+    page.drawCircle({x:xl+16,y:yy-HH/2,size:9,color:pcol});
+    { const sn=String(p.no), fs=sn.length>2?7:9; page.drawText(sn,{x:xl+16-num.widthOfTextAtSize(sn,fs)/2,y:yy-HH/2-fs*0.36,size:fs,font:num,color:WHITE}); }
+    const st=(done?"조치완료":"미조치"), stw=kor.widthOfTextAtSize(st,10.5);
+    page.drawText(st,{x:xl+32,y:yy-HH/2-3.8,size:10.5,font:kor,color:col});
+    const meta=[p.team?teamName(p.team):"",p.shape?kindLabel(p):"",pgLabel(drawing,p.page)||""].filter(Boolean).join("  ·  ");
+    if(meta) page.drawText(meta,{x:xl+32+stw+10,y:yy-HH/2-3.5,size:9.5,font:kor,color:SUB});
+    const tr=wrap(p.trade||"",10,CW*0.42)[0]; if(tr) page.drawText(tr,{x:xr-8-kor.widthOfTextAtSize(tr,10),y:yy-HH/2-3.6,size:10,font:kor,color:INK});
+    yy-=HH;
+    // 사진 줄: 조치 전 | 조치 후 (대표 사진 하나씩)
+    const PH=bh*0.56, hw=CW/2;
+    const putPhoto=async(x,bx,label,lcol,empty)=>{
+      const pad=7, lh=13, bw=hw-2*pad, bhh=PH-2*pad-lh;
+      page.drawText(label,{x:bx+pad,y:yy-pad-9,size:9,font:kor,color:lcol});
       if(x){ const img=await doc.embedJpg(x.data), sc=Math.min(bw/img.width,bhh/img.height), w=img.width*sc, h=img.height*sc;
-        page.drawImage(img,{x:bx+pad+(bw-w)/2,y:bot+pad+(bhh-h)/2,width:w,height:h}); }
-      else{ const t="사진 없음"; page.drawText(t,{x:bx+(bwid-kor.widthOfTextAtSize(t,11))/2,y:bot+(bh-lh)/2-4,size:11,font:kor,color:SUB}); }
+        page.drawImage(img,{x:bx+pad+(bw-w)/2,y:yy-PH+pad+(bhh-h)/2,width:w,height:h}); }
+      else page.drawText(empty,{x:bx+(hw-kor.widthOfTextAtSize(empty,10.5))/2,y:yy-PH/2-8,size:10.5,font:kor,color:SUB});
     };
-    if(cells[ci].dph===undefined) await putPhoto(ph,M,PWID,"");
-    else{ const hw=PWID/2; await putPhoto(ph,M,hw,"조치 전"); await putPhoto(cells[ci].dph,M+hw,hw,"조치 후");
-      page.drawLine({start:{x:M+hw,y:bot},end:{x:M+hw,y:top},thickness:0.5,color:LINE}); }
-    // 오른쪽 정보 표
-    const x0=M+PWID, x1=x0+LW, xr=W-M, VW=xr-x1-8;
-    const rowH=[22,20,0,30], locH=bh*0.42;   // 번호, 업체, 내용(남는 높이), 등록·완료(두 줄) + 위치도
-    rowH[2]=bh-rowH[0]-rowH[1]-rowH[3]-locH;
-    const labels=["번호","업체·공종","내용","등록"];
-    let yy=top;
-    labels.forEach((lb,k)=>{
-      const h=rowH[k];
-      page.drawRectangle({x:x0,y:yy-h,width:LW,height:h,color:HEAD});
-      page.drawLine({start:{x:x0,y:yy-h},end:{x:xr,y:yy-h},thickness:0.6,color:LINE});
-      page.drawText(lb,{x:x0+(LW-kor.widthOfTextAtSize(lb,8.5))/2,y:yy-(k===2?14:h/2+3),size:8.5,font:kor,color:SUB});
-      if(k===0){
-        page.drawCircle({x:x1+14,y:yy-h/2,size:8.5,color:pcol});
-        const s=String(p.no), fs=s.length>2?7:8.5; page.drawText(s,{x:x1+14-num.widthOfTextAtSize(s,fs)/2,y:yy-h/2-fs*0.36,size:fs,font:num,color:WHITE});
-        const st=(p.status==="done"?"조치완료":"미조치")+(p.shape?"  ·  "+kindLabel(p):"")+(pgLabel(drawing,p.page)?`  ·  ${pgLabel(drawing,p.page)}`:"")+(n>1?`  ·  사진 ${i+1}/${n}`:"");
-        page.drawText(st,{x:x1+28,y:yy-h/2-3.5,size:9.5,font:kor,color:col});
-      }else if(k===1){
-        page.drawText(wrap(p.trade||"-",9.5,VW)[0],{x:x1+6,y:yy-h/2-3.5,size:9.5,font:kor,color:INK});
-      }else if(k===2){
-        const maxL=Math.max(1,Math.floor((h-8)/13)); let ls=wrap(p.text||"-",9.5,VW);
-        if(ls.length>maxL){ ls=ls.slice(0,maxL); ls[maxL-1]=ls[maxL-1].slice(0,-1)+"…"; }
-        ls.forEach((l,j)=>page.drawText(l,{x:x1+6,y:yy-14-j*13,size:9.5,font:kor,color:INK}));
-      }else{   // 등록 시각(시·분까지), 완료 시각
-        const l1=`${fmtDate(p.created)}${p.by?"  "+p.by:""}`;
-        const l2=p.status==="done"&&p.doneAt?`완료 ${fmtDate(p.doneAt)}${p.doneBy?"  "+p.doneBy:""}`:"";
-        if(l2){ page.drawText(wrap(l1,8.5,VW)[0],{x:x1+6,y:yy-11.5,size:8.5,font:kor,color:INK}); page.drawText(wrap(l2,8.5,VW)[0],{x:x1+6,y:yy-24,size:8.5,font:kor,color:GREEN}); }
-        else page.drawText(wrap(l1,8.5,VW)[0],{x:x1+6,y:yy-h/2-3,size:8.5,font:kor,color:INK});
-      }
-      yy-=h;
-    });
-    page.drawLine({start:{x:x1,y:top},end:{x:x1,y:yy},thickness:0.6,color:LINE});
-    // 위치도 (핀 주변 도면)
+    await putPhoto(repOf(p.photos),xl,"조치 전",SUB,"사진 없음");
+    await putPhoto(repOf(p.donePhotos),xl+hw,"조치 후",GREEN,done?"사진 없음":"미조치");
+    page.drawLine({start:{x:xl+hw,y:yy},end:{x:xl+hw,y:yy-PH},thickness:0.6,color:LINE});
+    page.drawLine({start:{x:xl,y:yy-PH},end:{x:xr,y:yy-PH},thickness:0.6,color:LINE});
+    yy-=PH;
+    // 아래 줄: 왼쪽 내용·등록·완료, 오른쪽 위치도
+    const BH=yy-bot, LX=xl, LWID=CW*0.56, RX=xl+LWID;
+    page.drawLine({start:{x:RX,y:yy},end:{x:RX,y:bot},thickness:0.6,color:LINE});
+    const tw2=LWID-16, l1=`등록 ${fmtDate(p.created)}${p.by?"  "+p.by:""}`, l2=done&&p.doneAt?`완료 ${fmtDate(p.doneAt)}${p.doneBy?"  "+p.doneBy:""}`:"";
+    page.drawText("내용",{x:LX+8,y:yy-14,size:8.5,font:kor,color:SUB});
+    const footH=l2?30:17, maxL=Math.max(1,Math.floor((BH-22-footH)/13.5)); let ls=wrap(p.text||"-",10,tw2);
+    if(ls.length>maxL){ ls=ls.slice(0,maxL); ls[maxL-1]=ls[maxL-1].slice(0,-1)+"…"; }
+    ls.forEach((l,j)=>page.drawText(l,{x:LX+8,y:yy-29-j*13.5,size:10,font:kor,color:INK}));
+    page.drawLine({start:{x:LX+8,y:bot+footH+4},end:{x:RX-8,y:bot+footH+4},thickness:0.4,color:LINE});
+    page.drawText(wrap(l1,8.5,tw2)[0],{x:LX+8,y:bot+(l2?19:8),size:8.5,font:kor,color:INK});
+    if(l2) page.drawText(wrap(l2,8.5,tw2)[0],{x:LX+8,y:bot+7,size:8.5,font:kor,color:GREEN});
     const full=fulls[p.page];
-    if(full){   // 위치도는 가로:세로 1.45 정도로 (너무 납작하지 않게), 칸 가운데에
-      const pad=5, lh=locH-2*pad-12, lw=Math.min(xr-x0-2*pad,lh*1.45), lx=x0+(xr-x0-lw)/2;
+    if(full){
+      const pad=6, lbl=pgName(drawing,p.page)?`위치 · ${pgName(drawing,p.page)}`:"위치", lh=BH-2*pad-13, lw=Math.min(xr-RX-2*pad,lh*1.45), lx=RX+(xr-RX-lw)/2;
+      page.drawText(lbl,{x:RX+pad,y:yy-pad-8,size:8.5,font:kor,color:SUB});
       if(!crops[p.id]) crops[p.id]=await doc.embedJpg(await locCrop(full,p,pins,lw/lh));
-      page.drawText(pgName(drawing,p.page)?`위치 · ${pgName(drawing,p.page)}`:"위치",{x:x0+pad,y:yy-11,size:pgName(drawing,p.page)?9:7.5,font:kor,color:pgName(drawing,p.page)?INK:SUB});
       page.drawImage(crops[p.id],{x:lx,y:bot+pad,width:lw,height:lh});
     }
   }
