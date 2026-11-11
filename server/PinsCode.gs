@@ -12,7 +12,6 @@
  * 사람별 비밀번호: 앱에서 이름과 비밀번호를 처음 넣으면 시트 '사용자'에 등록된다(비밀번호는 암호화해서 저장).
  *   - 맨 처음 등록한 사람이 관리자가 된다. 관리자를 바꾸려면 '사용자' 시트의 admin 칸에 true / false 를 적는다.
  *   - 비밀번호를 잊으면 관리자가 '사용자' 시트에서 그 사람의 줄을 지운다 → 다시 넣는 비밀번호로 새로 등록된다.
- *   - 시트 '기록'에 누가 언제 핀을 찍고·고치고·완료하고·옮기고·지웠는지 남는다(앱의 '기록'에서 본다).
  *   - 도면 쪽마다 이름(예: 지하 4층)을 붙이면 사진대지의 위치에 함께 나온다.
  *   - 다른 사람의 핀은 관리자만 고치거나 지울 수 있다. 다른 사람은 조치완료(되돌리기 포함)만 할 수 있고,
  *     완료를 누른 사람 이름과 시각이 저장된다.
@@ -22,7 +21,6 @@ const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세
 const SS_NAME = '도면 하자 핀';
 const ROOT_NAME = '도면 하자 핀';
 const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames'];
-const L_COLS = ['time', 'when', 'drawingId', 'pinId', 'no', 'by', 'action', 'detail'];
 const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
 const P_COLS = ['id', 'drawingId', 'no', 'page', 'status', 'trade', 'text', 'by', 'editor', 'created', 'updated', 'doneAt', 'deleted', 'data(JSON)'];
 
@@ -42,12 +40,10 @@ function doPost(e) {
         case 'ping': ss_(); return out_({ ok: true, time: Date.now(), me: me });
         case 'drawings': return out_({ ok: true, drawings: drawings_(), me: me });
         case 'uploadDrawing': return out_({ ok: true, drawing: uploadDrawing_(req.drawing, req.data, me.name) });
-        case 'renameDrawing': { const old = (rows_('도면').list.find(x => x.id === req.id) || {}).name;
-          const d = patchDrawing_(req.id, { name: req.name }); log_(req.id, null, me.name, '도면 이름 바꿈', (old || '') + ' → ' + req.name); return out_({ ok: true, drawing: d }); }
-        case 'deleteDrawing': { const d = patchDrawing_(req.id, { deleted: true }); log_(req.id, null, me.name, '도면 삭제', d.name); return out_({ ok: true, drawing: d }); }
-        case 'replaceDrawingFile': { const d = replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names); log_(req.id, null, me.name, '쪽 편집', d.pages + '쪽'); return out_({ ok: true, drawing: d }); }
-        case 'setPageNames': { const d = setPageNames_(req.id, req.names); log_(req.id, null, me.name, '쪽 이름 바꿈', (d.pageNames || []).filter(String).join(', ')); return out_({ ok: true, drawing: d }); }
-        case 'logs': return out_({ ok: true, logs: logs_(req.drawingId) });
+        case 'renameDrawing': return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
+        case 'deleteDrawing': return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
+        case 'replaceDrawingFile': return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names) });
+        case 'setPageNames': return out_({ ok: true, drawing: setPageNames_(req.id, req.names) });
         case 'pins': return out_({ ok: true, pins: pins_(req.drawingId), ver: drawingVer_(req.drawingId), time: Date.now() });
         case 'savePin': return out_({ ok: true, pin: savePin_(req.item, req.photos || {}, me) });
         case 'deletePin': return out_({ ok: true, pin: deletePin_(req.id, me) });
@@ -74,10 +70,6 @@ function ss_() {
   }
   const dh = ss.getSheetByName('도면').getRange(1, 1, 1, D_COLS.length);   // 예전 시트에 새 칸(ver) 머리글 추가
   if (dh.getValues()[0][D_COLS.length - 1] !== D_COLS[D_COLS.length - 1]) dh.setValues([D_COLS]);
-  if (!ss.getSheetByName('기록')) {
-    const l = ss.insertSheet('기록');
-    l.getRange(1, 1, 1, L_COLS.length).setValues([L_COLS]); l.setFrozenRows(1);
-  }
   if (!ss.getSheetByName('사용자')) {   // 예전 버전에서 만든 시트에는 '사용자' 시트가 없다
     const u = ss.insertSheet('사용자');
     u.getRange(1, 1, 1, U_COLS.length).setValues([U_COLS]); u.setFrozenRows(1);
@@ -95,7 +87,7 @@ function folder_(parts) {
 function rows_(name) {   // [{row, obj}]
   const sh = ss_().getSheetByName(name), n = sh.getLastRow();
   if (n < 2) return { sh, list: [] };
-  const cols = name === '도면' ? D_COLS : name === '사용자' ? U_COLS : name === '기록' ? L_COLS : P_COLS;
+  const cols = name === '도면' ? D_COLS : name === '사용자' ? U_COLS : P_COLS;
   const v = sh.getRange(2, 1, n - 1, cols.length).getValues();
   return { sh, list: v.map((r, i) => { const o = {}; cols.forEach((c, j) => o[c] = r[j]); o._row = i + 2; return o; }) };
 }
@@ -158,7 +150,6 @@ function uploadDrawing_(d, data, by) {
   const now = Date.now();
   const o = { id: d.id, name: d.name, pages: d.pages || 1, fileId: file.getId(), created: d.created || now, updated: now, deleted: 'false', by: by || '' };
   writeRow_(sh, D_COLS, 0, o);
-  log_(o.id, null, o.by, '도면 올림', o.name + ' (' + o.pages + '쪽)');
   return drawingOut_(o);
 }
 function patchDrawing_(id, patch) {
@@ -204,52 +195,6 @@ function drawingFile_(id) {
   return Utilities.base64Encode(DriveApp.getFileById(o.fileId).getBlob().getBytes());
 }
 
-/* ---------- 기록 ---------- */
-// 핀을 찍고·고치고·완료하고·옮기고·지운 일을 '기록' 시트에 한 줄씩 남긴다.
-// 같은 사람이 같은 핀의 내용·사진을 10분 안에 또 고치면 새 줄 대신 앞 줄을 고친다(글자 칠 때마다 줄이 생기지 않게).
-function log_(drawingId, pin, by, action, detail, at) {
-  const sh = ss_().getSheetByName('기록'), now = Date.now();
-  const t = at && at > now - 7 * 864e5 && at <= now + 6e4 ? at : now;   // 오프라인으로 고친 것은 고친 시각으로
-  const o = { time: t, when: Utilities.formatDate(new Date(t), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'), drawingId: drawingId,
-    pinId: pin ? pin.id : '', no: pin ? pin.no : '', by: by || '', action: action, detail: detail || '' };
-  if (/^(내용 수정|사진)/.test(action)) {
-    const n = sh.getLastRow(), from = Math.max(2, n - 30);
-    if (n >= 2) {
-      const v = sh.getRange(from, 1, n - from + 1, L_COLS.length).getValues();
-      for (let i = v.length - 1; i >= 0; i--) {
-        const r = v[i];
-        if (r[3] === o.pinId && r[5] === o.by && String(r[6]).slice(0, 2) === action.slice(0, 2) && t - (+r[0]) < 6e5) {
-          if (r[6] !== action && action.indexOf('사진') === 0) o.action = '사진 추가·삭제';
-          writeRow_(sh, L_COLS, from + i, o); return;
-        }
-      }
-    }
-  }
-  writeRow_(sh, L_COLS, 0, o);
-}
-function logs_(drawingId) {
-  return rows_('기록').list.filter(o => o.drawingId === drawingId).slice(-500).reverse()
-    .map(o => ({ t: +o.time, pinId: o.pinId, no: o.no === '' ? null : +o.no, by: o.by, action: o.action, detail: o.detail }));
-}
-function snip_(t) { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > 30 ? t.slice(0, 30) + '…' : t; }
-function kind_(p) { return !p.shape ? '핀' : p.shape.type === 'sketch' ? '스케치' : '구역'; }
-function loc_(drawingId, page) {
-  const d = rows_('도면').list.find(x => x.id === drawingId) || {}, nm = names_(d.pageNames)[page - 1];
-  return nm || ((+d.pages || 1) > 1 ? page + '쪽' : '');
-}
-// 예전 핀(old)과 새 핀(p)을 비교해 무엇이 바뀌었는지
-function pinChanges_(old, p) {
-  const out = [], loc = loc_(p.drawingId, +p.page);
-  if (!old) { out.push(['찍기', [kind_(p), loc, snip_(p.text)].filter(String).join(' · ')]); return out; }
-  if ((old.status || 'open') !== (p.status || 'open')) out.push([p.status === 'done' ? '조치완료' : '미조치로 되돌림', snip_(p.text)]);
-  const moved = +old.page !== +p.page || Math.abs(+old.nx - +p.nx) > 1e-6 || Math.abs(+old.ny - +p.ny) > 1e-6;
-  if (moved) out.push(['위치 옮김', +old.page !== +p.page ? (loc_(p.drawingId, +old.page) || old.page + '쪽') + ' → ' + (loc || p.page + '쪽') : loc]);
-  if ((old.text || '') !== (p.text || '') || (old.trade || '') !== (p.trade || '')) out.push(['내용 수정', [p.trade, snip_(p.text)].filter(String).join(' · ')]);
-  const a = (old.photos || []).length, b = (p.photos || []).length;
-  if (b > a) out.push(['사진 추가', (b - a) + '장 (모두 ' + b + '장)']); else if (b < a) out.push(['사진 삭제', (a - b) + '장 (모두 ' + b + '장)']);
-  return out;
-}
-
 /* ---------- 핀 ---------- */
 function pinOut_(o) {
   let extra = {}; try { extra = JSON.parse(o['data(JSON)'] || '{}'); } catch (e) {}
@@ -261,8 +206,22 @@ function pinOut_(o) {
 }
 function pins_(drawingId) { return rows_('핀').list.filter(o => o.drawingId === drawingId).map(pinOut_); }
 function pinRow_(p) {
-  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '', photos: (p.photos || []).map(x => ({ k: x.k, id: x.id, w: x.w, h: x.h })) };
+  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '',
+    photos: (p.photos || []).map(x => ({ k: x.k, id: x.id, w: x.w, h: x.h })), donePhotos: (p.donePhotos || []).map(x => ({ k: x.k, id: x.id, w: x.w, h: x.h })) };
   return Object.assign({}, p, { deleted: p.deleted ? 'true' : 'false', doneAt: p.doneAt || '', 'data(JSON)': JSON.stringify(extra) });
+}
+// 사진 묶음(list) 정리: 새로 온 사진은 드라이브에 저장, 앱에서 지운 사진은 휴지통으로
+function syncPhotos_(list, before, photos, folderParts, prefix) {
+  const out = (list || []).map((x, i) => {
+    if (!x.id && photos[x.k]) {
+      const blob = Utilities.newBlob(Utilities.base64Decode(photos[x.k]), 'image/jpeg', prefix + ' ' + (i + 1) + '.jpg');
+      x.id = folder_(folderParts).createFile(blob).getId();
+    }
+    return { k: x.k, id: x.id, w: x.w, h: x.h };
+  }).filter(x => x.id);
+  const keep = out.map(x => x.id);
+  (before || []).forEach(x => { if (x.id && keep.indexOf(x.id) < 0) { try { DriveApp.getFileById(x.id).setTrashed(true); } catch (e) {} } });
+  return out;
 }
 function savePin_(p, photos, me) {
   const { sh, list } = rows_('핀');
@@ -277,13 +236,16 @@ function savePin_(p, photos, me) {
     else if (q.status === 'done') { q.doneAt = old.doneAt; q.doneBy = old.doneBy || ''; }
     else { q.doneAt = ''; q.doneBy = ''; }
   };
-  // 다른 사람의 핀: 관리자가 아니면 상태(조치완료)만 바꾼다
+  const dname = (rows_('도면').list.find(o => o.id === p.drawingId) || {}).name || p.drawingId;
+  // 다른 사람의 핀: 관리자가 아니면 상태(조치완료)와 조치완료 사진만 바꾼다
   if (old && old.by && old.by !== me.name && !me.admin) {
     const q = Object.assign({}, old);
     setDone(q, p.status);
-    if (q.status !== old.status) { q.editor = me.name; q.updated = now; }
+    const dp = syncPhotos_(p.donePhotos, old.donePhotos, photos, ['사진', dname], old.no + '번 핀 조치완료');
+    const dpChanged = JSON.stringify(dp.map(x => x.id)) !== JSON.stringify((old.donePhotos || []).map(x => x.id));
+    q.donePhotos = dp;
+    if (q.status !== old.status || dpChanged) { q.editor = me.name; q.updated = now; }
     writeRow_(sh, P_COLS, ex._row, pinRow_(q));
-    pinChanges_(old, q).forEach(c => log_(q.drawingId, q, me.name, c[0], c[1], p.updated));
     return pinOut_(pinRow_(q));
   }
   p.by = old ? (old.by || me.name) : me.name;   // 만든 사람은 바뀌지 않는다
@@ -293,22 +255,11 @@ function savePin_(p, photos, me) {
   const others = list.filter(o => o.drawingId === p.drawingId && o.id !== p.id);
   if (!ex && others.some(o => +o.no === +p.no)) p.no = others.reduce((m, o) => Math.max(m, +o.no), 0) + 1;
   if (ex) p.no = +ex.no;
-  // 사진: 새로 온 사진은 드라이브에 저장, 앱에서 지운 사진은 휴지통으로
-  const dname = (rows_('도면').list.find(o => o.id === p.drawingId) || {}).name || p.drawingId;
-  const before = ex ? (pinOut_(ex).photos || []) : [];
-  p.photos = (p.photos || []).map((x, i) => {
-    if (!x.id && photos[x.k]) {
-      const blob = Utilities.newBlob(Utilities.base64Decode(photos[x.k]), 'image/jpeg', p.no + '번 핀 ' + (i + 1) + '.jpg');
-      x.id = folder_(['사진', dname]).createFile(blob).getId();
-    }
-    return x;
-  }).filter(x => x.id);
-  const keep = p.photos.map(x => x.id);
-  before.forEach(x => { if (x.id && keep.indexOf(x.id) < 0) { try { DriveApp.getFileById(x.id).setTrashed(true); } catch (e) {} } });
-  const at = p.updated;
+  // 사진(조치 전)과 조치완료 사진
+  p.photos = syncPhotos_(p.photos, old ? old.photos : [], photos, ['사진', dname], p.no + '번 핀');
+  p.donePhotos = syncPhotos_(p.donePhotos, old ? old.donePhotos : [], photos, ['사진', dname], p.no + '번 핀 조치완료');
   p.updated = now;
   writeRow_(sh, P_COLS, ex ? ex._row : 0, pinRow_(p));
-  pinChanges_(old, p).forEach(c => log_(p.drawingId, p, me.name, c[0], c[1], c[0] === '찍기' ? p.created : at));
   return pinOut_(pinRow_(p));
 }
 function deletePin_(id, me) {
@@ -316,9 +267,8 @@ function deletePin_(id, me) {
   const o = list.find(x => x.id === id); if (!o) return null;
   const p = pinOut_(o);
   if (p.by && p.by !== me.name && !me.admin) return p;   // 다른 사람의 핀은 지우지 않는다(앱은 다음 동기화 때 다시 받는다)
-  (p.photos || []).forEach(x => { try { DriveApp.getFileById(x.id).setTrashed(true); } catch (e) {} });
-  log_(p.drawingId, p, me.name, '삭제', [kind_(p), loc_(p.drawingId, p.page), snip_(p.text)].filter(String).join(' · '));
-  p.deleted = true; p.editor = me.name; p.updated = Date.now(); p.photos = [];
+  (p.photos || []).concat(p.donePhotos || []).forEach(x => { try { DriveApp.getFileById(x.id).setTrashed(true); } catch (e) {} });
+  p.deleted = true; p.editor = me.name; p.updated = Date.now(); p.photos = []; p.donePhotos = [];
   writeRow_(sh, P_COLS, o._row, pinRow_(p));
   return p;
 }
