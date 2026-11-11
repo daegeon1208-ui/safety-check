@@ -201,8 +201,8 @@ header .cloud[data-state="err"] i{background:#F87171}
 <section id="home" class="screen">
   <header><h1>도면 하자 핀</h1><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">구글 공유</span></button><button class="hbtn" id="helpBtn">사용법</button></header>
   <main id="dlist"></main>
-  <button class="fab" id="importBtn">＋ 도면 PDF 불러오기</button>
-  <input type="file" id="pdfInput" accept="application/pdf,.pdf" hidden>
+  <button class="fab" id="importBtn">＋ 도면 불러오기 (PDF·DWG)</button>
+  <input type="file" id="pdfInput" hidden>
 </section>
 
 <!-- 도면 보기 -->
@@ -309,10 +309,10 @@ header .cloud[data-state="err"] i{background:#F87171}
 <div class="sheet" id="pageSheet" hidden>
   <div class="sh"><h2 id="pgTitle">쪽 편집</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp">
-    <p style="font-size:13px;color:var(--sub);margin:0 0 4px">쪽마다 이름(예: 지하 4층)을 붙이면 핀 창과 사진대지의 위치에 나옵니다. 다른 PDF의 쪽을 뒤에 더하거나, 쪽을 빼거나 순서를 바꿀 수도 있습니다. 핀이 있는 쪽은 뺄 수 없습니다. 핀은 자기 쪽을 따라 함께 옮겨집니다.</p>
+    <p style="font-size:13px;color:var(--sub);margin:0 0 4px">쪽마다 이름(예: 지하 4층)을 붙이면 핀 창과 사진대지의 위치에 나옵니다. 다른 PDF(또는 DWG)의 쪽을 뒤에 더하거나, 쪽을 빼거나 순서를 바꿀 수도 있습니다. 핀이 있는 쪽은 뺄 수 없습니다. 핀은 자기 쪽을 따라 함께 옮겨집니다.</p>
     <div id="pgList"></div>
-    <input type="file" id="pgAddInput" accept="application/pdf,.pdf" multiple hidden>
-    <button class="sec" id="pgAdd">＋ 다른 PDF 더하기</button>
+    <input type="file" id="pgAddInput" multiple hidden>
+    <button class="sec" id="pgAdd">＋ 다른 PDF·DWG 더하기</button>
     <button id="pgSave">저장</button>
     <p id="pgMsg" style="font-size:13px;color:var(--open);min-height:1.2em;margin-top:8px"></p>
   </div>
@@ -328,7 +328,8 @@ header .cloud[data-state="err"] i{background:#F87171}
 <div class="sheet" id="helpSheet" hidden>
   <div class="sh"><h2>사용법</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp">
-    <p>1. <b>도면 PDF 불러오기</b>로 도면을 고릅니다. (카톡·파일 앱에 받은 PDF)</p>
+    <p>1. <b>도면 불러오기</b>로 도면을 고릅니다. (카톡·파일 앱에 받은 PDF 또는 캐드 DWG)</p>
+    <p>· <b>DWG</b>를 고르면 휴대폰 안에서 PDF로 바꿔 넣습니다(모형 공간만, 처음 한 번 읽는 프로그램 약 6MB를 받음). 빗금 같은 무늬 해치는 빠지고, 글자는 앱 글꼴로 바뀌어 보일 수 있습니다. 구글 공유에는 바뀐 PDF가 올라갑니다.</p>
     <p>2. 두 손가락으로 벌려 확대하고, 한 손가락으로 끌어 옮깁니다.</p>
     <p>3. <b>＋ 핀 찍기</b>를 누른 뒤 도면에서 위치를 누르면 번호 핀이 생깁니다.</p>
     <p>4. 핀 창에서 상태(미조치/조치완료), 업체, 내용, 사진을 넣습니다. 적는 즉시 저장됩니다.</p>
@@ -358,7 +359,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.2";
+const APP_VER="3.3";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -502,7 +503,7 @@ async function renderHome(){
   ds.sort((a,b)=>(b.opened||b.created)-(a.opened||a.created));
   const box=$("#dlist");
   const rem=remoteOnly.filter(r=>!ds.some(d=>d.id===r.id));
-  if(!ds.length&&!rem.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 PDF 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF를 고르세요.</div>`;return;}
+  if(!ds.length&&!rem.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF나 DWG를 고르세요.</div>`;return;}
   box.innerHTML=ds.map(d=>{
     const mine=ps.filter(p=>p.drawingId===d.id&&!p.deleted), o=mine.filter(p=>p.status!=="done").length, dn=mine.length-o;
     return `<div class="dcard" data-id="${d.id}"><div class="meta"><div class="nm">${esc(d.name)}</div>
@@ -562,21 +563,35 @@ $("#dlist").addEventListener("click",async e=>{
   }
   const card=e.target.closest(".dcard"); if(card) openDrawing(card.dataset.id);
 });
+/* 고른 파일 → PDF 내용. DWG면 휴대폰 안에서 PDF로 바꾼다 (pins/dwg2pdf.js) */
+let dwgMod=null;
+async function fileToPdf(f,progress){
+  const buf=await f.arrayBuffer(), h=new Uint8Array(buf.slice(0,4));
+  const dwg=/\.dwg$/i.test(f.name)||String.fromCharCode(...h)==="AC10";
+  if(!dwg) return {data:buf,name:f.name.replace(/\.pdf$/i,""),dwg:false};
+  if(!pdfLibReady) pdfLibReady=Promise.all([loadScript("../lib/pdf-lib.min.js"),loadScript("../lib/fontkit.umd.min.js")]);
+  await pdfLibReady;
+  if(!dwgMod) dwgMod=await import("./dwg2pdf.js");
+  const {bytes}=await dwgMod.dwgToPdf(buf,progress);
+  return {data:bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),name:f.name.replace(/\.dwg$/i,""),dwg:true};
+}
 $("#importBtn").addEventListener("click",()=>$("#pdfInput").click());
 $("#pdfInput").addEventListener("change",async e=>{
   const f=e.target.files[0]; e.target.value=""; if(!f) return;
-  toast("도면을 불러오는 중…",60000);
+  toast("도면을 불러오는 중…",120000);
+  let src=null;
   try{
+    src=await fileToPdf(f,t=>toast(t,120000));
     await loadPdfjs();
-    const buf=await f.arrayBuffer();
+    const buf=src.data;
     const pdf=await pdfjsLib.getDocument({data:buf.slice(0)}).promise;
     const id=uid(), now=Date.now();
     await dbPut("files",{id,data:buf});
-    await dbPut("drawings",{id,name:f.name.replace(/\.pdf$/i,""),pages:pdf.numPages,created:now,opened:now,by:cloud.name||""});
+    await dbPut("drawings",{id,name:src.name,pages:pdf.numPages,created:now,opened:now,by:cloud.name||""});
     pdf.destroy();
     $("#toast").hidden=true;
     openDrawing(id);
-  }catch(err){console.error(err);toast("PDF를 열 수 없습니다: "+err.message,4000);}
+  }catch(err){console.error(err);toast((src&&!src.dwg||!/\.dwg$/i.test(f.name)?"PDF를 열 수 없습니다: ":"DWG를 열 수 없습니다: ")+err.message,5000);}
 });
 
 /* 도면 복사: 같은 PDF로 새 도면을 만든다. 핀·사진까지 복사할지 고른다 */
@@ -906,11 +921,12 @@ $("#pgAdd").addEventListener("click",()=>$("#pgAddInput").click());
 $("#pgAddInput").addEventListener("change",async e=>{
   const files=[...e.target.files]; e.target.value=""; if(!PE||!files.length) return;
   for(const f of files){
-    try{ const data=await f.arrayBuffer(), pdf=await pdfjsLib.getDocument({data:data.slice(0)}).promise;
-      PE.srcs.push({name:f.name.replace(/\.pdf$/i,""),data,pdf});
+    try{ const src=await fileToPdf(f,t=>toast(`${f.name}: ${t}`,120000)), data=src.data, pdf=await pdfjsLib.getDocument({data:data.slice(0)}).promise;
+      if(src.dwg) $("#toast").hidden=true;
+      PE.srcs.push({name:src.name,data,pdf});
       for(let n=1;n<=pdf.numPages;n++) PE.items.push({src:PE.srcs.length-1,n,name:"",pins:0});
       PE.changed=true;
-    }catch(err){ toast(`${f.name}: PDF를 열 수 없습니다`,3000); }
+    }catch(err){ console.error(err); toast(`${f.name}: 열 수 없습니다 (${err.message})`,4000); }
   }
   renderPages(); $("#pgList").lastElementChild&&$("#pgList").lastElementChild.scrollIntoView({block:"nearest"});
 });
