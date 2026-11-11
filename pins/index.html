@@ -47,8 +47,9 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 #detail{position:absolute;left:0;top:0;pointer-events:none}
 #pinLayer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .pin{position:absolute;width:30px;height:30px;margin:-34px 0 0 -15px}
-.pin::before{content:"";position:absolute;inset:0;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--open);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
-.pin.done::before{background:var(--done)}
+.pin::before{content:"";position:absolute;inset:0;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--pc,var(--open));border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.pin.done::before{opacity:.55}
+.pin .ck{position:absolute;right:-7px;top:-7px;width:17px;height:17px;border-radius:50%;background:var(--done);color:#fff;border:2px solid #fff;font-size:10px;font-style:normal;font-weight:700;line-height:13px;text-align:center}
 .pin.sel::before{box-shadow:0 0 0 3px #FBBF24,0 1px 3px rgba(0,0,0,.4)}
 .pin span{position:relative;display:block;text-align:center;line-height:28px;color:#fff;font-weight:700;font-size:13px}
 .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:15px;pointer-events:none}
@@ -116,6 +117,13 @@ header .cloud[data-state="err"] i{background:#F87171}
 .exp a,.exp button{display:block;width:100%;text-align:center;padding:14px;border-radius:12px;background:var(--accent);color:#fff;font-weight:600;text-decoration:none;margin-top:10px}
 .exp .sec{background:var(--chip);color:var(--ink)}
 .exp [data-v="share"]{background:var(--accent);color:#fff}
+.kv{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
+.kv b{flex:none;width:92px;color:var(--sub);font-weight:500;font-size:14px}
+.kv span{flex:1;min-width:0;word-break:break-all}
+.who{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:15px}
+.who i{width:14px;height:14px;border-radius:50%;flex:none}
+.who small{color:var(--sub);font-size:12px;margin-left:auto;text-align:right}
+.ibtn{padding:4px 10px;border-radius:8px;background:var(--chip);font-size:13px;font-weight:600;margin-left:6px}
 .exp .danger{background:#FDE8EB;color:var(--open)}
 #vTitle{cursor:pointer}
 .exp p{color:var(--sub);font-size:14px;line-height:1.6;margin:4px 0}
@@ -135,7 +143,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 <section id="viewer" class="screen" hidden>
   <header>
     <button class="hbtn" id="backBtn">‹ 목록</button>
-    <h1 id="vTitle" title="눌러서 이름 바꾸기"></h1><span class="sync" id="syncTxt" hidden></span>
+    <h1 id="vTitle" title="눌러서 도면 정보"></h1><span class="sync" id="syncTxt" hidden></span>
     <div class="pager" id="pager"><button class="hbtn" id="prevPg">‹</button><span id="pgTxt"></span><button class="hbtn" id="nextPg">›</button></div>
   </header>
   <div id="vp">
@@ -215,6 +223,12 @@ header .cloud[data-state="err"] i{background:#F87171}
   <div class="sb exp" id="capBody"></div>
 </div>
 
+<!-- 도면 정보 -->
+<div class="sheet" id="infoSheet" hidden>
+  <div class="sh"><h2>도면 정보</h2><button class="x" data-close>✕</button></div>
+  <div class="sb" id="infoBody"></div>
+</div>
+
 <!-- 도면 메뉴 -->
 <div class="sheet" id="actSheet" hidden>
   <div class="sh"><h2 id="actTitle" style="word-break:break-all"></h2><button class="x" data-close>✕</button></div>
@@ -231,7 +245,8 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>4. 핀 창에서 상태(미조치/조치완료), 업체, 내용, 사진을 넣습니다. 적는 즉시 저장됩니다.</p>
     <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀도 꾹 눌러 끌거나, 핀 창의 위치 옮기기로 옮깁니다. 옮긴 뒤 아래 <b>여기에 고정</b>을 눌러야 저장되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다.</p>
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(핀 번호·상태·업체·내용·사진·위치도)를 PDF 한 파일로 보낼 수 있습니다.</p>
-    <p>· 도면 이름은 도면 화면 위쪽 제목을 누르거나, 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
+    <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 참여자(사람별 핀 색)를 봅니다. 핀 색은 사람마다 다르고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
+    <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
     <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 두 모서리를, 다각형은 꼭짓점을 차례로 누르고 첫 점이나 완료를 누릅니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
     <p>· <b>캡처</b>: 캡처를 누르고 영역의 두 모서리를 누르면 그 부분이 핀과 함께 그림으로 만들어집니다. 보내기·복사·저장할 수 있습니다.</p>
     <p>5. 이미 찍은 핀을 누르면 다시 열립니다. <b>목록</b>에서 핀을 고르면 그 위치로 이동합니다.</p>
@@ -249,7 +264,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="1.4";
+const APP_VER="1.5";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -290,7 +305,7 @@ function loadPdfjs(){
 }
 
 /* ---------- 창 열고 닫기 ---------- */
-const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet"];
+const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet"];
 let onSheetClose=null;
 function openSheet(id){sheets.forEach(s=>$(s).hidden=(s!==id));$("#sheetBg").hidden=false;}
 function closeSheets(){const cb=onSheetClose;onSheetClose=null;sheets.forEach(s=>$(s).hidden=true);$("#sheetBg").hidden=true;if(cb)cb();}
@@ -323,9 +338,10 @@ $("#dlist").addEventListener("click",async e=>{
   const more=e.target.closest("[data-more]");
   if(more){
     const d=await dbGet("drawings",more.dataset.more), shared=cloudOn()&&d.cloud;
-    const act=await chooseAction(d.name,[["share","공유하기 (핀 표시 도면 + 사진대지 PDF)"],["rename","이름 바꾸기"],["delete",shared?"도면과 핀 모두 삭제 (함께 쓰는 사람 모두)":"도면과 핀 모두 삭제"]]);
+    const act=await chooseAction(d.name,[["info","도면 정보 (올린 사람·참여자)"],["share","공유하기 (핀 표시 도면 + 사진대지 PDF)"],["rename","이름 바꾸기"],["delete",shared?"도면과 핀 모두 삭제 (함께 쓰는 사람 모두)":"도면과 핀 모두 삭제"]]);
     try{
-      if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted)); }
+      if(act==="info"){ showInfo(d); }
+      else if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted)); }
       else if(act==="rename"){ if(await renameDrawing(d)) renderHome(); }
       else if(act==="delete"){
         const ps=(await pinsOf(d.id)).filter(p=>!p.deleted);
@@ -344,7 +360,7 @@ $("#dlist").addEventListener("click",async e=>{
     try{
       const j=await api({action:"drawingFile",id:r.id});
       await dbPut("files",{id:r.id,data:b64ToBuf(j.data)});
-      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true});
+      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true,by:r.by||""});
       remoteOnly=remoteOnly.filter(x=>x.id!==r.id);
       $("#toast").hidden=true; openDrawing(r.id);
     }catch(err){toast("도면을 받지 못했습니다: "+err.message,4000);}
@@ -362,14 +378,39 @@ $("#pdfInput").addEventListener("change",async e=>{
     const pdf=await pdfjsLib.getDocument({data:buf.slice(0)}).promise;
     const id=uid(), now=Date.now();
     await dbPut("files",{id,data:buf});
-    await dbPut("drawings",{id,name:f.name.replace(/\.pdf$/i,""),pages:pdf.numPages,created:now,opened:now});
+    await dbPut("drawings",{id,name:f.name.replace(/\.pdf$/i,""),pages:pdf.numPages,created:now,opened:now,by:cloud.name||""});
     pdf.destroy();
     $("#toast").hidden=true;
     openDrawing(id);
   }catch(err){console.error(err);toast("PDF를 열 수 없습니다: "+err.message,4000);}
 });
 
-/* 도면 이름 바꾸기 (목록 ⋯ 메뉴, 도면 화면 제목 누르기) */
+/* 도면 정보: 올린 사람·시각, 최근 핀 변경, 참여자(사람별 핀 색) */
+async function showInfo(d){
+  const pins=(await pinsOf(d.id)).filter(p=>!p.deleted), cOf=colorsOf(pins);
+  const o=pins.filter(p=>p.status!=="done").length, zones=pins.filter(p=>p.shape).length;
+  const last=pins.reduce((m,p)=>(p.updated||0)>(m?m.updated||0:-1)?p:m,null);
+  const ppl={};
+  pins.forEach(p=>{ const n=p.by||""; (ppl[n]=ppl[n]||{n,made:0,last:0,col:cOf(p)}).made++; ppl[n].last=Math.max(ppl[n].last,p.created||0); });
+  pins.forEach(p=>{ const n=p.editor; if(n&&n!==p.by){ (ppl[n]=ppl[n]||{n,made:0,last:0,col:"#9CA3AF"}); ppl[n].last=Math.max(ppl[n].last,p.updated||0); } });
+  const rows=Object.values(ppl).sort((a,b)=>b.made-a.made);
+  const shared=cloudOn()&&d.cloud;
+  $("#infoBody").innerHTML=`
+    <div class="kv"><b>도면 이름</b><span>${esc(d.name)}<button class="ibtn" id="infoRename">이름 바꾸기</button></span></div>
+    <div class="kv"><b>올린 사람</b><span>${esc(d.by||(shared?"-":"이 휴대폰"))}</span></div>
+    <div class="kv"><b>올린 시각</b><span>${fmtDate(d.created)}</span></div>
+    <div class="kv"><b>쪽수</b><span>${d.pages}쪽</span></div>
+    <div class="kv"><b>공유</b><span>${shared?"구글 공유 중":"이 휴대폰에만 저장"}</span></div>
+    <div class="kv"><b>핀</b><span>전체 ${pins.length} · 미조치 ${o} · 완료 ${pins.length-o}${zones?` · 구역 ${zones}`:""}</span></div>
+    <div class="kv"><b>최근 핀 변경</b><span>${last?`${fmtDate(last.updated)} · ${last.no}번${(last.editor||last.by)?" · "+esc(last.editor||last.by):""}`:"-"}</span></div>
+    <div class="lbl">참여자 (핀 색)</div>
+    ${rows.length?rows.map(r=>`<div class="who"><i style="background:${r.col}"></i>${esc(r.n||"이름 없음")}<small>${r.made?`핀 ${r.made}개`:"수정만"}<br>${r.last?fmtDate(r.last):""}</small></div>`).join(""):`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}
+    <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 처음 찍은 사람별로 정해집니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
+  $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").textContent=d.name+" ⓘ";} showInfo(d); renderHome(); } };
+  openSheet("#infoSheet");
+}
+
+/* 도면 이름 바꾸기 (목록 ⋯ 메뉴, 도면 정보) */
 async function renameDrawing(d){
   const nm=prompt("도면 이름",d.name); if(!nm||!nm.trim()||nm.trim()===d.name) return false;
   if(cloudOn()&&d.cloud){ try{ await api({action:"renameDrawing",id:d.id,name:nm.trim()}); }catch(err){ toast("구글에 반영하지 못했습니다: "+err.message,4000); return false; } }
@@ -411,8 +452,8 @@ function schedulePush(){ if(!cloudOn()) return; clearTimeout(pushT); pushT=setTi
 async function uploadDrawing(d){
   const f=await dbGet("files",d.id);
   setSync("wait","도면 올리는 중…");
-  await api({action:"uploadDrawing",drawing:{id:d.id,name:d.name,pages:d.pages,created:d.created},data:bufToB64(f.data),by:cloud.name});
-  d.cloud=true; await dbPut("drawings",d);
+  await api({action:"uploadDrawing",drawing:{id:d.id,name:d.name,pages:d.pages,created:d.created},data:bufToB64(f.data),by:d.by||cloud.name});
+  d.cloud=true; if(!d.by) d.by=cloud.name; await dbPut("drawings",d);
   for(const p of await pinsOf(d.id)){ p.dirty=true; if(!p.by)p.by=cloud.name; p.photos.forEach(x=>{if(!x.k)x.k=uid();}); await dbPut("pins",p); }   // 이전에 찍은 핀도 함께 올린다
 }
 let homeSyncing=false;
@@ -425,7 +466,7 @@ async function syncDrawings(){
     for(const r of j.drawings){
       const l=locals.find(d=>d.id===r.id); if(!l) continue;
       if(r.deleted){ await removeLocalDrawing(r.id); continue; }
-      if(l.name!==r.name||!l.cloud){ l.name=r.name; l.cloud=true; await dbPut("drawings",l); }
+      if(l.name!==r.name||!l.cloud||(r.by&&l.by!==r.by)){ l.name=r.name; l.cloud=true; if(r.by) l.by=r.by; await dbPut("drawings",l); }
     }
     remoteOnly=live.filter(r=>!locals.some(d=>d.id===r.id));
     await renderHome();
@@ -533,7 +574,7 @@ async function openDrawing(id){
   d.opened=Date.now(); dbPut("drawings",d);
   V.drawing=d; V.sel=null; setMode("view");
   $("#home").hidden=true; $("#viewer").hidden=false;
-  $("#vTitle").textContent=d.name+" ✎";
+  $("#vTitle").textContent=d.name+" ⓘ";
   $("#pager").hidden=d.pages<2;
   $("#vLoading").hidden=false; base.style.visibility="hidden"; pinLayer.innerHTML="";
   await loadPdfjs();
@@ -584,12 +625,22 @@ function apply(){
   detail.hidden=true;
   drawPins();
 }
+/* 사람별 핀 색: 도면에서 처음 핀을 찍은 순서대로 색을 정한다 */
+const PALETTE=["#D3162F","#2563EB","#9333EA","#EA580C","#0891B2","#DB2777","#4D7C0F","#92400E","#0F766E","#4338CA"];
+function colorsOf(pins){
+  const first={}; pins.forEach(p=>{const n=p.by||""; if(!(n in first)||p.created<first[n]) first[n]=p.created||0;});
+  const m={}; Object.keys(first).sort((a,b)=>first[a]-first[b]).forEach((n,i)=>m[n]=PALETTE[i%PALETTE.length]);
+  return p=>m[p.by||""]||PALETTE[0];
+}
+let colorOf=()=>PALETTE[0];
+const hexRgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
 const scr=([nx,ny])=>[V.tx+nx*V.pw*V.k, V.ty+ny*V.ph*V.k];
 function drawShapes(){
+  colorOf=colorsOf(V.pins.filter(q=>q.id!=="temp"));
   const svg=$("#shapeLayer"); let h="";
   for(const p of V.pins){ if(p.page!==V.pageNo||!p.shape) continue;
-    const col=p.status==="done"?"#15803D":"#D3162F", sel=V.sel===p.id||(G&&G.type==="drag"&&G.pin===p);
-    h+=`<polygon points="${shapePts(p.shape).map(q=>scr(q).join(",")).join(" ")}" fill="${col}" fill-opacity="${sel?0.28:0.16}" stroke="${sel?"#FBBF24":col}" stroke-width="${sel?3:2}" stroke-linejoin="round"/>`;
+    const col=colorOf(p), done=p.status==="done", sel=V.sel===p.id||(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p);
+    h+=`<polygon points="${shapePts(p.shape).map(q=>scr(q).join(",")).join(" ")}" fill="${col}" fill-opacity="${sel?0.28:done?0.07:0.16}" stroke="${sel?"#FBBF24":col}" stroke-opacity="${done&&!sel?0.55:1}" stroke-width="${sel?3:2}" ${done?'stroke-dasharray="7 5"':""} stroke-linejoin="round"/>`;
   }
   // 그리는 중인 구역·캡처 영역
   const d=V.draft;
@@ -624,7 +675,7 @@ function drawPins(){
   const list=V.pins.filter(p=>p.page===V.pageNo).sort((a,b)=>a.no-b.no);
   pinLayer.innerHTML=list.map(p=>{
     const x=V.tx+p.nx*V.pw*V.k, y=V.ty+p.ny*V.ph*V.k;
-    return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p)?" drag":""}" style="left:${x}px;top:${y}px"><span>${p.no}</span></div>`;
+    return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p)?" drag":""}" style="left:${x}px;top:${y}px;--pc:${p.id==="temp"?"#D3162F":colorOf(p)}"><span>${p.no}</span>${p.status==="done"?'<i class="ck">✓</i>':""}</div>`;
   }).join("");
 }
 /* 확대했을 때 보이는 부분만 선명하게 다시 그린다 */
@@ -847,7 +898,7 @@ $("#modeBar").addEventListener("click",e=>{
   if(b.dataset.act==="confirm") confirmPending();
   if(b.dataset.act==="cancelmove"){ setMode("view"); drawPins(); }
 });
-$("#vTitle").addEventListener("click",async()=>{ if(V.drawing&&await renameDrawing(V.drawing)) $("#vTitle").textContent=V.drawing.name+" ✎"; });
+$("#vTitle").addEventListener("click",()=>{ if(V.drawing) showInfo(V.drawing); });
 $("#addBtn").addEventListener("click",()=>setMode(V.mode==="add"?"view":"add","point"));
 $("#capBtn").addEventListener("click",()=>setMode(V.mode==="capture"?"view":"capture"));
 $("#backBtn").addEventListener("click",()=>{
@@ -984,12 +1035,12 @@ async function openCapture(pts){
     const P=([nx,ny])=>[(nx*V.pw-x0)*sc,(ny*V.ph-y0)*sc];
     const unit=Math.max(cv.width,cv.height)/2400;
     for(const p of V.pins){ if(p.page!==V.pageNo||!p.shape) continue;
-      const col=p.status==="done"?"21,128,61":"211,22,47";
+      const col=hexRgb(colorOf(p)).join(",");
       ctx.beginPath(); shapePts(p.shape).forEach((q,i)=>{const [x,y]=P(q); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
-      ctx.fillStyle=`rgba(${col},.15)`; ctx.fill(); ctx.strokeStyle=`rgba(${col},.9)`; ctx.lineWidth=4*unit; ctx.stroke(); }
+      ctx.setLineDash(p.status==="done"?[14*unit,10*unit]:[]); ctx.fillStyle=`rgba(${col},.15)`; ctx.fill(); ctx.strokeStyle=`rgba(${col},.9)`; ctx.lineWidth=4*unit; ctx.stroke(); ctx.setLineDash([]); }
     for(const p of [...V.pins].sort((a,b)=>a.no-b.no)){ if(p.page!==V.pageNo) continue;
       const [x,y]=P([p.nx,p.ny]); if(x<-60||y<-60||x>cv.width+60||y>cv.height+60) continue;
-      drawPinMark(ctx,x,y,30*unit,p.no,p.status==="done"?"#15803D":"#D3162F"); }
+      drawPinMark(ctx,x,y,30*unit,p.no,colorOf(p),p.status==="done"); }
     const blob=await new Promise(r=>cv.toBlob(r,"image/png"));
     const now=new Date(), name=`${V.drawing.name}_캡처_${dayStr(now)}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`.replace(/[\\/:*?"<>|]/g,"_");
     capFile=new File([blob],name,{type:"image/png"});
@@ -1006,11 +1057,13 @@ async function openCapture(pts){
       catch(e){ toast("이 브라우저에서는 복사가 안 됩니다. 보내기를 써 주세요",3500); } };
   }catch(err){ console.error(err); body.innerHTML=`<p>캡처하지 못했습니다: ${esc(err.message)}</p>`; }
 }
-function drawPinMark(ctx,x,y,r,no,col){   // 앱 화면과 같은 물방울 핀 (끝이 위치)
-  ctx.save(); ctx.translate(x,y-r*1.42);
+function drawPinMark(ctx,x,y,r,no,col,done){   // 앱 화면과 같은 물방울 핀 (끝이 위치), 완료는 흐리게 + ✓
+  ctx.save(); ctx.translate(x,y-r*1.42); if(done) ctx.globalAlpha*=0.6;
   ctx.beginPath(); ctx.arc(0,0,r,Math.PI*0.75,Math.PI*0.25); ctx.lineTo(0,r*1.42); ctx.closePath();
   ctx.fillStyle=col; ctx.fill(); ctx.lineWidth=r*0.15; ctx.strokeStyle="#fff"; ctx.stroke();
   ctx.fillStyle="#fff"; ctx.font=`bold ${r*0.95}px -apple-system,sans-serif`; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(String(no),0,r*0.05);
+  if(done){ ctx.globalAlpha=1; ctx.beginPath(); ctx.arc(r*0.85,-r*0.85,r*0.5,0,Math.PI*2); ctx.fillStyle="#15803D"; ctx.fill(); ctx.lineWidth=r*0.12; ctx.strokeStyle="#fff"; ctx.stroke();
+    ctx.fillStyle="#fff"; ctx.font=`bold ${r*0.6}px -apple-system,sans-serif`; ctx.fillText("✓",r*0.85,-r*0.82); }
   ctx.restore();
 }
 
@@ -1067,6 +1120,7 @@ async function pageImages(drawing,pins,progress){
   return out;
 }
 async function locCrop(full,pin,pins,aspect){
+  const cOf=colorsOf(pins);
   const W=full.width,H=full.height, [cx,cy]=[pin.nx*W,pin.ny*H];
   let cw=Math.max(W,H)*0.2;
   if(pin.shape){ const ps=shapePts(pin.shape); const xs=ps.map(q=>q[0]*W), ys=ps.map(q=>q[1]*H);
@@ -1078,12 +1132,12 @@ async function locCrop(full,pin,pins,aspect){
   ctx.drawImage(full,x0,y0,cw,chh,0,0,ow,oh);
   const P=([nx,ny])=>[(nx*W-x0)*k,(ny*H-y0)*k];
   for(const q of pins){ if(q.page!==pin.page||!q.shape) continue;
-    const col=q.status==="done"?"21,128,61":"211,22,47", me=q===pin;
+    const col=hexRgb(cOf(q)).join(","), me=q===pin;
     ctx.beginPath(); shapePts(q.shape).forEach((t,i)=>{const [x,y]=P(t); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
     ctx.fillStyle=`rgba(${col},${me?.22:.1})`; ctx.fill(); ctx.strokeStyle=`rgba(${col},${me?1:.5})`; ctx.lineWidth=me?5:3; ctx.stroke(); }
   for(const q of pins){ if(q.page!==pin.page||q===pin) continue; const [x,y]=P([q.nx,q.ny]);
-    if(x>-40&&y>-40&&x<ow+40&&y<oh+60){ ctx.globalAlpha=.55; drawPinMark(ctx,x,y,20,q.no,q.status==="done"?"#15803D":"#D3162F"); ctx.globalAlpha=1; } }
-  const [x,y]=P([pin.nx,pin.ny]); drawPinMark(ctx,x,y,28,pin.no,pin.status==="done"?"#15803D":"#D3162F");
+    if(x>-40&&y>-40&&x<ow+40&&y<oh+60){ ctx.globalAlpha=.55; drawPinMark(ctx,x,y,20,q.no,cOf(q),q.status==="done"); ctx.globalAlpha=1; } }
+  const [x,y]=P([pin.nx,pin.ny]); drawPinMark(ctx,x,y,28,pin.no,cOf(pin),pin.status==="done");
   ctx.strokeStyle="#9CA3AF"; ctx.lineWidth=2; ctx.strokeRect(1,1,ow-2,oh-2);
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.88));
   return await blob.arrayBuffer();
@@ -1100,19 +1154,22 @@ async function buildExport(drawing,pinList,progress){
   const num=await doc.embedFont(StandardFonts.HelveticaBold);
   const RED=rgb(0.83,0.09,0.18), GREEN=rgb(0.08,0.5,0.24), WHITE=rgb(1,1,1), INK=rgb(0.12,0.16,0.22), SUB=rgb(0.42,0.45,0.5), LINE=rgb(0.55,0.57,0.6), HEAD=rgb(0.94,0.95,0.96);
   const pins=[...pinList].sort((a,b)=>a.no-b.no);
+  const cOf=colorsOf(pins), pc=p=>{const [r,g,b]=hexRgb(cOf(p));return rgb(r/255,g/255,b/255);};
   for(const p of pins){ if(p.photos.some(x=>!x.data)) progress&&progress(`${p.no}번 핀 사진 받는 중…`); for(const x of p.photos) await ensurePhoto(p,x); }
 
   // 1) 도면 위에 번호 핀·구역 (원본 도면은 그대로, 선명함 유지)
   for(const p of pins){
     const pg=doc.getPage(p.page-1); if(!pg) continue;
     if(p.shape&&p.shape.pdf){
-      const {width,height}=pg.getSize(), col=p.status==="done"?GREEN:RED;
+      const {width,height}=pg.getSize(), col=pc(p), dn=p.status==="done", bw=Math.max(width,height)*0.0015;
       const path=p.shape.pdf.map(([x,y],i)=>`${i?"L":"M"}${x},${-y}`).join(" ")+" Z";
-      pg.drawSvgPath(path,{x:0,y:0,color:col,opacity:0.15,borderColor:col,borderWidth:Math.max(width,height)*0.0015,borderOpacity:0.9});
+      pg.drawSvgPath(path,{x:0,y:0,color:col,opacity:dn?0.07:0.15,borderColor:col,borderWidth:bw,borderOpacity:dn?0.6:0.9,borderDashArray:dn?[bw*5,bw*3.5]:undefined});
     }
     const {width,height}=pg.getSize(), rot=((pg.getRotation().angle%360)+360)%360;
-    const r=Math.max(width,height)*0.0065, fs=r*1.15, col=p.status==="done"?GREEN:RED;
-    pg.drawCircle({x:p.px,y:p.py,size:r,color:col,borderColor:WHITE,borderWidth:r*0.18});
+    const r=Math.max(width,height)*0.0065, fs=r*1.15, col=pc(p), dn=p.status==="done";
+    pg.drawCircle({x:p.px,y:p.py,size:r,color:col,opacity:dn?0.55:1,borderColor:WHITE,borderWidth:r*0.18});
+    if(dn){ const a=rot*Math.PI/180, bx=r*0.8, by=r*0.8;   // 완료: 오른쪽 위 초록 점
+      pg.drawCircle({x:p.px+bx*Math.cos(a)-by*Math.sin(a),y:p.py+bx*Math.sin(a)+by*Math.cos(a),size:r*0.42,color:GREEN,borderColor:WHITE,borderWidth:r*0.1}); }
     const s=String(p.no), tw=num.widthOfTextAtSize(s,fs), a=rot*Math.PI/180;
     const ox=-tw/2, oy=-fs*0.36;
     pg.drawText(s,{x:p.px+ox*Math.cos(a)-oy*Math.sin(a),y:p.py+ox*Math.sin(a)+oy*Math.cos(a),size:fs,font:num,color:WHITE,rotate:degrees(rot)});
@@ -1142,7 +1199,7 @@ async function buildExport(drawing,pinList,progress){
       page.drawText(rt,{x:W-M-kor.widthOfTextAtSize(rt,9),y:H-M-38,size:9,font:kor,color:SUB});
       page.drawLine({start:{x:M,y:H-TOP+8},end:{x:W-M,y:H-TOP+8},thickness:1.2,color:INK});
     }
-    const top=H-TOP-slot*(bh+GAP), bot=top-bh, col=p.status==="done"?GREEN:RED;
+    const top=H-TOP-slot*(bh+GAP), bot=top-bh, col=p.status==="done"?GREEN:RED, pcol=pc(p);
     // 바깥 테두리와 사진 칸
     page.drawRectangle({x:M,y:bot,width:W-2*M,height:bh,borderColor:LINE,borderWidth:0.8});
     page.drawLine({start:{x:M+PWID,y:bot},end:{x:M+PWID,y:top},thickness:0.8,color:LINE});
@@ -1165,7 +1222,7 @@ async function buildExport(drawing,pinList,progress){
       page.drawLine({start:{x:x0,y:yy-h},end:{x:xr,y:yy-h},thickness:0.6,color:LINE});
       page.drawText(lb,{x:x0+(LW-kor.widthOfTextAtSize(lb,8.5))/2,y:yy-(k===2?14:h/2+3),size:8.5,font:kor,color:SUB});
       if(k===0){
-        page.drawCircle({x:x1+14,y:yy-h/2,size:8.5,color:col});
+        page.drawCircle({x:x1+14,y:yy-h/2,size:8.5,color:pcol});
         const s=String(p.no), fs=s.length>2?7:8.5; page.drawText(s,{x:x1+14-num.widthOfTextAtSize(s,fs)/2,y:yy-h/2-fs*0.36,size:fs,font:num,color:WHITE});
         const st=(p.status==="done"?"조치완료":"미조치")+(p.shape?"  ·  구역":"")+(drawing.pages>1?`  ·  ${p.page}쪽`:"")+(n>1?`  ·  사진 ${i+1}/${n}`:"");
         page.drawText(st,{x:x1+28,y:yy-h/2-3.5,size:9.5,font:kor,color:col});
