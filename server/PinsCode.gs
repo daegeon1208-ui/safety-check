@@ -12,6 +12,7 @@
  * 사람별 비밀번호: 앱에서 이름과 비밀번호를 처음 넣으면 시트 '사용자'에 등록된다(비밀번호는 암호화해서 저장).
  *   - 맨 처음 등록한 사람이 관리자가 된다. 관리자를 바꾸려면 '사용자' 시트의 admin 칸에 true / false 를 적는다.
  *   - 비밀번호를 잊으면 관리자가 '사용자' 시트에서 그 사람의 줄을 지운다 → 다시 넣는 비밀번호로 새로 등록된다.
+ *   - 도면 쪽마다 이름(예: 지하 4층)을 붙이면 사진대지의 위치에 함께 나온다.
  *   - 다른 사람의 핀은 관리자만 고치거나 지울 수 있다. 다른 사람은 조치완료(되돌리기 포함)만 할 수 있고,
  *     완료를 누른 사람 이름과 시각이 저장된다.
  */
@@ -19,7 +20,7 @@ const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세
 
 const SS_NAME = '도면 하자 핀';
 const ROOT_NAME = '도면 하자 핀';
-const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver'];
+const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames'];
 const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
 const P_COLS = ['id', 'drawingId', 'no', 'page', 'status', 'trade', 'text', 'by', 'editor', 'created', 'updated', 'doneAt', 'deleted', 'data(JSON)'];
 
@@ -41,7 +42,8 @@ function doPost(e) {
         case 'uploadDrawing': return out_({ ok: true, drawing: uploadDrawing_(req.drawing, req.data, me.name) });
         case 'renameDrawing': return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
         case 'deleteDrawing': return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
-        case 'replaceDrawingFile': return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me) });
+        case 'replaceDrawingFile': return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names) });
+        case 'setPageNames': return out_({ ok: true, drawing: setPageNames_(req.id, req.names) });
         case 'pins': return out_({ ok: true, pins: pins_(req.drawingId), ver: drawingVer_(req.drawingId), time: Date.now() });
         case 'savePin': return out_({ ok: true, pin: savePin_(req.item, req.photos || {}, me) });
         case 'deletePin': return out_({ ok: true, pin: deletePin_(req.id, me) });
@@ -129,7 +131,7 @@ function login_(req) {
 
 /* ---------- 도면 ---------- */
 function drawingOut_(o) {
-  return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '' };
+  return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '', pageNames: names_(o.pageNames) };
 }
 function drawings_() {
   const pins = rows_('핀').list.filter(p => p.deleted !== 'true');
@@ -159,10 +161,18 @@ function patchDrawing_(id, patch) {
   writeRow_(sh, D_COLS, o._row, o);
   return drawingOut_(o);
 }
+function names_(v) { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a.map(x => String(x || '')) : []; } catch (e) { return []; } }
+function setPageNames_(id, names) {
+  const { sh, list } = rows_('도면');
+  const o = list.find(x => x.id === id); if (!o) throw new Error('도면이 없습니다');
+  o.pageNames = JSON.stringify((names || []).map(x => String(x || '').slice(0, 40))); o.updated = Date.now();
+  writeRow_(sh, D_COLS, o._row, o);
+  return drawingOut_(o);
+}
 function drawingVer_(id) { const o = rows_('도면').list.find(x => x.id === id); return o ? (o.ver || '') : ''; }
 /* 쪽 더하기·빼기·순서 바꾸기: 새 PDF로 바꾸고, 핀의 쪽 번호를 map(예전 쪽 → 새 쪽)대로 옮긴다.
    예전 PDF 파일은 드라이브에 그대로 남겨 둔다. */
-function replaceDrawingFile_(id, data, pages, map, me) {
+function replaceDrawingFile_(id, data, pages, map, me, names) {
   const { sh, list } = rows_('도면');
   const o = list.find(x => x.id === id); if (!o) throw new Error('도면이 없습니다');
   const P = rows_('핀'), mine = P.list.filter(x => x.drawingId === id && x.deleted !== 'true');
@@ -172,6 +182,7 @@ function replaceDrawingFile_(id, data, pages, map, me) {
   const blob = Utilities.newBlob(Utilities.base64Decode(data), 'application/pdf', String(o.name).replace(/[\\/]/g, '_') + ' (' + stamp + ').pdf');
   o.fileId = folder_(['도면']).createFile(blob).getId();
   o.pages = +pages || 1; o.updated = now; o.ver = String(now); o.by = o.by || me.name;
+  if (names) o.pageNames = JSON.stringify(names.map(x => String(x || '').slice(0, 40)));
   writeRow_(sh, D_COLS, o._row, o);
   mine.forEach(x => {
     const np = +map[+x.page];
