@@ -56,6 +56,10 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(31,41,55,.9);color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;width:max-content;max-width:calc(100% - 24px);text-align:center;pointer-events:none}
 .teambar{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--card);border-bottom:1px solid var(--line);flex:none;overflow-x:auto}
 .teambar small{font-size:12px;color:var(--sub);flex:none}
+#viewer .teambar{gap:4px}
+#viewer .teambar small{display:none}
+#viewer .teambar .tchip{padding:5px 7px;gap:4px}
+#viewer .teambar .tchip i{width:8px;height:8px}   /* 팀 5개가 한 줄에 들어가게 */
 .tchip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;font-size:13px;font-weight:600;background:var(--chip);color:var(--sub);flex:none;border:1.5px solid transparent}
 .tchip i{width:10px;height:10px;border-radius:50%;background:var(--tc);opacity:.35}
 .tchip.on{background:#fff;color:var(--ink);border-color:var(--tc)}
@@ -76,7 +80,8 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .toolbar button#addBtn{flex:none;width:64px;height:64px;padding:0;margin:0 6px;border-radius:50%;display:grid;place-items:center;background:var(--open);color:#fff;border:3px solid #fff;box-shadow:0 4px 12px rgba(211,22,47,.45)}
 .toolbar button#addBtn svg{width:30px;height:30px;display:block}
 .toolbar button#addBtn{transition:transform .18s}
-.toolbar button#addBtn.arm{transform:scale(1.16);box-shadow:0 0 0 6px rgba(239,68,68,.28),0 0 24px 8px rgba(248,113,113,.6)}   /* 찍는 중: 반짝이지 않고 은은하게 빛나는 상태로 고정 */
+.toolbar button#addBtn.arm{transform:scale(1.16)}   /* 찍는 중: 버튼만 키우고, 빛은 도면 위 #armGlow가 다른 버튼 뒤에서 퍼진다 */
+#armGlow{position:absolute;left:0;top:0;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(248,113,113,.7) 0,rgba(248,113,113,.42) 32%,rgba(248,113,113,.14) 55%,rgba(248,113,113,0) 70%)}
 @keyframes pinGlow{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55),0 4px 14px rgba(211,22,47,.5)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0),0 0 26px 8px rgba(248,113,113,.75)}}
 .modebar button.cancel{background:#374151;color:#fff}
 #shapeLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible}
@@ -236,6 +241,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <canvas id="detail" hidden></canvas>
     <svg id="shapeLayer"></svg>
     <div id="pinLayer"></div>
+    <div id="armGlow" hidden></div>
     <div class="modebar" id="modeBar" hidden></div>
     <div class="loading" id="vLoading">도면을 여는 중…</div>
     <div class="hint" id="hint" hidden></div>
@@ -351,10 +357,10 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>2. 두 손가락으로 벌려 확대하고, 한 손가락으로 끌어 옮깁니다.</p>
     <p>3. <b>＋ 핀 찍기</b>를 누른 뒤 도면에서 위치를 누르면 번호 핀이 생깁니다.</p>
     <p>4. 핀 창에서 상태(미조치/조치완료), 업체, 내용, 사진을 넣습니다. 적는 즉시 저장됩니다.</p>
-    <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀도 꾹 눌러 끌거나, 핀 창의 위치 옮기기로 옮깁니다. 위치를 맞춘 뒤 가운데 <b>핀 버튼</b>을 눌러야 고정되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다. 사각형은 끌어 그린 뒤 모서리 손잡이로, 다각형은 점을 차례로 누른 뒤 점을 꾹 누르거나 바깥 손잡이를 끌어 다듬고 핀 버튼으로 고정합니다.</p>
+    <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀은 핀 창의 위치 옮기기로 옮깁니다. 핀 번호는 지워진 앞 번호부터 다시 씁니다. 위치를 맞춘 뒤 가운데 <b>핀 버튼</b>을 눌러야 고정되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다. 사각형은 끌어 그린 뒤 모서리 손잡이로, 다각형은 점을 차례로 누른 뒤 점을 꾹 누르거나 바깥 손잡이를 끌어 다듬고 핀 버튼으로 고정합니다.</p>
     <p>· 찍힌 핀을 누르면 위에는 그 핀이 가운데 오게 도면이, 아래에는 핀 내용이 반씩 보입니다. 손잡이를 위로 올리면 내용이 크게, 내리면 다시 반반, 한 번 더 내리면 닫힙니다.</p>
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(한 쪽에 핀 2개: 조치 전·후 대표 사진, 내용, 위치도)를 PDF 한 파일로 보낼 수 있습니다. 내보낼 팀을 먼저 고릅니다.</p>
-    <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
+    <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀·전기팀·설비팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라·전기 노랑·설비 청록)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
     <p>· <b>대표 사진</b>: 사진이 여러 장이면 사진을 눌러 크게 본 뒤 <b>☆ 대표 사진으로</b>를 누르세요. 사진대지에는 조치 전·조치 후 대표 사진이 한 장씩 들어갑니다(안 고르면 첫 사진).</p>
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 팀별 핀 수, 참여자를 봅니다. 핀 색은 팀별이고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
     <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
@@ -377,7 +383,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.5";
+const APP_VER="3.7";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -664,7 +670,7 @@ async function showInfo(d){
     ${pins.some(p=>!p.team)?`<div class="who"><i style="background:${NO_TEAM}"></i>팀 없음<small>핀 ${pins.filter(p=>!p.team).length}개</small></div>`:""}
     <div class="lbl">참여자</div>
     ${rows.length?rows.map(r=>`<div class="who"><i style="background:${r.col}"></i>${esc(r.n||"이름 없음")}<small>${r.made?`핀 ${r.made}개`:"수정만"}<br>${r.last?fmtDate(r.last):""}</small></div>`).join(""):`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}
-    <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 팀별(공사팀 파랑 · 안전팀 주황 · 품질팀 보라)입니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
+    <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 팀별(공사 파랑 · 안전 주황 · 품질 보라 · 전기 노랑 · 설비 청록)입니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
   $("#infoPages").onclick=()=>editPages(d);
   $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").textContent=d.name+" ⓘ";} showInfo(d); renderHome(); } };
   openSheet("#infoSheet");
@@ -1079,12 +1085,14 @@ function apply(){
 /* 사람별 핀 색: 도면에서 처음 핀을 찍은 순서대로 색을 정한다 */
 const PALETTE=["#D3162F","#2563EB","#9333EA","#EA580C","#0891B2","#DB2777","#4D7C0F","#92400E","#0F766E","#4338CA"];
 /* 팀: 핀 색은 팀별로. 팀 없는 예전 핀은 회색 */
-const TEAMS=[["공사","공사팀","#2563EB"],["안전","안전팀","#EA580C"],["품질","품질팀","#9333EA"]], NO_TEAM="#6B7280";
+const TEAMS=[["공사","공사팀","#2563EB"],["안전","안전팀","#EA580C"],["품질","품질팀","#9333EA"],["전기","전기팀","#CA8A04"],["설비","설비팀","#0D9488"]], NO_TEAM="#6B7280";
 const teamColor=t=>(TEAMS.find(x=>x[0]===t)||[0,0,NO_TEAM])[2];
 const teamName=t=>(TEAMS.find(x=>x[0]===t)||[0,"팀 없음"])[1];
 let teamFilter=new Set(TEAMS.map(x=>x[0]).concat([""]));
-try{ const f=JSON.parse(localStorage.getItem("teamFilter")||"null"); if(Array.isArray(f)&&f.length) teamFilter=new Set(f); }catch(e){}
-const saveTeamFilter=()=>{ try{localStorage.setItem("teamFilter",JSON.stringify([...teamFilter]));}catch(e){} };
+try{ const f=JSON.parse(localStorage.getItem("teamFilter")||"null"); if(Array.isArray(f)&&f.length){ teamFilter=new Set(f);
+  const known=JSON.parse(localStorage.getItem("teamFilterKnown")||'["공사","안전","품질"]');   // 새로 생긴 팀은 처음엔 보이게
+  TEAMS.forEach(([v])=>{ if(!known.includes(v)) teamFilter.add(v); }); } }catch(e){}
+const saveTeamFilter=()=>{ try{localStorage.setItem("teamFilter",JSON.stringify([...teamFilter])); localStorage.setItem("teamFilterKnown",JSON.stringify(TEAMS.map(x=>x[0])));}catch(e){} };
 const teamShown=p=>p.id==="temp"||teamFilter.has(p.team||"")||V.sel===p.id||(V.pending&&V.pending.pin===p);
 const visPins=()=>V.pins.filter(teamShown);
 /* 팀 고르기 칩: sel은 Set, 바뀌면 onChange */
@@ -1218,13 +1226,14 @@ function pinAt(p){   // 손가락 아래(핀 머리까지 넉넉하게) 있는 �
   const inside=visPins().filter(q=>q.page===V.pageNo&&q.shape&&inShape(q.shape,n,tol));
   return inside.length?inside[inside.length-1]:null;
 }
-/* 꾹 누르기(0.45초): 핀 위면 그 핀을 들어 옮기고, 핀 찍기 중이면 새 핀을 손가락 위에 띄워 끌어 맞춘다 */
+/* 꾹 누르기(0.45초): 위치 옮기기 중인 핀만 들어 옮기고, 핀 찍기 중이면 새 핀을 손가락 위에 띄워 끌어 맞춘다 */
 function longPress(p){
   lpTimer=null;
   if(!G||G.type!=="pan"||G.moved||ptrs.size!==1) return;
   let pin=pinAt(p), temp=false;
   if(V.mode==="capture"||(V.mode==="add"&&V.addKind!=="point")) return;
   if(V.mode==="move"&&pin!==V.pending?.pin) pin=null;
+  if(V.mode!=="move") pin=null;   // 이미 있는 핀은 꾹 눌러도 옮기지 않음 (옮기기는 핀 창의 '위치 옮기기'로만)
   if(!pin&&V.mode==="add"){
     const nx=(p.x-V.tx)/(V.pw*V.k), ny=(p.y-48-V.ty)/(V.ph*V.k);
     if(nx<0||nx>1||ny<0||ny>1) return;
@@ -1324,7 +1333,7 @@ vp.addEventListener("wheel",e=>{   // PC 마우스 휠 확대
   const cx=(p.x-V.tx)/V.k, cy=(p.y-V.ty)/V.k, [k0,k1]=kLimits(); V.k=Math.max(k0,Math.min(k1,V.k*f)); V.tx=p.x-cx*V.k; V.ty=p.y-cy*V.k; apply(); scheduleDetail();
 },{passive:false});
 let wasLand=LAND.matches;
-window.addEventListener("resize",()=>{if(!$("#viewer").hidden&&V.page){
+window.addEventListener("resize",()=>{placeGlow();if(!$("#viewer").hidden&&V.page){
   if(LAND.matches!==wasLand){ wasLand=LAND.matches; const p=V.sel&&V.pins.find(q=>q.id===V.sel); if(p&&!$("#pinSheet").hidden) setTimeout(()=>centerOnPin(p),60); else fitPage(); }   // 돌렸으면 다시 맞춤
   else apply(); scheduleDetail();}});
 
@@ -1411,7 +1420,8 @@ function setGeom(p){
   if(p.shape) p.shape.pdf=shapePts(p.shape).map(([x,y])=>{const q=pdfPoint(x,y);return [q.px,q.py];});
 }
 async function addPin(nx,ny,shape){
-  const no=(await pinsOf(V.drawing.id)).reduce((m,p)=>Math.max(m,p.no),0)+1, now=Date.now();
+  const used=new Set((await pinsOf(V.drawing.id)).filter(p=>!p.deleted).map(p=>+p.no)); let no=1; while(used.has(no)) no++;   // 지워진 앞 번호부터 다시 쓴다
+  const now=Date.now();
   let team=""; try{ team=localStorage.getItem("lastTeam")||""; }catch(e){}
   const shownTeams=TEAMS.map(x=>x[0]).filter(t=>teamFilter.has(t));
   if(shownTeams.length===1) team=shownTeams[0]; else if(!TEAMS.some(x=>x[0]===team)) team=TEAMS[0][0];   // 한 팀만 보고 있으면 그 팀으로
@@ -1444,9 +1454,15 @@ async function finishDraft(){
   V.draft=null; V.mode="view";
   await addPin(cx,cy,shape);
 }
+function placeGlow(arm){   // 핀 버튼 빛: 도면 칸 안(버튼들보다 아래 층)에 버튼 가운데 맞춰 둔다
+  const g=$("#armGlow"); if(arguments.length) g.hidden=!arm; if(g.hidden) return;
+  const b=$("#addBtn").getBoundingClientRect(), v=vp.getBoundingClientRect();
+  g.style.left=(b.left+b.width/2-v.left)+"px"; g.style.top=(b.top+b.height/2-v.top)+"px";
+}
 function updateModeUI(){
   const arm=V.mode==="add"||V.mode==="move";
   $("#addBtn").classList.toggle("arm",arm); $("#addBtn").setAttribute("aria-label",arm?"핀 고정":"핀 찍기");
+  placeGlow(arm);
   $("#expBtn").classList.toggle("on",V.mode==="capture");
   $("#expBtn").textContent=V.mode==="capture"?"캡처 취소":"내보내기";
   const h=$("#hint"), mb=$("#modeBar"), d=V.draft, n=d?d.pts.length:0;

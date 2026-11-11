@@ -15,7 +15,7 @@
  *   - 도면 쪽마다 이름(예: 지하 4층)을 붙이면 사진대지의 위치에 함께 나온다.
  *   - 다른 사람의 핀은 관리자만 고치거나 지울 수 있다. 다른 사람은 조치완료(되돌리기 포함)만 할 수 있고,
  *     완료를 누른 사람 이름과 시각이 저장된다.
- *   - 핀마다 팀(공사·안전·품질)이 저장되고, 앱에서 팀별 색으로 보인다. 사진마다 대표 사진(★) 표시가 저장된다.
+ *   - 핀마다 팀(공사·안전·품질·전기·설비)이 저장되고, 앱에서 팀별 색으로 보인다. 사진마다 대표 사진(★) 표시가 저장된다.
  */
 const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세요. 함께 쓸 사람에게만 알려 주세요.
 
@@ -254,9 +254,9 @@ function savePin_(p, photos, me) {
   p.by = old ? (old.by || me.name) : me.name;   // 만든 사람은 바뀌지 않는다
   p.editor = me.name;
   setDone(p, p.status);
-  // 번호: 새 핀이 이미 쓰인 번호를 달고 오면(동시에 찍은 경우) 다음 번호로 바꾼다
-  const others = list.filter(o => o.drawingId === p.drawingId && o.id !== p.id);
-  if (!ex && others.some(o => +o.no === +p.no)) p.no = others.reduce((m, o) => Math.max(m, +o.no), 0) + 1;
+  // 번호: 새 핀이 이미 쓰인 번호를 달고 오면(동시에 찍은 경우) 비어 있는 가장 앞 번호로 바꾼다 (지워진 핀 번호는 다시 쓴다)
+  const others = list.filter(o => o.drawingId === p.drawingId && o.id !== p.id && String(o.deleted) !== 'true');
+  if (!ex && others.some(o => +o.no === +p.no)) { const used = {}; others.forEach(o => { used[+o.no] = 1; }); let n = 1; while (used[n]) n++; p.no = n; }
   if (ex) p.no = +ex.no;
   // 사진(조치 전)과 조치완료 사진
   p.photos = syncPhotos_(p.photos, old ? old.photos : [], photos, ['사진', dname], p.no + '번 핀');
