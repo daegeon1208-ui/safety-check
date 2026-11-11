@@ -19,7 +19,7 @@ const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세
 
 const SS_NAME = '도면 하자 핀';
 const ROOT_NAME = '도면 하자 핀';
-const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by'];
+const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver'];
 const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
 const P_COLS = ['id', 'drawingId', 'no', 'page', 'status', 'trade', 'text', 'by', 'editor', 'created', 'updated', 'doneAt', 'deleted', 'data(JSON)'];
 
@@ -41,7 +41,8 @@ function doPost(e) {
         case 'uploadDrawing': return out_({ ok: true, drawing: uploadDrawing_(req.drawing, req.data, me.name) });
         case 'renameDrawing': return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
         case 'deleteDrawing': return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
-        case 'pins': return out_({ ok: true, pins: pins_(req.drawingId), time: Date.now() });
+        case 'replaceDrawingFile': return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me) });
+        case 'pins': return out_({ ok: true, pins: pins_(req.drawingId), ver: drawingVer_(req.drawingId), time: Date.now() });
         case 'savePin': return out_({ ok: true, pin: savePin_(req.item, req.photos || {}, me) });
         case 'deletePin': return out_({ ok: true, pin: deletePin_(req.id, me) });
         default: return out_({ ok: false, error: '알 수 없는 요청' });
@@ -65,6 +66,8 @@ function ss_() {
     p.getRange(1, 1, 1, P_COLS.length).setValues([P_COLS]); p.setFrozenRows(1);
     props.setProperty('PINS_SS_ID', ss.getId());
   }
+  const dh = ss.getSheetByName('도면').getRange(1, 1, 1, D_COLS.length);   // 예전 시트에 새 칸(ver) 머리글 추가
+  if (dh.getValues()[0][D_COLS.length - 1] !== D_COLS[D_COLS.length - 1]) dh.setValues([D_COLS]);
   if (!ss.getSheetByName('사용자')) {   // 예전 버전에서 만든 시트에는 '사용자' 시트가 없다
     const u = ss.insertSheet('사용자');
     u.getRange(1, 1, 1, U_COLS.length).setValues([U_COLS]); u.setFrozenRows(1);
@@ -126,7 +129,7 @@ function login_(req) {
 
 /* ---------- 도면 ---------- */
 function drawingOut_(o) {
-  return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '' };
+  return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '' };
 }
 function drawings_() {
   const pins = rows_('핀').list.filter(p => p.deleted !== 'true');
@@ -154,6 +157,26 @@ function patchDrawing_(id, patch) {
   if (patch.deleted) o.deleted = 'true';   // 시트 기록과 드라이브 파일은 지우지 않고 '삭제' 표시만 한다
   o.updated = Date.now();
   writeRow_(sh, D_COLS, o._row, o);
+  return drawingOut_(o);
+}
+function drawingVer_(id) { const o = rows_('도면').list.find(x => x.id === id); return o ? (o.ver || '') : ''; }
+/* 쪽 더하기·빼기·순서 바꾸기: 새 PDF로 바꾸고, 핀의 쪽 번호를 map(예전 쪽 → 새 쪽)대로 옮긴다.
+   예전 PDF 파일은 드라이브에 그대로 남겨 둔다. */
+function replaceDrawingFile_(id, data, pages, map, me) {
+  const { sh, list } = rows_('도면');
+  const o = list.find(x => x.id === id); if (!o) throw new Error('도면이 없습니다');
+  const P = rows_('핀'), mine = P.list.filter(x => x.drawingId === id && x.deleted !== 'true');
+  const lost = mine.filter(x => !map[+x.page]);
+  if (lost.length) throw new Error('빼려는 쪽에 핀이 있습니다 (' + lost.map(x => x.no + '번').join(', ') + '). 새로 고친 뒤 다시 해 주세요');
+  const now = Date.now(), stamp = Utilities.formatDate(new Date(now), 'Asia/Seoul', 'yyMMdd HHmm');
+  const blob = Utilities.newBlob(Utilities.base64Decode(data), 'application/pdf', String(o.name).replace(/[\\/]/g, '_') + ' (' + stamp + ').pdf');
+  o.fileId = folder_(['도면']).createFile(blob).getId();
+  o.pages = +pages || 1; o.updated = now; o.ver = String(now); o.by = o.by || me.name;
+  writeRow_(sh, D_COLS, o._row, o);
+  mine.forEach(x => {
+    const np = +map[+x.page];
+    if (np !== +x.page) { const q = pinOut_(x); q.page = np; q.updated = now; writeRow_(P.sh, P_COLS, x._row, pinRow_(q)); }
+  });
   return drawingOut_(o);
 }
 function drawingFile_(id) {

@@ -129,6 +129,13 @@ header .cloud[data-state="err"] i{background:#F87171}
 .who{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:15px}
 .who i{width:14px;height:14px;border-radius:50%;flex:none}
 .who small{color:var(--sub);font-size:12px;margin-left:auto;text-align:right}
+.pgrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.pgrow canvas{width:64px;height:64px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:6px;flex:none}
+.pgrow .t{flex:1;min-width:0;font-size:14px}
+.pgrow .t small{display:block;color:var(--sub);font-size:12px;word-break:break-all}
+.exp .pgrow button{display:grid;place-items:center;width:36px;height:36px;margin:0;padding:0;border-radius:9px;background:var(--chip);color:#1F2937;font-size:16px;font-weight:700;flex:none}
+.exp .pgrow button:disabled{opacity:.3}
+.exp .pgrow button.rm{color:var(--open)}
 .ibtn{padding:4px 10px;border-radius:8px;background:var(--chip);font-size:13px;font-weight:600;margin-left:6px}
 .exp .danger{background:#FDE8EB;color:var(--open)}
 #vTitle{cursor:pointer}
@@ -241,6 +248,19 @@ header .cloud[data-state="err"] i{background:#F87171}
   <div class="sb" id="infoBody"></div>
 </div>
 
+<!-- 쪽 더하기·빼기 -->
+<div class="sheet" id="pageSheet" hidden>
+  <div class="sh"><h2 id="pgTitle">쪽 더하기·빼기</h2><button class="x" data-close>✕</button></div>
+  <div class="sb exp">
+    <p style="font-size:13px;color:var(--sub);margin:0 0 4px">다른 PDF의 쪽을 뒤에 더하거나, 쪽을 빼거나 순서를 바꿉니다. 핀이 있는 쪽은 뺄 수 없습니다. 핀은 자기 쪽을 따라 함께 옮겨집니다.</p>
+    <div id="pgList"></div>
+    <input type="file" id="pgAddInput" accept="application/pdf,.pdf" multiple hidden>
+    <button class="sec" id="pgAdd">＋ 다른 PDF 더하기</button>
+    <button id="pgSave">저장</button>
+    <p id="pgMsg" style="font-size:13px;color:var(--open);min-height:1.2em;margin-top:8px"></p>
+  </div>
+</div>
+
 <!-- 도면 메뉴 -->
 <div class="sheet" id="actSheet" hidden>
   <div class="sh"><h2 id="actTitle" style="word-break:break-all"></h2><button class="x" data-close>✕</button></div>
@@ -277,7 +297,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="1.9";
+const APP_VER="2.0";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -318,7 +338,7 @@ function loadPdfjs(){
 }
 
 /* ---------- 창 열고 닫기 ---------- */
-const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet"];
+const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet"];
 let onSheetClose=null;
 function openSheet(id){sheets.forEach(s=>$(s).hidden=(s!==id));$("#sheetBg").hidden=false;}
 function closeSheets(){const cb=onSheetClose;onSheetClose=null;sheets.forEach(s=>$(s).hidden=true);$("#sheetBg").hidden=true;if(cb)cb();}
@@ -351,11 +371,12 @@ $("#dlist").addEventListener("click",async e=>{
   const more=e.target.closest("[data-more]");
   if(more){
     const d=await dbGet("drawings",more.dataset.more), shared=cloudOn()&&d.cloud;
-    const act=await chooseAction(d.name,[["info","도면 정보 (올린 사람·참여자)"],["share","공유하기 (핀 표시 도면 + 사진대지 PDF)"],["rename","이름 바꾸기"],["delete",shared?"도면과 핀 모두 삭제 (함께 쓰는 사람 모두)":"도면과 핀 모두 삭제"]]);
+    const act=await chooseAction(d.name,[["info","도면 정보 (올린 사람·참여자)"],["share","공유하기 (핀 표시 도면 + 사진대지 PDF)"],["rename","이름 바꾸기"],["pages","쪽 더하기·빼기 (다른 PDF 합치기)"],["delete",shared?"도면과 핀 모두 삭제 (함께 쓰는 사람 모두)":"도면과 핀 모두 삭제"]]);
     try{
       if(act==="info"){ showInfo(d); }
       else if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted)); }
       else if(act==="rename"){ if(await renameDrawing(d)) renderHome(); }
+      else if(act==="pages"){ editPages(d); }
       else if(act==="delete"){
         const ps=(await pinsOf(d.id)).filter(p=>!p.deleted);
         if(confirm(`「${d.name}」 도면과 핀 ${ps.length}개를 삭제할까요?${shared?"\n함께 쓰는 사람들 휴대폰에서도 사라집니다. (구글 드라이브의 PDF·사진 파일은 남겨 둡니다)":" 되돌릴 수 없습니다."}`)){
@@ -373,7 +394,7 @@ $("#dlist").addEventListener("click",async e=>{
     try{
       const j=await api({action:"drawingFile",id:r.id});
       await dbPut("files",{id:r.id,data:b64ToBuf(j.data)});
-      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true,by:r.by||""});
+      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true,by:r.by||"",ver:r.ver||""});
       remoteOnly=remoteOnly.filter(x=>x.id!==r.id);
       $("#toast").hidden=true; openDrawing(r.id);
     }catch(err){toast("도면을 받지 못했습니다: "+err.message,4000);}
@@ -412,13 +433,14 @@ async function showInfo(d){
     <div class="kv"><b>도면 이름</b><span>${esc(d.name)}<button class="ibtn" id="infoRename">이름 바꾸기</button></span></div>
     <div class="kv"><b>올린 사람</b><span>${esc(d.by||(shared?"-":"이 휴대폰"))}</span></div>
     <div class="kv"><b>올린 시각</b><span>${fmtDate(d.created)}</span></div>
-    <div class="kv"><b>쪽수</b><span>${d.pages}쪽</span></div>
+    <div class="kv"><b>쪽수</b><span>${d.pages}쪽<button class="ibtn" id="infoPages">쪽 더하기·빼기</button></span></div>
     <div class="kv"><b>공유</b><span>${shared?"구글 공유 중":"이 휴대폰에만 저장"}</span></div>
     <div class="kv"><b>핀</b><span>전체 ${pins.length} · 미조치 ${o} · 완료 ${pins.length-o}${zones?` · 구역 ${zones}`:""}</span></div>
     <div class="kv"><b>최근 핀 변경</b><span>${last?`${fmtDate(last.updated)} · ${last.no}번${(last.editor||last.by)?" · "+esc(last.editor||last.by):""}`:"-"}</span></div>
     <div class="lbl">참여자 (핀 색)</div>
     ${rows.length?rows.map(r=>`<div class="who"><i style="background:${r.col}"></i>${esc(r.n||"이름 없음")}<small>${r.made?`핀 ${r.made}개`:"수정만"}<br>${r.last?fmtDate(r.last):""}</small></div>`).join(""):`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}
     <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 처음 찍은 사람별로 정해집니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
+  $("#infoPages").onclick=()=>editPages(d);
   $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").textContent=d.name+" ⓘ";} showInfo(d); renderHome(); } };
   openSheet("#infoSheet");
 }
@@ -500,6 +522,7 @@ async function syncDrawings(){
       const l=locals.find(d=>d.id===r.id); if(!l) continue;
       if(r.deleted){ await removeLocalDrawing(r.id); continue; }
       if(l.name!==r.name||!l.cloud||(r.by&&l.by!==r.by)){ l.name=r.name; l.cloud=true; if(r.by) l.by=r.by; await dbPut("drawings",l); }
+      if((r.ver||"")!==(l.ver||"")){ l.ver=r.ver||""; l.pages=r.pages; l.stale=true; await dbPut("drawings",l); }   // 다른 사람이 쪽을 바꿈 → 열 때 새 PDF를 받는다
     }
     remoteOnly=live.filter(r=>!locals.some(d=>d.id===r.id));
     await renderHome();
@@ -542,6 +565,10 @@ async function syncPins(){
     // 2) 받기: 다른 사람이 찍거나 고친 핀
     const j=await api({action:"pins",drawingId:d.id});
     if(V.drawing!==d) return;
+    if(j.ver!==undefined&&(j.ver||"")!==(d.ver||"")){   // 다른 사람이 쪽을 더하거나 뺐다 → 새 PDF로 다시 연다
+      d.ver=j.ver; d.stale=true; await dbPut("drawings",d); toast("다른 사람이 도면 쪽을 바꿔 다시 엽니다",3000);
+      syncing=false; openDrawing(d.id,V.pageNo); return;
+    }
     const all=await pinsOf(d.id); let changed=false;
     for(const sp of j.pins){
       const l=all.find(p=>p.id===sp.id);
@@ -631,13 +658,105 @@ $("#cOff").addEventListener("click",()=>{
   remoteOnly=[]; setSync("",""); closeSheets(); renderHome();
 });
 
+/* ---------- 쪽 더하기·빼기 ---------- */
+// PE.items: [{src:0(원본)|1..(더한 PDF), n:그 PDF의 쪽 번호}], PE.srcs: [{name,data,pdf}]
+let PE=null;
+async function editPages(d){
+  if(cloudOn()&&d.cloud&&d.stale){ toast("먼저 도면을 열어 바뀐 도면을 받아 주세요",3000); return; }
+  const f=await dbGet("files",d.id); if(!f){ toast("도면 파일이 없습니다"); return; }
+  await loadPdfjs();
+  const pdf=await pdfjsLib.getDocument({data:f.data.slice(0)}).promise;
+  const pins=(await pinsOf(d.id)).filter(p=>!p.deleted);
+  PE={d,srcs:[{name:"원본",data:f.data,pdf}],items:Array.from({length:pdf.numPages},(_,i)=>({src:0,n:i+1,pins:pins.filter(p=>p.page===i+1).length})),thumbs:{},changed:false};
+  $("#pgTitle").textContent=`쪽 더하기·빼기 · ${d.name}`; $("#pgMsg").textContent="";
+  renderPages(); openSheet("#pageSheet");
+  onSheetClose=()=>{ if(PE){ PE.srcs.forEach(s=>s.pdf.destroy()); PE=null; } };
+}
+function renderPages(){
+  const it=PE.items;
+  $("#pgList").innerHTML=it.map((x,i)=>`<div class="pgrow" data-i="${i}"><canvas width="128" height="128"></canvas>
+    <div class="t"><b>${i+1}쪽</b>${x.pins?` · <span style="color:var(--open)">핀 ${x.pins}개</span>`:""}<small>${x.src?`더함: ${esc(PE.srcs[x.src].name)} ${x.n}쪽`:`원본 ${x.n}쪽`}</small></div>
+    <button data-a="up" ${i?"":"disabled"}>↑</button><button data-a="dn" ${i<it.length-1?"":"disabled"}>↓</button><button data-a="rm" class="rm" ${x.pins||it.length<2?"disabled":""}>✕</button></div>`).join("");
+  drawThumbs(); thumbLoop(PE);
+}
+// 미리보기는 한 번에 하나씩 그려서 보관해 두고(겹쳐 그리면 pdf.js가 앞의 것을 취소함), 목록을 다시 그릴 때 꺼내 쓴다
+function drawThumbs(){
+  if(!PE) return;
+  $("#pgList").querySelectorAll(".pgrow").forEach(r=>{ const x=PE.items[+r.dataset.i], t=x&&PE.thumbs[x.src+":"+x.n];
+    if(t) r.querySelector("canvas").getContext("2d").drawImage(t,0,0); });
+}
+async function thumbLoop(pe){
+  if(pe.busy) return; pe.busy=true;
+  try{ for(;;){
+    if(PE!==pe) return;
+    const x=pe.items.find(y=>!pe.thumbs[y.src+":"+y.n]); if(!x) return;
+    const c=document.createElement("canvas"); c.width=c.height=128;
+    try{ const pg=await pe.srcs[x.src].pdf.getPage(x.n), v0=pg.getViewport({scale:1}), sc=128/Math.max(v0.width,v0.height), v=pg.getViewport({scale:sc});
+      const ctx=c.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,128,128);
+      ctx.translate((128-v.width)/2,(128-v.height)/2); await pg.render({canvasContext:ctx,viewport:v}).promise; }catch(e){}
+    pe.thumbs[x.src+":"+x.n]=c; drawThumbs();
+  } }finally{ pe.busy=false; }
+}
+$("#pgList").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b||!PE) return;
+  const i=+b.closest(".pgrow").dataset.i, it=PE.items;
+  if(b.dataset.a==="up") [it[i-1],it[i]]=[it[i],it[i-1]];
+  else if(b.dataset.a==="dn") [it[i+1],it[i]]=[it[i],it[i+1]];
+  else if(b.dataset.a==="rm") it.splice(i,1);
+  PE.changed=true; renderPages();
+});
+$("#pgAdd").addEventListener("click",()=>$("#pgAddInput").click());
+$("#pgAddInput").addEventListener("change",async e=>{
+  const files=[...e.target.files]; e.target.value=""; if(!PE||!files.length) return;
+  for(const f of files){
+    try{ const data=await f.arrayBuffer(), pdf=await pdfjsLib.getDocument({data:data.slice(0)}).promise;
+      PE.srcs.push({name:f.name.replace(/\.pdf$/i,""),data,pdf});
+      for(let n=1;n<=pdf.numPages;n++) PE.items.push({src:PE.srcs.length-1,n,pins:0});
+      PE.changed=true;
+    }catch(err){ toast(`${f.name}: PDF를 열 수 없습니다`,3000); }
+  }
+  renderPages(); $("#pgList").lastElementChild&&$("#pgList").lastElementChild.scrollIntoView({block:"nearest"});
+});
+$("#pgSave").addEventListener("click",async()=>{
+  if(!PE) return; if(!PE.changed){ closeSheets(); return; }
+  const pe=PE, d=pe.d, msg=t=>$("#pgMsg").textContent=t, btn=$("#pgSave");
+  btn.disabled=true; msg("새 PDF 만드는 중…");
+  try{
+    if(!pdfLibReady) pdfLibReady=Promise.all([loadScript("../lib/pdf-lib.min.js"),loadScript("../lib/fontkit.umd.min.js")]);
+    await pdfLibReady;
+    const {PDFDocument}=PDFLib, out=await PDFDocument.create(), docs=[];
+    for(const s of pe.srcs) docs.push(await PDFDocument.load(s.data.slice(0),{ignoreEncryption:true}));
+    for(const x of pe.items){ const [pg]=await out.copyPages(docs[x.src],[x.n-1]); out.addPage(pg); }
+    const bytes=await out.save(), buf=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
+    const map={}; pe.items.forEach((x,i)=>{ if(x.src===0) map[x.n]=i+1; });
+    const pages=pe.items.length;
+    if(cloudOn()&&d.cloud){
+      msg("구글에 올리는 중…");
+      const j=await api({action:"replaceDrawingFile",id:d.id,data:bufToB64(buf),pages,map});
+      d.ver=j.drawing.ver;
+    }else d.ver=String(Date.now());
+    await dbPut("files",{id:d.id,data:buf});
+    d.pages=pages; d.stale=false; await dbPut("drawings",d);
+    for(const p of await pinsOf(d.id)){ if(map[p.page]&&map[p.page]!==p.page){ p.page=map[p.page]; await dbPut("pins",p); } }
+    PE=null; pe.srcs.forEach(s=>s.pdf.destroy()); onSheetClose=null; closeSheets();
+    toast(`${pages}쪽으로 저장했습니다`);
+    if(V.drawing&&V.drawing.id===d.id&&!$("#viewer").hidden) openDrawing(d.id,V.pageNo); else renderHome();
+  }catch(err){ console.error(err); msg("저장하지 못했습니다: "+err.message); }
+  finally{ btn.disabled=false; }
+});
+
 /* ---------- 도면 보기 ---------- */
 const vp=$("#vp"), base=$("#base"), detail=$("#detail"), pinLayer=$("#pinLayer");
 const V={drawing:null,pdf:null,page:null,pageNo:1,pw:0,ph:0,ps:1,tx:0,ty:0,k:1,pins:[],mode:"view",sel:null,renderTask:null,detailTask:null,detailJob:0};
 const dpr=()=>Math.min(window.devicePixelRatio||1,3);
 
-async function openDrawing(id){
-  const d=await dbGet("drawings",id), f=await dbGet("files",id);
+async function openDrawing(id,pageNo){
+  let d=await dbGet("drawings",id), f=await dbGet("files",id);
+  if(d&&d.stale&&cloudOn()){
+    toast("바뀐 도면을 구글에서 받는 중…",120000);
+    try{ const j=await api({action:"drawingFile",id}); f={id,data:b64ToBuf(j.data)}; await dbPut("files",f); d.stale=false; await dbPut("drawings",d); $("#toast").hidden=true; }
+    catch(err){ toast("바뀐 도면을 받지 못해 예전 도면을 엽니다: "+err.message,4000); }
+  }
   if(!d||!f){toast("도면 파일이 없습니다");return;}
   d.opened=Date.now(); dbPut("drawings",d);
   V.drawing=d; V.sel=null; setMode("view");
@@ -648,9 +767,10 @@ async function openDrawing(id){
   await loadPdfjs();
   if(V.pdf){V.pdf.destroy();V.pdf=null;}
   V.pdf=await pdfjsLib.getDocument({data:f.data.slice(0)}).promise;
+  if(V.pdf.numPages!==d.pages){ d.pages=V.pdf.numPages; dbPut("drawings",d); $("#pager").hidden=d.pages<2; }
   V.pins=(await pinsOf(id)).filter(p=>!p.deleted);
   for(const p of V.pins) if(p.photos.some(x=>!x.k)){ p.photos.forEach(x=>{if(!x.k)x.k=uid();}); await dbPut("pins",p); }
-  await showPage(1);
+  await showPage(Math.min(pageNo||1,d.pages));
   syncPins();
 }
 async function showPage(n){
