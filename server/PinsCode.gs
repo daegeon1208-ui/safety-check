@@ -15,13 +15,14 @@
  *   - 도면 쪽마다 이름(예: 지하 4층)을 붙이면 사진대지의 위치에 함께 나온다.
  *   - 다른 사람의 핀은 관리자만 고치거나 지울 수 있다. 다른 사람은 조치완료(되돌리기 포함)만 할 수 있고,
  *     완료를 누른 사람 이름과 시각이 저장된다.
+ *   - 도면마다 원래 파일 종류(PDF·DWG)가 저장되어 앱 목록에 표시된다.
  *   - 핀마다 팀(공사·안전·품질·전기·설비)이 저장되고, 앱에서 팀별 색으로 보인다. 사진마다 대표 사진(★) 표시가 저장된다.
  */
 const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세요. 함께 쓸 사람에게만 알려 주세요.
 
 const SS_NAME = '도면 하자 핀';
 const ROOT_NAME = '도면 하자 핀';
-const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames'];
+const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames', 'kind'];
 const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
 const P_COLS = ['id', 'drawingId', 'no', 'page', 'status', 'trade', 'text', 'by', 'editor', 'created', 'updated', 'doneAt', 'deleted', 'data(JSON)'];
 
@@ -132,7 +133,7 @@ function login_(req) {
 
 /* ---------- 도면 ---------- */
 function drawingOut_(o) {
-  return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '', pageNames: names_(o.pageNames) };
+  return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '', pageNames: names_(o.pageNames), kind: o.kind || '' };
 }
 function drawings_() {
   const pins = rows_('핀').list.filter(p => p.deleted !== 'true');
@@ -149,7 +150,7 @@ function uploadDrawing_(d, data, by) {
   const blob = Utilities.newBlob(Utilities.base64Decode(data), 'application/pdf', String(d.name).replace(/[\\/]/g, '_') + '.pdf');
   const file = folder_(['도면']).createFile(blob);
   const now = Date.now();
-  const o = { id: d.id, name: d.name, pages: d.pages || 1, fileId: file.getId(), created: d.created || now, updated: now, deleted: 'false', by: by || '' };
+  const o = { id: d.id, name: d.name, pages: d.pages || 1, fileId: file.getId(), created: d.created || now, updated: now, deleted: 'false', by: by || '', kind: d.kind === 'dwg' ? 'dwg' : (d.kind === 'pdf' ? 'pdf' : '') };
   writeRow_(sh, D_COLS, 0, o);
   return drawingOut_(o);
 }
