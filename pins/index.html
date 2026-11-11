@@ -66,9 +66,13 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .toolbar{align-items:center}
 .toolbar button#addBtn{flex:none;width:64px;height:64px;padding:0;margin:0 6px;border-radius:50%;display:grid;place-items:center;background:var(--open);color:#fff;border:3px solid #fff;box-shadow:0 4px 12px rgba(211,22,47,.45)}
 .toolbar button#addBtn svg{width:30px;height:30px;display:block}
-.toolbar button#addBtn.on{background:#374151;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+.toolbar button#addBtn{transition:transform .18s}
+.toolbar button#addBtn.arm{transform:scale(1.16);animation:pinGlow 1.3s ease-in-out infinite}
+@keyframes pinGlow{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55),0 4px 14px rgba(211,22,47,.5)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0),0 0 26px 8px rgba(248,113,113,.75)}}
+.modebar button.cancel{background:#374151;color:#fff}
 #shapeLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-.modebar{position:absolute;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 92px);display:flex;gap:6px;justify-content:center;flex-wrap:wrap;pointer-events:auto}
+.modebar{position:absolute;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 92px);display:flex;gap:6px;justify-content:center;flex-wrap:wrap;pointer-events:none}
+.modebar>*{pointer-events:auto}
 .modebar button{padding:9px 14px;border-radius:20px;background:rgba(255,255,255,.95);font-weight:600;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
 .modebar button.on{background:var(--accent);color:#fff}
 .modebar button.go{background:var(--open);color:#fff}
@@ -310,11 +314,11 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>2. 두 손가락으로 벌려 확대하고, 한 손가락으로 끌어 옮깁니다.</p>
     <p>3. <b>＋ 핀 찍기</b>를 누른 뒤 도면에서 위치를 누르면 번호 핀이 생깁니다.</p>
     <p>4. 핀 창에서 상태(미조치/조치완료), 업체, 내용, 사진을 넣습니다. 적는 즉시 저장됩니다.</p>
-    <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀도 꾹 눌러 끌거나, 핀 창의 위치 옮기기로 옮깁니다. 옮긴 뒤 아래 <b>여기에 고정</b>을 눌러야 저장되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다.</p>
+    <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀도 꾹 눌러 끌거나, 핀 창의 위치 옮기기로 옮깁니다. 위치를 맞춘 뒤 가운데 <b>핀 버튼</b>을 눌러야 고정되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다. 사각형은 끌어 그린 뒤 모서리 손잡이로, 다각형은 점을 차례로 누른 뒤 점을 꾹 누르거나 바깥 손잡이를 끌어 다듬고 핀 버튼으로 고정합니다.</p>
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(핀 번호·상태·업체·내용·사진·위치도)를 PDF 한 파일로 보낼 수 있습니다.</p>
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 참여자(사람별 핀 색)를 봅니다. 핀 색은 사람마다 다르고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
     <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
-    <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 손가락으로 끌어 그리고, 다각형은 꼭짓점을 차례로 누르고 첫 점이나 완료를 누릅니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
+    <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 손가락으로 끌어 그리고, 다각형은 꼭짓점을 차례로 누릅니다. 다 됐으면 핀 버튼으로 고정합니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
     <p>· <b>캡처</b>: 내보내기 → 부분 캡처를 누르고 한 손가락으로 영역을 끌어 그리면 그 부분이 그림으로 만들어집니다. 핀 표시 스위치로 핀을 넣거나 뺄 수 있고, 보내기·복사·저장할 수 있습니다.</p>
     <p>· <b>스케치</b>: 핀 찍기 → ✎ 스케치에서 한 손가락으로 그립니다(두 손가락은 확대·이동). 완료를 누르면 번호와 메모가 붙는 스케치 핀이 됩니다.</p>
     <p>5. 이미 찍은 핀을 누르면 다시 열립니다. <b>목록</b>에서 핀을 고르면 그 위치로 이동합니다.</p>
@@ -333,7 +337,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="2.9";
+const APP_VER="3.0";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -991,7 +995,11 @@ function drawShapes(){
     const sp=pts.map(q=>scr(q).join(",")).join(" ");
     if(pts.length>=3) h+=`<polygon points="${sp}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2" stroke-dasharray="6 4"/>`;
     else if(pts.length===2) h+=`<polyline points="${sp}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="6 4"/>`;
-    d.pts.forEach((q,i)=>{const [x,y]=scr(q); h+=`<circle cx="${x}" cy="${y}" r="${i===0&&d.kind==="poly"&&d.pts.length>=3?10:6}" fill="#fff" stroke="${col}" stroke-width="3"/>`;});
+    if(d.kind==="capture") d.pts.forEach(q=>{const [x,y]=scr(q); h+=`<circle cx="${x}" cy="${y}" r="6" fill="#fff" stroke="${col}" stroke-width="3"/>`;});
+    else handlesOf(d).forEach(({v,g},i)=>{ const on=G&&G.type==="handle"&&G.i===i;
+      h+=`<line x1="${v[0]}" y1="${v[1]}" x2="${g[0]}" y2="${g[1]}" stroke="${col}" stroke-width="1.5" stroke-dasharray="3 3"/>`
+        +`<circle cx="${g[0]}" cy="${g[1]}" r="${on?15:12}" fill="${on?col:"#fff"}" fill-opacity="${on?0.9:0.85}" stroke="${col}" stroke-width="2.5"/>`
+        +`<circle cx="${v[0]}" cy="${v[1]}" r="${on?7:5.5}" fill="${on?"#FBBF24":"#fff"}" stroke="${col}" stroke-width="3"/>`; });
   }
   svg.innerHTML=h;
 }
@@ -1103,7 +1111,7 @@ function dragTo(p){
   if(G.shape){ const dx=G.pin.nx-G.nx, dy=G.pin.ny-G.ny; G.pin.shape.pts=G.shape.pts.map(([x,y])=>[x+dx,y+dy]); }
   drawPins();
 }
-/* 끌어서 놓으면 바로 저장하지 않고 '여기에 고정'을 눌러야 저장 */
+/* 끌어서 놓으면 바로 저장하지 않고 핀 버튼을 눌러야 저장 */
 async function endDrag(ok){
   const g=G; G=null;
   if(!ok){ if(V.pending){ updateModeUI(); drawPins(); return; }
@@ -1131,8 +1139,11 @@ vp.addEventListener("pointerdown",e=>{
   try{vp.setPointerCapture(e.pointerId);}catch(_){}
   ptrs.set(e.pointerId,rel(e));
   V.detailJob++; if(V.detailTask){try{V.detailTask.cancel();}catch(_){}}
-  if(G&&G.type==="drag") return;
-  const drawMode=V.mode==="capture"||(V.mode==="add"&&(V.addKind==="sketch"||V.addKind==="rect"));
+  if(G&&(G.type==="drag"||G.type==="handle")) return;
+  if(ptrs.size===1&&V.mode==="add"){ const p=rel(e), h=handleAt(p);
+    if(h&&(h.grip||V.addKind==="rect")){ startHandle(h,p); return; }   // 바깥 손잡이(사각형은 모서리도)는 바로 끌기
+    if(h){ startPan(p,false); lpTimer=setTimeout(()=>{ lpTimer=null; if(G&&G.type==="pan"&&!G.moved&&ptrs.size===1) startHandle(h,p); },300); return; } }   // 다각형 점은 조금 길게 눌러 끌기
+  const drawMode=V.mode==="capture"||(V.mode==="add"&&(V.addKind==="sketch"||(V.addKind==="rect"&&V.draft&&V.draft.pts.length<2)));
   if(ptrs.size===1&&drawMode){ const p=rel(e); clearLP(); G={type:"draw",pts:[normPt(p)],sp:p}; if(V.draft.kind!=="sketch"){V.draft.pts=[];} return; }
   if(ptrs.size===1){ const p=rel(e); startPan(p,false); lpTimer=setTimeout(()=>longPress(p),450); }
   else if(ptrs.size===2){
@@ -1145,6 +1156,7 @@ vp.addEventListener("pointermove",e=>{
   if(!ptrs.has(e.pointerId)||!G) return;
   ptrs.set(e.pointerId,rel(e));
   if(G.type==="drag"){ dragTo(rel(e)); return; }
+  if(G.type==="handle"){ if(ptrs.size===1) handleTo(rel(e)); return; }
   if(G.type==="draw"){ const p=rel(e), last=G.lp||G.sp; if(Math.hypot(p.x-last.x,p.y-last.y)<3) return; G.lp=p;
     const n=normPt(p);
     if(V.draft.kind!=="sketch") V.draft.pts=[G.pts[0],n]; else G.pts.push(n);
@@ -1164,6 +1176,7 @@ function endPtr(e){
   if(!ptrs.has(e.pointerId)) return;
   const p=rel(e); ptrs.delete(e.pointerId); clearLP();
   if(G&&G.type==="drag"){ ptrs.clear(); endDrag(e.type==="pointerup"); return; }
+  if(G&&G.type==="handle"){ G=null; ptrs.clear(); drawShapes(); updateModeUI(); return; }
   if(G&&G.type==="draw"){ const g=G; G=null; ptrs.clear(); if(e.type==="pointerup") endDraw(g,p); else { if(V.draft&&V.draft.kind!=="sketch") V.draft.pts=[]; drawShapes(); } return; }
   if(G&&G.type==="pan"&&!G.moved&&Date.now()-G.t<600&&e.type==="pointerup") onTap(p);
   if(ptrs.size===1){startPan([...ptrs.values()][0],true);}
@@ -1181,11 +1194,53 @@ function endDraw(g,p){
   const d=V.draft; if(!d) return;
   if(d.kind==="capture"||d.kind==="rect"){
     const a=g.sp; if(Math.abs(p.x-a.x)<12||Math.abs(p.y-a.y)<12){ d.pts=[]; drawShapes(); toast(d.kind==="rect"?"구역을 손가락으로 끌어 사각형으로 그려 주세요":"캡처할 영역을 손가락으로 끌어 그려 주세요"); return; }
-    d.pts=[g.pts[0],normPt(p)]; finishDraft(); return;
+    d.pts=[g.pts[0],normPt(p)];
+    if(d.kind==="capture"){ finishDraft(); return; }
+    // 사각형: 바로 핀을 만들지 않고 네 모서리를 조절한 뒤 핀 버튼으로 고정
+    const [q0,q1]=d.pts; d.pts=[[Math.min(q0[0],q1[0]),Math.min(q0[1],q1[1])],[Math.max(q0[0],q1[0]),Math.max(q0[1],q1[1])]];
+    drawShapes(); updateModeUI(); return;
   }
   if(g.pts.length<2){ drawShapes(); return; }   // 점 하나는 무시
   d.cuts=d.cuts||[]; d.cuts.push(d.pts.length); d.pts.push(...g.pts);
   drawShapes(); updateModeUI();
+}
+/* 사각형·다각형 꼭짓점 손잡이: 점(v)과, 손가락에 가리지 않게 바깥쪽으로 떨어진 손잡이(g) */
+function draftCorners(d){ if(d.kind==="rect"){ if(d.pts.length<2) return []; return shapePts({type:"rect",pts:d.pts}); } return d.pts; }
+function handlesOf(d){
+  const cs=draftCorners(d).map(scr); if(!cs.length) return [];
+  const cx=cs.reduce((a,q)=>a+q[0],0)/cs.length, cy=cs.reduce((a,q)=>a+q[1],0)/cs.length;
+  return cs.map(v=>{ let dx=v[0]-cx, dy=v[1]-cy, L=Math.hypot(dx,dy); if(L<1){dx=1;dy=1;L=Math.SQRT2;} return {v,g:[v[0]+dx/L*42,v[1]+dy/L*42]}; });
+}
+function handleAt(p){
+  const d=V.draft; if(!d||V.mode!=="add"||(d.kind!=="rect"&&d.kind!=="poly")) return null;
+  const hs=handlesOf(d); let best=null, bd=1e9;
+  hs.forEach(({v,g},i)=>{ const dg=Math.hypot(p.x-g[0],p.y-g[1]), dv=Math.hypot(p.x-v[0],p.y-v[1]);
+    if(dg<26&&dg<bd){bd=dg;best={i,grip:true};} if(dv<22&&dv<bd){bd=dv;best={i,grip:false};} });
+  return best;
+}
+function cornerGet(d,i){ return draftCorners(d)[i]; }
+function cornerSet(d,i,[x,y]){
+  if(d.kind==="poly"){ d.pts[i]=[x,y]; return; }
+  const [a,b]=d.pts;   // 사각형: 0 왼위(a,a) 1 (b,a) 2 (b,b) 3 (a,b)
+  if(i===0){a[0]=x;a[1]=y;} else if(i===1){b[0]=x;a[1]=y;} else if(i===2){b[0]=x;b[1]=y;} else {a[0]=x;b[1]=y;}
+}
+function startHandle(h,p){ const d=V.draft; clearLP();
+  G={type:"handle",i:h.i,sx:p.x,sy:p.y,orig:cornerGet(d,h.i).slice()};
+  if(navigator.vibrate) try{navigator.vibrate(15);}catch(_){}
+  const ht=$("#hint"); ht.textContent="끌어서 점 위치를 맞추세요"; ht.hidden=false; drawShapes(); }
+function handleTo(p){ const d=V.draft; if(!d) return;
+  const x=Math.min(1,Math.max(0,G.orig[0]+(p.x-G.sx)/(V.pw*V.k))), y=Math.min(1,Math.max(0,G.orig[1]+(p.y-G.sy)/(V.ph*V.k)));
+  cornerSet(d,G.i,[+x.toFixed(5),+y.toFixed(5)]); drawShapes(); }
+/* 핀 버튼: 보기 중이면 핀 찍기 시작, 찍는 중이면 그 자리에 고정 */
+async function pinButton(){
+  if(V.mode==="move"){ await confirmPending(); return; }
+  if(V.mode==="add"){
+    const d=V.draft;
+    if(!d){ toast("도면에서 핀 놓을 위치를 먼저 누르세요"); return; }
+    if(d.kind==="rect"&&d.pts.length<2){ toast("끌어서 사각형을 먼저 그려 주세요"); return; }
+    await finishDraft(); return;
+  }
+  setMode("add","point");
 }
 function onTap(p){
   const nx=(p.x-V.tx)/(V.pw*V.k), ny=(p.y-V.ty)/(V.ph*V.k);
@@ -1193,13 +1248,17 @@ function onTap(p){
   if(V.mode==="capture"||(V.mode==="add"&&V.addKind!=="point")){
     if(!inside){ toast("도면 안쪽을 눌러 주세요"); return; }
     const d=V.draft;
-    if(d.kind==="poly"&&d.pts.length>=3){ const [fx,fy]=scr(d.pts[0]); if(Math.hypot(p.x-fx,p.y-fy)<22){ finishDraft(); return; } }
+    if(d.kind==="rect"){ if(d.pts.length<2) toast("손가락으로 끌어서 사각형을 그려 주세요"); return; }
+    if(d.kind==="poly"){ if(handleAt(p)){ toast("점을 꾹 누르거나 바깥 손잡이를 끌어 옮기세요"); return; } d.pts.push([nx,ny]); drawShapes(); updateModeUI(); return; }
     d.pts.push([nx,ny]);
-    if((d.kind==="rect"||d.kind==="capture")&&d.pts.length===2) finishDraft();
+    if(d.kind==="capture"&&d.pts.length===2) finishDraft();
     else { drawShapes(); updateModeUI(); }
     return;
   }
-  if(V.mode==="add"){ if(inside) addPin(nx,ny); else toast("도면 안쪽을 눌러 주세요"); return; }
+  if(V.mode==="add"){   // 점 핀: 바로 만들지 않고 임시 핀을 놓은 뒤 핀 버튼으로 고정
+    if(!inside){ toast("도면 안쪽을 눌러 주세요"); return; }
+    const pin={id:"temp",page:V.pageNo,nx,ny,no:"+",status:"open"}; V.pins.push(pin);
+    V.pending={pin,temp:true,orig:{nx,ny,shape:null}}; setMode("move"); drawPins(); return; }
   if(V.mode==="move"){ if(inside) movePin(nx,ny); return; }   // 누를 때마다 위치만 바뀌고, 고정은 버튼으로
   // 이미 있는 핀을 눌렀는지 (핀 머리 부분까지 넉넉하게)
   const best=pinAt(p); if(best) openPin(best.id);
@@ -1244,27 +1303,28 @@ async function finishDraft(){
   await addPin(cx,cy,shape);
 }
 function updateModeUI(){
-  $("#addBtn").classList.toggle("on",V.mode==="add");
-  $("#addBtn").innerHTML=V.mode==="add"?ICON.close:ICON.pin; $("#addBtn").setAttribute("aria-label",V.mode==="add"?"핀 찍기 취소":"핀 찍기");
+  const arm=V.mode==="add"||V.mode==="move";
+  $("#addBtn").classList.toggle("arm",arm); $("#addBtn").setAttribute("aria-label",arm?"핀 고정":"핀 찍기");
   $("#expBtn").classList.toggle("on",V.mode==="capture");
   $("#expBtn").textContent=V.mode==="capture"?"캡처 취소":"내보내기";
   const h=$("#hint"), mb=$("#modeBar"), d=V.draft, n=d?d.pts.length:0;
   h.hidden=false; mb.hidden=true;
   if(V.mode==="add"){
     const k=V.addKind;
-    h.textContent=k==="point"?"위치를 누르세요 · 꾹 누르면 끌어서 맞춤"
-      :k==="rect"?"끌어서 사각형 구역을 그리세요 (두 손가락: 확대)"
-      :k==="sketch"?(n?"더 그리거나 완료 · 두 손가락은 확대·이동":"한 손가락으로 그리세요 · 두 손가락은 확대·이동")
-      :(n<3?`구역의 꼭짓점을 차례로 누르세요 (${n}개)`:`꼭짓점 ${n}개 · 첫 점을 누르거나 완료`);
+    h.textContent=k==="point"?"핀 놓을 위치를 누르세요 · 꾹 누르면 끌어서 맞춤"
+      :k==="rect"?(n<2?"끌어서 사각형 구역을 그리세요 (두 손가락: 확대)":"모서리 손잡이로 맞춘 뒤 핀 버튼을 누르세요")
+      :k==="sketch"?(n?"더 그리거나 핀 버튼으로 고정 · 두 손가락은 확대·이동":"한 손가락으로 그리세요 · 두 손가락은 확대·이동")
+      :(n<3?`꼭짓점을 차례로 누르세요 (${n}개)`:`꼭짓점 ${n}개 · 점을 꾹 눌러 옮기거나 핀 버튼으로 고정`);
     mb.innerHTML=[["point","● 점"],["rect","▭ 사각형"],["poly","⬠ 다각형"],["sketch","✎ 스케치"]].map(([v,t])=>`<button data-kind="${v}" class="${k===v?"on":""}">${t}</button>`).join("")
-      +(k!=="point"&&k!=="rect"&&n?`<button data-act="undo">되돌리기</button>`:"")+(k==="poly"?`<button data-act="done" class="go" ${n<3?"disabled":""}>완료</button>`:"")+(k==="sketch"?`<button data-act="done" class="go" ${n?"":"disabled"}>완료</button>`:"");
+      +(k==="rect"&&n?`<button data-act="redraw">다시 그리기</button>`:"")+((k==="poly"||k==="sketch")&&n?`<button data-act="undo">되돌리기</button>`:"")
+      +`<button data-act="cancelmove" class="cancel">취소</button>`;
     mb.hidden=false;
   }
   else if(V.mode==="capture"){ h.textContent="끌어서 캡처 영역을 그리세요 (두 손가락: 확대)"; }
   else if(V.mode==="move"){
     const pp=V.pending&&V.pending.pin;
-    h.textContent=pp&&pp.temp?"위치를 맞추고 '여기에 고정'을 누르세요":`${pp?pp.no+"번 ":""}위치를 누르거나 꾹 눌러 끈 뒤 '여기에 고정'`;
-    mb.innerHTML=`<button data-act="cancelmove">취소</button><button data-act="confirm" class="go">여기에 고정</button>`; mb.hidden=false;
+    h.textContent=pp&&pp.temp?"다른 곳을 누르거나 꾹 눌러 끌어 맞춘 뒤 핀 버튼으로 고정":`${pp?pp.no+"번 ":""}위치를 누르거나 꾹 눌러 끈 뒤 핀 버튼으로 고정`;
+    mb.innerHTML=`<button data-act="cancelmove" class="cancel">취소</button>`; mb.hidden=false;
   }
   else h.hidden=true;
 }
@@ -1275,12 +1335,13 @@ $("#modeBar").addEventListener("click",e=>{
   if(b.dataset.act==="undo"&&V.draft){ const d=V.draft;
     if(d.kind==="sketch"){ const c=d.cuts.pop(); if(c!==undefined) d.pts.length=c; } else d.pts.pop();
     drawShapes(); updateModeUI(); }
+  if(b.dataset.act==="redraw"&&V.draft){ V.draft.pts=[]; drawShapes(); updateModeUI(); }
   if(b.dataset.act==="done") finishDraft();
   if(b.dataset.act==="confirm") confirmPending();
   if(b.dataset.act==="cancelmove"){ setMode("view"); drawPins(); }
 });
 $("#vTitle").addEventListener("click",()=>{ if(V.drawing) showInfo(V.drawing); });
-$("#addBtn").addEventListener("click",()=>setMode(V.mode==="add"?"view":"add","point"));
+$("#addBtn").addEventListener("click",()=>{ pinButton().catch(e=>toast("저장하지 못했습니다: "+e.message,4000)); });
 
 $("#backBtn").addEventListener("click",()=>{
   setMode("view"); $("#viewer").hidden=true; $("#home").hidden=false;
