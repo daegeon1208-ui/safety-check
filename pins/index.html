@@ -175,6 +175,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 <div class="sheet" id="pinSheet" hidden>
   <div class="sh"><span class="badge" id="pBadge"></span><h2 id="pTitle"></h2><button class="x" data-close>✕</button></div>
   <div class="sb">
+    <p id="pLock" hidden style="margin:2px 0 8px;font-size:13px;color:var(--sub)"></p>
     <div class="lbl" style="margin-top:4px">상태</div>
     <div class="seg" id="pStatus"><button data-v="open" class="o">미조치</button><button data-v="done" class="d">조치완료</button></div>
     <div class="lbl">업체 / 공종</div>
@@ -213,13 +214,18 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>같은 웹 앱 URL과 PIN을 넣은 휴대폰끼리 도면과 핀을 함께 보고 고칩니다. 핀·메모는 구글 시트 「도면 하자 핀」에, 도면 PDF와 사진은 구글 드라이브 「도면 하자 핀」 폴더에 저장됩니다. 다른 사람이 고친 내용은 몇 초 안에 들어옵니다.</p>
     <div class="lbl">웹 앱 URL</div>
     <input class="inp" id="cUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <div class="lbl">PIN</div>
+    <div class="lbl">팀 PIN (함께 쓰는 사람 모두 같은 번호)</div>
     <input class="inp" id="cPin" inputmode="numeric" autocomplete="off" placeholder="스크립트에 적은 PIN">
     <div class="lbl">내 이름 (핀에 작성자로 표시)</div>
-    <input class="inp" id="cName" autocomplete="off" placeholder="예: 김대건">
+    <input class="inp" id="cName" autocomplete="username" placeholder="예: 김대건">
+    <div class="lbl">내 비밀번호 (처음 넣으면 이 비밀번호로 등록됩니다)</div>
+    <input class="inp" id="cPw" type="password" autocomplete="current-password" placeholder="4자 이상">
+    <label class="sw" style="margin-top:10px"><input type="checkbox" id="cRemember"><span></span>비밀번호 기억하기</label>
     <p id="cMsg" style="color:var(--open);min-height:1.4em;margin-top:10px"></p>
     <button id="cOn">연결</button>
-    <button id="cOff" class="sec" hidden>연결 끊기</button>
+    <button id="cLink" class="sec" hidden>자동 연결 링크 보내기</button>
+    <p id="cLinkTip" hidden style="margin-top:6px;font-size:13px;color:var(--sub)">이 링크를 받은 사람은 링크를 한 번 열고 이름과 자기 비밀번호만 넣으면 연결됩니다. PIN이 들어 있으니 함께 쓸 사람에게만 보내 주세요.</p>
+    <button id="cOff" class="sec" hidden>로그아웃</button>
   </div>
 </div>
 
@@ -253,7 +259,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(핀 번호·상태·업체·내용·사진·위치도)를 PDF 한 파일로 보낼 수 있습니다.</p>
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 참여자(사람별 핀 색)를 봅니다. 핀 색은 사람마다 다르고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
     <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
-    <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 두 모서리를, 다각형은 꼭짓점을 차례로 누르고 첫 점이나 완료를 누릅니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
+    <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 손가락으로 끌어 그리고, 다각형은 꼭짓점을 차례로 누르고 첫 점이나 완료를 누릅니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
     <p>· <b>캡처</b>: 캡처를 누르고 한 손가락으로 영역을 끌어 그리면 그 부분이 그림으로 만들어집니다. 핀 표시 스위치로 핀을 넣거나 뺄 수 있고, 보내기·복사·저장할 수 있습니다.</p>
     <p>· <b>스케치</b>: 핀 찍기 → ✎ 스케치에서 한 손가락으로 그립니다(두 손가락은 확대·이동). 완료를 누르면 번호와 메모가 붙는 스케치 핀이 됩니다.</p>
     <p>5. 이미 찍은 핀을 누르면 다시 열립니다. <b>목록</b>에서 핀을 고르면 그 위치로 이동합니다.</p>
@@ -271,7 +277,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="1.6";
+const APP_VER="1.9";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -434,23 +440,43 @@ function chooseAction(title,items){
 }
 
 /* ---------- 구글 공유 (시트·드라이브) ---------- */
-let cloud={url:"",pin:"",name:""};
+/* 연결 정보: URL·팀 PIN·이름은 늘 저장, 개인 비밀번호는 '기억하기'를 켰을 때만 저장(끄면 앱을 닫을 때까지만) */
+let cloud={url:"",pin:"",name:"",pw:"",remember:false,admin:false};
 try{cloud=Object.assign(cloud,JSON.parse(localStorage.getItem("pinsCloud")||"{}"));}catch(e){}
-const cloudOn=()=>!!(cloud.url&&cloud.pin);
+if(!cloud.pw){ try{ cloud.pw=sessionStorage.getItem("pinsPw")||""; }catch(e){} }
+function saveCloud(){
+  const o={...cloud}; if(!o.remember) o.pw="";
+  try{ localStorage.setItem("pinsCloud",JSON.stringify(o)); }catch(e){}
+  try{ if(cloud.pw&&!cloud.remember) sessionStorage.setItem("pinsPw",cloud.pw); else sessionStorage.removeItem("pinsPw"); }catch(e){}
+}
+const cloudSet=()=>!!(cloud.url&&cloud.pin);           // 연결 설정은 있음
+const cloudOn=()=>cloudSet()&&!!(cloud.name&&cloud.pw);   // 로그인까지 됨
 async function api(body){
-  const r=await fetch(cloud.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({pin:cloud.pin},body)),redirect:"follow"});
+  const r=await fetch(cloud.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({pin:cloud.pin,user:cloud.name,pw:cloud.pw},body)),redirect:"follow"});
   let j; try{j=await r.json();}catch(e){throw new Error("서버 응답을 읽지 못했습니다");}
-  if(!j.ok) throw new Error(j.error||"서버 오류"); return j;
+  if(!j.ok){ if(/비밀번호가 맞지|등록되지 않은|로그인이 필요/.test(j.error||"")) needLogin(j.error); throw new Error(j.error||"서버 오류"); }
+  if(j.me&&j.me.admin!==cloud.admin){ cloud.admin=j.me.admin; saveCloud(); }
+  return j;
+}
+/* 비밀번호가 바뀌었거나 지워졌으면 로그인 창을 다시 연다 */
+function needLogin(msg){
+  if(!cloud.pw) return; cloud.pw=""; saveCloud(); setSync("","");
+  openCloudSheet(); $("#cMsg").textContent=(msg||"")+" 다시 로그인해 주세요.";
+}
+/* 다른 사람의 핀은 관리자만 고칠 수 있다(공유 중인 도면에서만). 남의 핀은 조치완료만 바꿀 수 있다 */
+function canEdit(p){
+  if(!p||p.id==="temp"||!cloudOn()||!V.drawing||!V.drawing.cloud) return true;
+  return cloud.admin||!p.by||p.by===cloud.name;
 }
 function bufToB64(buf){const a=new Uint8Array(buf);let s="";for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode.apply(null,a.subarray(i,i+32768));return btoa(s);}
 function b64ToBuf(b){const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a.buffer;}
 function setSync(state,txt){
-  const b=$("#cloudBtn"); b.dataset.state=cloudOn()?state:""; $("#cloudTxt").textContent=cloudOn()?txt:"구글 공유";
+  const b=$("#cloudBtn"); b.dataset.state=cloudOn()?state:""; $("#cloudTxt").textContent=cloudOn()?txt:cloudSet()?"로그인":"구글 공유";
   const v=$("#syncTxt"); v.hidden=!cloudOn(); v.dataset.state=state; v.textContent=txt;
 }
 /* 핀을 고치면 휴대폰에 먼저 저장하고, 공유 중이면 곧 구글로 보낸다 */
 async function savePin(p){
-  p.updated=Date.now(); p.editor=cloud.name||p.editor||"";
+  p.updated=Date.now(); if(canEdit(p)) p.editor=cloud.name||p.editor||"";
   if(cloudOn()&&V.drawing&&V.drawing.cloud) p.dirty=true;
   await dbPut("pins",p); schedulePush();
 }
@@ -491,7 +517,7 @@ async function pushDirty_(drawingId){
     const dirty=(await pinsOf(drawingId)).filter(p=>p.dirty);
     if(dirty.length) setSync("wait",`보내는 중 ${dirty.length}`);
     for(const p0 of dirty){
-      if(p0.deleted){ await api({action:"deletePin",id:p0.id,by:cloud.name}); await dbDel("pins",p0.id); continue; }
+      if(p0.deleted){ await api({action:"deletePin",id:p0.id}); await dbDel("pins",p0.id); continue; }
       const photos={}, pin={...p0,photos:p0.photos.map(x=>{ if(!x.k)x.k=uid(); if(!x.id&&x.data) photos[x.k]=bufToB64(x.data); return {k:x.k,id:x.id||null,w:x.w,h:x.h}; })};
       delete pin.dirty; delete pin.serverUpdated;
       const j=await api({action:"savePin",item:pin,photos});
@@ -499,6 +525,7 @@ async function pushDirty_(drawingId){
       if(j.pin.deleted){ V.pins=V.pins.filter(q=>q.id!==cur.id); await dbDel("pins",cur.id); toast(`${cur.no}번 핀은 다른 사람이 삭제했습니다`); continue; }
       if(cur.no!==j.pin.no) toast(`다른 사람과 번호가 겹쳐 ${cur.no}번 → ${j.pin.no}번으로 바꿨습니다`,3500);
       cur.no=j.pin.no; cur.serverUpdated=j.pin.updated;
+      if(cur.updated===p0.updated){ cur.by=j.pin.by; cur.status=j.pin.status; cur.doneAt=j.pin.doneAt; cur.doneBy=j.pin.doneBy||""; }   // 만든 사람·완료한 사람은 서버 기록을 따른다
       for(const sp of j.pin.photos||[]){ const lp=cur.photos.find(x=>x.k===sp.k); if(lp) lp.id=sp.id; }
       if(cur.updated===p0.updated) cur.dirty=false;
       await dbPut("pins",cur);
@@ -547,26 +574,60 @@ async function ensurePhoto(p,x){
     return true; }catch(e){ return false; }
 }
 /* 연결 설정 창 */
-$("#cloudBtn").addEventListener("click",()=>{
-  $("#cUrl").value=cloud.url; $("#cPin").value=cloud.pin; $("#cName").value=cloud.name;
-  $("#cMsg").textContent=cloudOn()?"연결되어 있습니다.":""; $("#cOff").hidden=!cloudOn();
+function openCloudSheet(){
+  $("#cUrl").value=cloud.url; $("#cPin").value=cloud.pin; $("#cName").value=cloud.name; $("#cPw").value=cloud.pw; $("#cRemember").checked=!!cloud.remember;
+  $("#cMsg").textContent=cloudOn()?`${cloud.name}${cloud.admin?" (관리자)":""}(으)로 연결되어 있습니다.`:cloudSet()?"이름과 비밀번호를 넣고 '연결'을 눌러 주세요.":"";
+  $("#cOff").hidden=$("#cLink").hidden=$("#cLinkTip").hidden=!cloudOn();
   openSheet("#cloudSheet");
+}
+$("#cloudBtn").addEventListener("click",openCloudSheet);
+/* 자동 연결 링크: 주소 뒤 #c=… 에 URL·PIN을 담아 한 번 열면 이 휴대폰에 저장된다 */
+function inviteLink(){ return location.origin+location.pathname+"#c="+encodeURIComponent(btoa(JSON.stringify({u:cloud.url,p:cloud.pin}))); }
+$("#cLink").addEventListener("click",async()=>{
+  const link=inviteLink();
+  try{ if(navigator.share){ await navigator.share({title:"도면 하자 핀",text:"도면 하자 핀 앱 자동 연결 링크",url:link}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+  try{ await navigator.clipboard.writeText(link); toast("링크를 복사했습니다"); }catch(e){ prompt("링크를 복사해 주세요",link); }
 });
+function readInvite(){
+  const m=/[#&]c=([^&]+)/.exec(location.hash||""); if(!m) return false;
+  history.replaceState(null,"",location.pathname+location.search);
+  let o; try{ o=JSON.parse(atob(decodeURIComponent(m[1]))); }catch(e){ toast("자동 연결 링크가 올바르지 않습니다",3000); return false; }
+  if(!o||!/^https:\/\/script\.google\.com\//.test(o.u||"")||!o.p) return false;
+  if(cloudOn()&&cloud.url===o.u&&cloud.pin===o.p) return false;   // 이미 같은 곳에 연결됨
+  openCloudSheet(); $("#cUrl").value=o.u; $("#cPin").value=o.p;
+  $("#cOff").hidden=$("#cLink").hidden=$("#cLinkTip").hidden=true;
+  if(cloud.name&&cloud.pw) $("#cOn").click(); else $("#cMsg").textContent="자동 연결 링크로 URL과 PIN이 들어왔습니다. 이름과 내 비밀번호를 넣고 '연결'을 눌러 주세요.";
+  return true;
+}
 $("#cOn").addEventListener("click",async()=>{
   const old={...cloud};
-  cloud={url:$("#cUrl").value.trim(),pin:$("#cPin").value.trim(),name:$("#cName").value.trim()};
-  if(!/^https:\/\/script\.google\.com\//.test(cloud.url)){ $("#cMsg").textContent="웹 앱 URL은 https://script.google.com/ 으로 시작해야 합니다."; cloud=old; return; }
-  if(!cloud.pin||!cloud.name){ $("#cMsg").textContent="PIN과 이름을 넣어 주세요."; cloud=old; return; }
-  $("#cMsg").textContent="연결하는 중…";
-  try{ await api({action:"ping"}); }
-  catch(err){ cloud=old; $("#cMsg").textContent=/PIN/.test(err.message)?"PIN이 맞지 않습니다. 스크립트 맨 위에 적은 PIN을 넣어 주세요.":"연결하지 못했습니다. URL과, 배포할 때 '액세스 권한: 모든 사용자'로 했는지 확인해 주세요."; return; }
-  try{localStorage.setItem("pinsCloud",JSON.stringify(cloud));}catch(e){}
-  $("#cMsg").textContent="연결됐습니다. 이 휴대폰의 도면과 핀도 구글로 올립니다.";
-  setTimeout(()=>{closeSheets();syncDrawings();},900);
+  const nw={url:$("#cUrl").value.trim(),pin:$("#cPin").value.trim(),name:$("#cName").value.trim(),pw:$("#cPw").value,remember:$("#cRemember").checked,admin:false};
+  const msg=t=>$("#cMsg").textContent=t;
+  if(!/^https:\/\/script\.google\.com\//.test(nw.url)) return msg("웹 앱 URL은 https://script.google.com/ 으로 시작해야 합니다.");
+  if(!nw.pin||!nw.name) return msg("PIN과 이름을 넣어 주세요.");
+  if(nw.pw.length<4) return msg("비밀번호를 4자 이상으로 넣어 주세요.");
+  msg("연결하는 중…"); cloud=nw;
+  let j;
+  try{
+    j=await api({action:"login"});
+    if(j.newUser){
+      if(!confirm(`'${nw.name}' 이름은 처음입니다. 지금 넣은 비밀번호로 새로 등록할까요?\n(이미 쓰던 이름이면 '취소'를 누르고 이름을 확인해 주세요)`)){ cloud=old; return msg("등록하지 않았습니다. 이름을 확인해 주세요."); }
+      j=await api({action:"login",register:true});
+    }
+  }catch(err){
+    cloud=old;
+    return msg(/PIN이/.test(err.message)?"팀 PIN이 맞지 않습니다. 스크립트 맨 위에 적은 PIN을 넣어 주세요."
+      :/비밀번호|이름|4자/.test(err.message)?err.message
+      :/알 수 없는 요청/.test(err.message)?"구글 스크립트가 예전 코드입니다. 새 PinsCode.gs로 바꾸고 새 버전으로 배포해 주세요."
+      :"연결하지 못했습니다. URL과, 배포할 때 '액세스 권한: 모든 사용자'로 했는지 확인해 주세요.");
+  }
+  cloud.admin=!!(j.me&&j.me.admin); saveCloud();
+  msg((j.created?"새로 등록하고 연결했습니다.":"연결됐습니다.")+(cloud.admin?" 관리자입니다.":"")+" 이 휴대폰의 도면과 핀도 구글로 올립니다.");
+  setTimeout(()=>{closeSheets();syncDrawings();},1200);
 });
 $("#cOff").addEventListener("click",()=>{
-  if(!confirm("구글 공유 연결을 끊을까요? 이 휴대폰의 도면과 핀은 그대로 남습니다.")) return;
-  cloud={url:"",pin:"",name:cloud.name}; try{localStorage.setItem("pinsCloud",JSON.stringify(cloud));}catch(e){}
+  if(!confirm("로그아웃할까요? 이 휴대폰의 도면과 핀은 그대로 남고, 다시 로그인하면 이어서 공유합니다.")) return;
+  cloud.pw=""; cloud.admin=false; saveCloud();
   remoteOnly=[]; setSync("",""); closeSheets(); renderHome();
 });
 
@@ -762,6 +823,7 @@ function longPress(p){
     pin={id:"temp",page:V.pageNo,nx,ny,no:"+",status:"open"}; temp=true; V.pins.push(pin);
   }
   if(!pin) return;
+  if(!canEdit(pin)){ toast(`${pin.by}님이 만든 핀은 옮길 수 없습니다`); return; }
   G={type:"drag",pin,temp,sx:p.x,sy:p.y,nx:pin.nx,ny:pin.ny,shape:pin.shape?JSON.parse(JSON.stringify(pin.shape)):null};
   if(navigator.vibrate) try{navigator.vibrate(20);}catch(_){}
   const h=$("#hint"); h.textContent=temp?"끌어서 위치를 맞추고 손가락을 떼세요":`${pin.no}번 핀 · 끌어서 옮기고 손가락을 떼세요`; h.hidden=false;
@@ -806,11 +868,11 @@ vp.addEventListener("pointerdown",e=>{
   ptrs.set(e.pointerId,rel(e));
   V.detailJob++; if(V.detailTask){try{V.detailTask.cancel();}catch(_){}}
   if(G&&G.type==="drag") return;
-  const drawMode=V.mode==="capture"||(V.mode==="add"&&V.addKind==="sketch");
-  if(ptrs.size===1&&drawMode){ const p=rel(e); clearLP(); G={type:"draw",pts:[normPt(p)],sp:p}; if(V.mode==="capture"){V.draft.pts=[];} return; }
+  const drawMode=V.mode==="capture"||(V.mode==="add"&&(V.addKind==="sketch"||V.addKind==="rect"));
+  if(ptrs.size===1&&drawMode){ const p=rel(e); clearLP(); G={type:"draw",pts:[normPt(p)],sp:p}; if(V.draft.kind!=="sketch"){V.draft.pts=[];} return; }
   if(ptrs.size===1){ const p=rel(e); startPan(p,false); lpTimer=setTimeout(()=>longPress(p),450); }
   else if(ptrs.size===2){
-    clearLP(); if(V.mode==="capture"&&V.draft) V.draft.pts=[];
+    clearLP(); if(V.draft&&V.draft.kind!=="sketch"&&V.draft.kind!=="poly") V.draft.pts=[];
     const [a,b]=[...ptrs.values()];
     G={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y)||1,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,k:V.k,tx:V.tx,ty:V.ty,moved:true};
   }
@@ -821,7 +883,7 @@ vp.addEventListener("pointermove",e=>{
   if(G.type==="drag"){ dragTo(rel(e)); return; }
   if(G.type==="draw"){ const p=rel(e), last=G.lp||G.sp; if(Math.hypot(p.x-last.x,p.y-last.y)<3) return; G.lp=p;
     const n=normPt(p);
-    if(V.mode==="capture") V.draft.pts=[G.pts[0],n]; else G.pts.push(n);
+    if(V.draft.kind!=="sketch") V.draft.pts=[G.pts[0],n]; else G.pts.push(n);
     drawShapes(); return; }
   if(G.type==="pan"&&ptrs.size===1){
     const p=rel(e), dx=p.x-G.sx, dy=p.y-G.sy;
@@ -838,7 +900,7 @@ function endPtr(e){
   if(!ptrs.has(e.pointerId)) return;
   const p=rel(e); ptrs.delete(e.pointerId); clearLP();
   if(G&&G.type==="drag"){ ptrs.clear(); endDrag(e.type==="pointerup"); return; }
-  if(G&&G.type==="draw"){ const g=G; G=null; ptrs.clear(); if(e.type==="pointerup") endDraw(g,p); else { if(V.draft&&V.mode==="capture") V.draft.pts=[]; drawShapes(); } return; }
+  if(G&&G.type==="draw"){ const g=G; G=null; ptrs.clear(); if(e.type==="pointerup") endDraw(g,p); else { if(V.draft&&V.draft.kind!=="sketch") V.draft.pts=[]; drawShapes(); } return; }
   if(G&&G.type==="pan"&&!G.moved&&Date.now()-G.t<600&&e.type==="pointerup") onTap(p);
   if(ptrs.size===1){startPan([...ptrs.values()][0],true);}
   else if(ptrs.size===0){G=null;scheduleDetail();}
@@ -853,8 +915,8 @@ window.addEventListener("resize",()=>{if(!$("#viewer").hidden&&V.page){apply();s
 const normPt=p=>[+Math.min(1,Math.max(0,(p.x-V.tx)/(V.pw*V.k))).toFixed(5), +Math.min(1,Math.max(0,(p.y-V.ty)/(V.ph*V.k))).toFixed(5)];
 function endDraw(g,p){
   const d=V.draft; if(!d) return;
-  if(V.mode==="capture"){
-    const a=g.sp; if(Math.abs(p.x-a.x)<12||Math.abs(p.y-a.y)<12){ d.pts=[]; drawShapes(); toast("캡처할 영역을 손가락으로 끌어 그려 주세요"); return; }
+  if(d.kind==="capture"||d.kind==="rect"){
+    const a=g.sp; if(Math.abs(p.x-a.x)<12||Math.abs(p.y-a.y)<12){ d.pts=[]; drawShapes(); toast(d.kind==="rect"?"구역을 손가락으로 끌어 사각형으로 그려 주세요":"캡처할 영역을 손가락으로 끌어 그려 주세요"); return; }
     d.pts=[g.pts[0],normPt(p)]; finishDraft(); return;
   }
   if(g.pts.length<2){ drawShapes(); return; }   // 점 하나는 무시
@@ -927,11 +989,11 @@ function updateModeUI(){
   if(V.mode==="add"){
     const k=V.addKind;
     h.textContent=k==="point"?"위치를 누르세요 · 꾹 누르면 끌어서 맞춤"
-      :k==="rect"?(n?"반대쪽 모서리를 누르세요":"구역의 한쪽 모서리를 누르세요")
+      :k==="rect"?"끌어서 사각형 구역을 그리세요 (두 손가락: 확대)"
       :k==="sketch"?(n?"더 그리거나 완료 · 두 손가락은 확대·이동":"한 손가락으로 그리세요 · 두 손가락은 확대·이동")
       :(n<3?`구역의 꼭짓점을 차례로 누르세요 (${n}개)`:`꼭짓점 ${n}개 · 첫 점을 누르거나 완료`);
     mb.innerHTML=[["point","● 점"],["rect","▭ 사각형"],["poly","⬠ 다각형"],["sketch","✎ 스케치"]].map(([v,t])=>`<button data-kind="${v}" class="${k===v?"on":""}">${t}</button>`).join("")
-      +(k!=="point"&&n?`<button data-act="undo">되돌리기</button>`:"")+(k==="poly"?`<button data-act="done" class="go" ${n<3?"disabled":""}>완료</button>`:"")+(k==="sketch"?`<button data-act="done" class="go" ${n?"":"disabled"}>완료</button>`:"");
+      +(k!=="point"&&k!=="rect"&&n?`<button data-act="undo">되돌리기</button>`:"")+(k==="poly"?`<button data-act="done" class="go" ${n<3?"disabled":""}>완료</button>`:"")+(k==="sketch"?`<button data-act="done" class="go" ${n?"":"disabled"}>완료</button>`:"");
     mb.hidden=false;
   }
   else if(V.mode==="capture"){ h.textContent="끌어서 캡처 영역을 그리세요 (두 손가락: 확대)"; }
@@ -975,6 +1037,9 @@ async function openPin(id){
   $("#pBadge").textContent=p.no;
   $("#pTitle").textContent=`${p.no}번 ${kindLabel(p)}`+(V.drawing.pages>1?` · ${p.page}쪽`:"");
   $("#pTrade").value=p.trade||""; $("#pText").value=p.text||"";
+  const ed=canEdit(p);
+  $("#pTrade").readOnly=$("#pText").readOnly=!ed; $("#moveBtn").hidden=$("#delPin").hidden=!ed; $("#imgDel").hidden=!ed;
+  $("#pLock").hidden=ed; $("#pLock").textContent=`${p.by}님이 만든 핀입니다. 조치완료만 바꿀 수 있고, 내용은 만든 사람과 관리자만 고칠 수 있습니다.`;
   setStatusUI(p);
   const trades=[...new Set((await dbAll("pins")).map(q=>(q.trade||"").trim()).filter(Boolean))];
   $("#tradeList").innerHTML=trades.map(t=>`<option value="${esc(t)}">`).join("");
@@ -985,12 +1050,12 @@ async function openPin(id){
 function setStatusUI(p){
   document.querySelectorAll("#pStatus button").forEach(b=>b.classList.toggle("on",b.dataset.v===(p.status||"open")));
   $("#pBadge").classList.toggle("done",p.status==="done");
-  $("#pDates").innerHTML=`등록 ${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}`+(p.status==="done"&&p.doneAt?`<br>조치완료 ${fmtDate(p.doneAt)}`:"")+(p.editor&&p.editor!==p.by?`<br>마지막 수정 ${esc(p.editor)}`:"");
+  $("#pDates").innerHTML=`등록 ${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}`+(p.status==="done"&&p.doneAt?`<br>조치완료 ${fmtDate(p.doneAt)}${p.doneBy?" · "+esc(p.doneBy):""}`:"")+(p.editor&&p.editor!==p.by?`<br>마지막 수정 ${esc(p.editor)}`:"");
 }
 function renderPhotos(p){
   freeUrls();
   $("#pPhotos").innerHTML=p.photos.map((ph,i)=>`<div class="ph" data-i="${i}">${ph.data?`<img src="${photoUrl(ph)}" alt="">`:`<div class="phw">받는 중…</div>`}</div>`).join("")
-    +`<button class="add" id="addPhoto"><b>＋</b>사진 추가</button>`;
+    +(canEdit(p)?`<button class="add" id="addPhoto"><b>＋</b>사진 추가</button>`:"");
   p.photos.forEach((ph,i)=>{ if(ph.data) return;
     ensurePhoto(p,ph).then(ok=>{ const el=document.querySelector(`#pPhotos .ph[data-i="${i}"]`);
       if(el&&V.sel===p.id) el.innerHTML=ok?`<img src="${photoUrl(ph)}" alt="">`:`<div class="phw">사진을 받지 못함</div>`; }); });
@@ -1000,11 +1065,12 @@ let saveT=null;
 let saveP=null;
 function saveSoon(){saveP=selPin();clearTimeout(saveT);saveT=setTimeout(flushSave,400);}
 function flushSave(){clearTimeout(saveT);if(saveP){const p=saveP;saveP=null;savePin(p);}}
-$("#pTrade").addEventListener("input",e=>{const p=selPin();if(p){p.trade=e.target.value;saveSoon();}});
-$("#pText").addEventListener("input",e=>{const p=selPin();if(p){p.text=e.target.value;saveSoon();}});
+$("#pTrade").addEventListener("input",e=>{const p=selPin();if(p&&canEdit(p)){p.trade=e.target.value;saveSoon();}});
+$("#pText").addEventListener("input",e=>{const p=selPin();if(p&&canEdit(p)){p.text=e.target.value;saveSoon();}});
 $("#pStatus").addEventListener("click",e=>{
   const b=e.target.closest("button"),p=selPin(); if(!b||!p) return;
-  p.status=b.dataset.v; p.doneAt=p.status==="done"?Date.now():null;
+  if(p.status===b.dataset.v) return;
+  p.status=b.dataset.v; p.doneAt=p.status==="done"?Date.now():null; p.doneBy=p.status==="done"?(cloudOn()?cloud.name:""):"";
   savePin(p); setStatusUI(p); drawPins();
 });
 $("#pPhotos").addEventListener("click",e=>{
@@ -1016,7 +1082,7 @@ $("#pPhotos").addEventListener("click",e=>{
 $("#imgClose").addEventListener("click",()=>$("#imgView").hidden=true);
 $("#imgDel").addEventListener("click",async()=>{
   const p=selPin(), i=+$("#imgView").dataset.i;
-  if(!p||!confirm("이 사진을 삭제할까요?")) return;
+  if(!p||!canEdit(p)||!confirm("이 사진을 삭제할까요?")) return;
   p.photos.splice(i,1); await savePin(p);
   $("#imgView").hidden=true; renderPhotos(p);
 });
@@ -1297,7 +1363,7 @@ async function buildExport(drawing,pinList,progress){
         if(ls.length>maxL){ ls=ls.slice(0,maxL); ls[maxL-1]=ls[maxL-1].slice(0,-1)+"…"; }
         ls.forEach((l,j)=>page.drawText(l,{x:x1+6,y:yy-14-j*13,size:9.5,font:kor,color:INK}));
       }else{
-        const dt=`${fmtDate(p.created).slice(0,10)}${p.by?" "+p.by:""}${p.status==="done"&&p.doneAt?` / 완료 ${fmtDate(p.doneAt).slice(2,10)}`:""}`;
+        const dt=`${fmtDate(p.created).slice(0,10)}${p.by?" "+p.by:""}${p.status==="done"&&p.doneAt?` / 완료 ${fmtDate(p.doneAt).slice(2,10)}${p.doneBy?" "+p.doneBy:""}`:""}`;
         page.drawText(wrap(dt,8.5,VW)[0],{x:x1+6,y:yy-h/2-3,size:8.5,font:kor,color:INK});
       }
       yy-=h;
@@ -1317,7 +1383,9 @@ async function buildExport(drawing,pinList,progress){
 }
 
 /* ---------- 시작 ---------- */
-renderHome(); setSync("",""); syncDrawings();
+renderHome(); setSync("",""); if(!readInvite()){ if(cloudSet()&&!cloudOn()) openCloudSheet(); else syncDrawings(); }
+window.addEventListener("hashchange",readInvite);
+try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}   // 연결 정보·도면이 저절로 지워지지 않게 요청
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
