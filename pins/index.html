@@ -111,6 +111,24 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 #pinSheet{height:50%;max-height:none;transition:height .22s ease-out;box-shadow:0 -6px 20px rgba(0,0,0,.18)}
 #pinSheet.full{height:90%}
 #pinSheet .grab{width:48px;height:6px}
+/* 가로 화면(휴대폰): 팀 버튼은 왼쪽, 목록·핀·내보내기는 오른쪽 세로로. 핀 창은 오른쪽 옆 창 */
+@media (orientation:landscape) and (max-height:600px){
+  #viewer header{padding:calc(env(safe-area-inset-top) + 4px) max(12px,env(safe-area-inset-right)) 4px max(12px,env(safe-area-inset-left))}
+  .pgbar{padding:3px 8px}
+  .pgbar>button:not(.pgmid){height:30px;font-size:20px}
+  .pgbar .pgmid small{display:none}
+  #viewer .teambar{position:absolute;z-index:20;left:calc(env(safe-area-inset-left) + 8px);top:50%;transform:translateY(-30%);flex-direction:column;align-items:stretch;gap:8px;padding:0;background:none;border:0;overflow:visible;pointer-events:none}
+  #viewer .teambar small{display:none}
+  #viewer .teambar .tchip{pointer-events:auto;padding:10px 12px;font-size:14px;background:rgba(255,255,255,.9);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+  #viewer .teambar .tchip.on{background:#fff}
+  .toolbar{left:auto;top:0;right:0;bottom:0;width:calc(env(safe-area-inset-right) + 108px);flex-direction:column;justify-content:center;gap:14px;padding:8px calc(env(safe-area-inset-right) + 10px) calc(env(safe-area-inset-bottom) + 8px) 8px}
+  .toolbar button{flex:none;width:90px;padding:11px 4px}
+  .toolbar button#addBtn{width:70px;height:70px;margin:0}
+  .modebar{left:auto;right:calc(env(safe-area-inset-right) + 116px);top:8px;bottom:8px;flex-direction:column;flex-wrap:nowrap;justify-content:center;align-items:flex-end}
+  .sheet{max-width:680px;margin:0 auto;max-height:94%}
+  #pinSheet{left:auto;right:0;top:0;bottom:0;height:auto!important;max-height:none;width:min(50%,480px);max-width:none;margin:0;border-radius:18px 0 0 18px;padding-right:env(safe-area-inset-right);padding-top:env(safe-area-inset-top);box-shadow:-6px 0 20px rgba(0,0,0,.18);transition:none}
+  #pinSheet .grab{display:none}
+}
 .sheet .grab{width:40px;height:5px;border-radius:3px;background:#D1D5DB;margin:8px auto 0;flex:none}
 .sheet .sh{display:flex;align-items:center;gap:10px;padding:8px 16px 10px;border-bottom:1px solid var(--line)}
 .sheet .sh h2{flex:1;margin:0;font-size:17px}
@@ -359,7 +377,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.3";
+const APP_VER="3.4";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -460,7 +478,7 @@ function pinSheetSwipe(sh){
   const g=document.createElement("div"); g.className="grab"; sh.prepend(g);
   let st=null;
   sh.addEventListener("touchstart",e=>{ st=null;
-    if(e.touches.length!==1) return;
+    if(e.touches.length!==1||LAND.matches) return;   // 가로 화면의 옆 창은 ✕로 닫는다
     const t=e.target, sb=t.closest(".sb"), bar=!sb;   // 손잡이·제목 줄
     if(t.closest("input,textarea,select,.photos")&&!bar) return;
     if(sb&&sb.scrollTop>0) return;
@@ -490,9 +508,14 @@ function setPinSheet(state){
 /* 핀 창이 반만 열렸을 때, 누른 핀이 위쪽 남은 도면의 가운데에 오게 */
 function centerOnPin(p){
   if(!V.page||p.page!==V.pageNo) return;
-  const r=vp.getBoundingClientRect(), top=$("#pinSheet").getBoundingClientRect().top;
-  const visH=Math.max(80,Math.min(r.height,top-r.top)), head=p.shape?0:22;   // 점 핀은 머리가 위로 올라와 있어 조금 내려 맞춤
-  V.tx=r.width/2-p.nx*V.pw*V.k; V.ty=visH/2+head-p.ny*V.ph*V.k;
+  const r=vp.getBoundingClientRect(), sb=$("#pinSheet").getBoundingClientRect(), head=p.shape?0:22;   // 점 핀은 머리가 위로 올라와 있어 조금 내려 맞춤
+  if(LAND.matches){   // 가로: 핀 창이 오른쪽 옆에 있으니 왼쪽 남은 도면의 가운데
+    const l=resv().l, visW=Math.max(80,Math.min(r.width,sb.left-r.left));
+    V.tx=(l+visW)/2-p.nx*V.pw*V.k; V.ty=r.height/2+head-p.ny*V.ph*V.k;
+  }else{
+    const visH=Math.max(80,Math.min(r.height,sb.top-r.top));
+    V.tx=r.width/2-p.nx*V.pw*V.k; V.ty=visH/2+head-p.ny*V.ph*V.k;
+  }
   apply(); scheduleDetail();
 }
 
@@ -1017,23 +1040,31 @@ async function showPage(n){
   $("#vLoading").hidden=true; base.style.visibility="visible";
   scheduleDetail();
 }
+/* 떠 있는 버튼 자리: 세로 화면은 아래(84px), 가로 화면은 왼쪽 팀 버튼·오른쪽 핀 버튼 */
+const LAND=matchMedia("(orientation:landscape) and (max-height:600px)");
+function resv(){
+  if(!LAND.matches) return {l:0,r:0,b:84};
+  const tb=$("#teamBar"), bar=document.querySelector(".toolbar");
+  return {l:tb&&tb.offsetWidth?tb.offsetWidth+12:0, r:bar?bar.offsetWidth:0, b:0};
+}
 function fitPage(){
-  const cw=vp.clientWidth, ch=vp.clientHeight-84;   // 아래 떠 있는 버튼 자리를 비워 둔다
+  const R=resv(), cw=vp.clientWidth-R.l-R.r, ch=vp.clientHeight-R.b;   // 떠 있는 버튼 자리를 비워 둔다
   V.k=Math.min(cw/V.pw,ch/V.ph)*0.96;
-  V.tx=(cw-V.pw*V.k)/2; V.ty=(ch-V.ph*V.k)/2;
+  V.tx=R.l+(cw-V.pw*V.k)/2; V.ty=(ch-V.ph*V.k)/2;
   apply();
 }
 function clampView(){
-  const cw=vp.clientWidth, ch=vp.clientHeight;
+  const cw=vp.clientWidth, ch=vp.clientHeight, R=resv();
   // 너무 크게 확대하면 아이폰이 그림 메모리를 못 버티고 화면을 새로 고친다 → 화면 맞춤의 20배, 렌더 배율 12배까지
   const [minK,maxK]=kLimits(); V.k=Math.max(minK,Math.min(maxK,V.k));
   const w=V.pw*V.k, h=V.ph*V.k, m=60;   // 도면이 화면 밖으로 완전히 나가지 않게
   // 도면이 화면보다 작은 방향은 가운데에 고정 (축소했을 때 옆으로 밀리지 않게)
-  if(w<=cw&&!V.split) V.tx=(cw-w)/2; else V.tx=Math.min(cw-m,Math.max(m-w,V.tx));
-  if(h<=ch-84&&!V.split) V.ty=(ch-84-h)/2; else V.ty=Math.min(ch-m,Math.max(m-h,V.ty));
+  const aw=cw-R.l-R.r, ah=ch-R.b;
+  if(w<=aw&&!V.split) V.tx=R.l+(aw-w)/2; else V.tx=Math.min(cw-m,Math.max(m-w,V.tx));
+  if(h<=ah&&!V.split) V.ty=(ah-h)/2; else V.ty=Math.min(ch-m,Math.max(m-h,V.ty));
 }
 function kLimits(){   // [최대 축소, 최대 확대]
-  const cw=vp.clientWidth, ch=vp.clientHeight-84, fitK=Math.min(cw/V.pw,ch/V.ph);
+  const R=resv(), cw=vp.clientWidth-R.l-R.r, ch=vp.clientHeight-R.b, fitK=Math.min(cw/V.pw,ch/V.ph);
   return [fitK*0.75*0.96, Math.max(fitK*4,Math.min(fitK*20,12/dpr()))];
 }
 function apply(){
@@ -1288,7 +1319,10 @@ vp.addEventListener("wheel",e=>{   // PC 마우스 휠 확대
   e.preventDefault(); const p=rel(e), f=Math.exp(-e.deltaY*0.0015);
   const cx=(p.x-V.tx)/V.k, cy=(p.y-V.ty)/V.k, [k0,k1]=kLimits(); V.k=Math.max(k0,Math.min(k1,V.k*f)); V.tx=p.x-cx*V.k; V.ty=p.y-cy*V.k; apply(); scheduleDetail();
 },{passive:false});
-window.addEventListener("resize",()=>{if(!$("#viewer").hidden&&V.page){apply();scheduleDetail();}});
+let wasLand=LAND.matches;
+window.addEventListener("resize",()=>{if(!$("#viewer").hidden&&V.page){
+  if(LAND.matches!==wasLand){ wasLand=LAND.matches; const p=V.sel&&V.pins.find(q=>q.id===V.sel); if(p&&!$("#pinSheet").hidden) setTimeout(()=>centerOnPin(p),60); else fitPage(); }   // 돌렸으면 다시 맞춤
+  else apply(); scheduleDetail();}});
 
 const normPt=p=>[+Math.min(1,Math.max(0,(p.x-V.tx)/(V.pw*V.k))).toFixed(5), +Math.min(1,Math.max(0,(p.y-V.ty)/(V.ph*V.k))).toFixed(5)];
 function endDraw(g,p){
