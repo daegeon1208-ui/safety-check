@@ -64,8 +64,9 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .toolbar button{flex:1;padding:12px 4px;border-radius:12px;background:var(--chip);font-weight:600;font-size:15px}
 .toolbar button.on{background:var(--open);color:#fff}
 .toolbar{align-items:center}
-.toolbar button#addBtn{flex:1.7;padding:17px 4px;font-size:18px;font-weight:700;background:var(--open);color:#fff;box-shadow:0 3px 8px rgba(211,22,47,.35)}
-.toolbar button#addBtn.on{background:#7F1D1D}
+.toolbar button#addBtn{flex:none;width:64px;height:64px;padding:0;margin:-26px 6px 0;border-radius:50%;display:grid;place-items:center;background:var(--open);color:#fff;border:4px solid var(--card);box-shadow:0 4px 12px rgba(211,22,47,.45)}
+.toolbar button#addBtn svg{width:30px;height:30px;display:block}
+.toolbar button#addBtn.on{background:#374151;box-shadow:0 4px 12px rgba(0,0,0,.35)}
 #shapeLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .modebar{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;pointer-events:auto}
 .modebar button{padding:9px 14px;border-radius:20px;background:rgba(255,255,255,.95);font-weight:600;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
@@ -78,9 +79,11 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .sw span::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:.15s}
 .sw input:checked+span{background:var(--done)}
 .sw input:checked+span::after{left:21px}
-.capimg{width:100%;border-radius:10px;border:1px solid var(--line);display:block;margin:4px 0 6px}
-.capwrap{position:relative}
-#capView.pen{touch-action:none;outline:3px solid var(--accent);outline-offset:-3px}
+.capimg{width:100%;display:block;transform-origin:0 0}
+.capwrap{position:relative;overflow:hidden;border-radius:10px;border:1px solid var(--line);margin:4px 0 6px;background:#fff}
+.capwrap.pen{touch-action:none}
+.capwrap.pen::after{content:"";position:absolute;inset:0;border:3px solid var(--accent);border-radius:10px;pointer-events:none}
+.exp .capwrap button.capfit{position:absolute;right:8px;top:8px;z-index:1;display:block;width:auto;margin:0;padding:6px 11px;border-radius:16px;font-size:13px;background:rgba(17,24,39,.75);color:#fff}
 .captools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 6px}
 .exp .captools button{display:inline-block;width:auto;margin:0;padding:8px 12px;border-radius:18px;font-size:14px;background:var(--chip);color:var(--ink)}
 .exp .captools button.on{background:var(--accent);color:#fff}
@@ -92,7 +95,8 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 /* 아래에서 올라오는 창 */
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10}
 .sheet{position:fixed;left:0;right:0;bottom:0;max-height:88%;background:var(--card);border-radius:18px 18px 0 0;z-index:11;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
-.sheet .sh{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:#D1D5DB;margin:8px auto 0;flex:none}
+.sheet .sh{display:flex;align-items:center;gap:10px;padding:8px 16px 10px;border-bottom:1px solid var(--line)}
 .sheet .sh h2{flex:1;margin:0;font-size:17px}
 .sheet .sb{overflow:auto;padding:12px 16px 16px}
 .x{font-size:22px;padding:2px 8px;color:var(--sub)}
@@ -155,6 +159,20 @@ header .cloud[data-state="err"] i{background:#F87171}
 .exp .pgrow button.rm{color:var(--open)}
 .ibtn{padding:4px 10px;border-radius:8px;background:var(--chip);font-size:13px;font-weight:600;margin-left:6px}
 .exp .danger{background:#FDE8EB;color:var(--open)}
+.actsub{font-size:13px;color:var(--sub);margin:-4px 2px 8px}
+.alist{background:var(--chip);border-radius:14px;overflow:hidden;margin-bottom:12px}
+.exp button.arow{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:11px 14px;border-radius:0;background:none;color:var(--ink);text-align:left;font-weight:600;font-size:15.5px;border-bottom:1px solid rgba(0,0,0,.06)}
+.exp button.arow:last-child{border-bottom:none}
+.exp button.arow:active{background:rgba(0,0,0,.06)}
+.arow .ic{width:34px;height:34px;border-radius:9px;background:var(--card);color:var(--accent);display:grid;place-items:center;flex:none;font-size:14px;font-weight:700}
+.arow .ic svg{width:19px;height:19px}
+.arow .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.arow .tx b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arow small{font-weight:400;font-size:12.5px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp button.arow.danger{background:none;color:var(--open)}
+.arow.danger .ic{color:var(--open);background:#FDE8EB}
+.arow.cur .ic{background:var(--accent);color:#fff}
+.arow .ck{font-size:12px;color:var(--accent);font-weight:600;flex:none}
 #vTitle{cursor:pointer}
 .exp p{color:var(--sub);font-size:14px;line-height:1.6;margin:4px 0}
 </style>
@@ -187,7 +205,7 @@ header .cloud[data-state="err"] i{background:#F87171}
   </div>
   <div class="toolbar">
     <button id="listBtn">목록</button>
-    <button id="addBtn">＋ 핀 찍기</button>
+    <button id="addBtn" aria-label="핀 찍기"></button>
     <button id="expBtn">내보내기</button>
   </div>
 </section>
@@ -297,7 +315,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 참여자(사람별 핀 색)를 봅니다. 핀 색은 사람마다 다르고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
     <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
     <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 손가락으로 끌어 그리고, 다각형은 꼭짓점을 차례로 누르고 첫 점이나 완료를 누릅니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
-    <p>· <b>캡처</b>: 캡처를 누르고 한 손가락으로 영역을 끌어 그리면 그 부분이 그림으로 만들어집니다. 핀 표시 스위치로 핀을 넣거나 뺄 수 있고, 보내기·복사·저장할 수 있습니다.</p>
+    <p>· <b>캡처</b>: 내보내기 → 부분 캡처를 누르고 한 손가락으로 영역을 끌어 그리면 그 부분이 그림으로 만들어집니다. 핀 표시 스위치로 핀을 넣거나 뺄 수 있고, 보내기·복사·저장할 수 있습니다.</p>
     <p>· <b>스케치</b>: 핀 찍기 → ✎ 스케치에서 한 손가락으로 그립니다(두 손가락은 확대·이동). 완료를 누르면 번호와 메모가 붙는 스케치 핀이 됩니다.</p>
     <p>5. 이미 찍은 핀을 누르면 다시 열립니다. <b>목록</b>에서 핀을 고르면 그 위치로 이동합니다.</p>
     <p>6. <b>내보내기</b>를 누르면 핀이 표시된 도면과 하자 목록(사진 포함)을 PDF 한 파일로 만들어 카톡 등으로 보낼 수 있습니다.</p>
@@ -314,7 +332,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="2.5";
+const APP_VER="2.6";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -357,6 +375,24 @@ function loadPdfjs(){
   return pdfjsReady;
 }
 
+/* ---------- 아이콘 ---------- */
+const svgI=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICON={
+  pin:`<svg viewBox="0 0 24 24"><path d="M12 2.5a7 7 0 0 0-7 7c0 5.1 6.1 11.4 6.4 11.7a.85.85 0 0 0 1.2 0C12.9 20.9 19 14.6 19 9.5a7 7 0 0 0-7-7z" fill="currentColor"/><circle cx="12" cy="9.5" r="2.7" fill="#D3162F"/></svg>`,
+  close:svgI('<path d="M6 6l12 12M18 6L6 18" stroke-width="2.6"/>'),
+  info:svgI('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'),
+  share:svgI('<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>'),
+  edit:svgI('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+  pages:svgI('<rect x="7" y="3" width="13" height="16" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h10"/>'),
+  copy:svgI('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
+  trash:svgI('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+  crop:svgI('<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>'),
+  pdf:svgI('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>'),
+  layers:svgI('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>'),
+  doc:svgI('<rect x="5" y="3" width="14" height="18" rx="2"/>'),
+};
+$("#addBtn").innerHTML=ICON.pin;
+
 /* ---------- 창 열고 닫기 ---------- */
 const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet"];
 let onSheetClose=null;
@@ -365,6 +401,29 @@ function closeSheets(){const cb=onSheetClose;onSheetClose=null;sheets.forEach(s=
 $("#sheetBg").addEventListener("click",closeSheets);
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeSheets));
 $("#helpBtn").addEventListener("click",()=>openSheet("#helpSheet"));
+/* 창을 아래로 끌어내리면 닫힌다 (위 손잡이·제목 줄, 또는 내용이 맨 위일 때) */
+function sheetSwipe(sh){
+  const g=document.createElement("div"); g.className="grab"; sh.prepend(g);
+  let st=null;
+  sh.addEventListener("touchstart",e=>{ st=null;
+    if(e.touches.length!==1) return;
+    const t=e.target, sb=t.closest(".sb");
+    if(t.closest("canvas,input,textarea,select,.capwrap,.pgrow")) return;
+    if(sb&&sb.scrollTop>0) return;
+    st={y:e.touches[0].clientY,t:Date.now(),dy:0,on:false,sb}; },{passive:true});
+  sh.addEventListener("touchmove",e=>{ if(!st) return;
+    if(e.touches.length!==1){ st.on&&(sh.style.transform=""); st=null; return; }
+    const dy=e.touches[0].clientY-st.y;
+    if(!st.on){ if(dy<-4){st=null;return;} if(dy<10||(st.sb&&st.sb.scrollTop>0)) return; st.on=true; st.y+=10; sh.style.transition="none"; }
+    e.preventDefault(); st.dy=Math.max(0,dy-10); sh.style.transform=`translateY(${st.dy}px)`; },{passive:false});
+  const end=()=>{ const s=st; st=null; if(!s||!s.on) return;
+    const v=s.dy/Math.max(1,Date.now()-s.t);
+    sh.style.transition="transform .18s ease-out";
+    if(s.dy>100||(s.dy>35&&v>0.45)){ sh.style.transform="translateY(100%)"; setTimeout(()=>{ closeSheets(); sh.style.transition=""; sh.style.transform=""; },170); }
+    else { sh.style.transform=""; setTimeout(()=>{sh.style.transition="";},200); } };
+  sh.addEventListener("touchend",end); sh.addEventListener("touchcancel",end);
+}
+sheets.forEach(s=>sheetSwipe($(s)));
 
 /* ---------- 도면 목록 ---------- */
 let remoteOnly=[];   // 구글에는 있지만 이 휴대폰에는 아직 없는 도면
@@ -391,7 +450,17 @@ $("#dlist").addEventListener("click",async e=>{
   const more=e.target.closest("[data-more]");
   if(more){
     const d=await dbGet("drawings",more.dataset.more), shared=cloudOn()&&d.cloud;
-    const act=await chooseAction(d.name,[["info","도면 정보 (올린 사람·참여자)"],["share","공유하기 (핀 표시 도면 + 사진대지 PDF)"],["rename","이름 바꾸기"],["pages","쪽 편집 (쪽 이름·다른 PDF 합치기·빼기)"],["copy","도면 복사"],["delete",shared?"도면과 핀 모두 삭제 (함께 쓰는 사람 모두)":"도면과 핀 모두 삭제"]]);
+    const mp=(await pinsOf(d.id)).filter(p=>!p.deleted), mo=mp.filter(p=>p.status!=="done").length;
+    const act=await chooseAction(d.name,[
+      ["share","공유하기","핀 표시 도면 + 사진대지 PDF","share"],
+      ["info","도면 정보","올린 사람 · 참여자 · 최근 변경","info"],
+      ["-"],
+      ["rename","이름 바꾸기","","edit"],
+      ["pages","쪽 편집","쪽 이름 · 다른 PDF 합치기 · 빼기","pages"],
+      ["copy","도면 복사","핀·사진까지 또는 도면만","copy"],
+      ["-"],
+      ["delete","삭제",shared?"도면과 핀 모두 · 함께 쓰는 사람 모두에게서":"도면과 핀 모두 · 되돌릴 수 없음","trash"]],
+      {sub:`${d.pages}쪽 · 미조치 ${mo} · 완료 ${mp.length-mo}${shared?" · 구글 공유":""}`});
     try{
       if(act==="info"){ showInfo(d); }
       else if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted)); }
@@ -443,7 +512,7 @@ $("#pdfInput").addEventListener("change",async e=>{
 /* 도면 복사: 같은 PDF로 새 도면을 만든다. 핀·사진까지 복사할지 고른다 */
 async function copyDrawing(d){
   if(cloudOn()&&d.cloud&&d.stale){ toast("먼저 도면을 열어 바뀐 도면을 받아 주세요",3000); return; }
-  const how=await chooseAction(`「${d.name}」 복사`,[["pins","도면 + 핀·사진까지 복사"],["only","도면만 복사 (핀 없이)"]]); if(!how) return;
+  const how=await chooseAction(`「${d.name}」 복사`,[["pins","도면 + 핀·사진까지 복사","지금 찍힌 핀과 사진을 그대로","layers"],["only","도면만 복사","핀 없이 빈 도면으로","doc"]]); if(!how) return;
   const nm=prompt("새 도면 이름",d.name+" (복사)"); if(!nm||!nm.trim()) return;
   const f=await dbGet("files",d.id); if(!f){ toast("도면 파일이 없습니다"); return; }
   toast("복사하는 중…",60000);
@@ -496,10 +565,13 @@ async function renameDrawing(d){
   if(cloudOn()&&d.cloud){ try{ await api({action:"renameDrawing",id:d.id,name:nm.trim()}); }catch(err){ toast("구글에 반영하지 못했습니다: "+err.message,4000); return false; } }
   d.name=nm.trim(); await dbPut("drawings",d); toast("이름을 바꿨습니다"); return true;
 }
-function chooseAction(title,items){
+/* items: [값, 제목, 설명, 아이콘] — 값이 "-"이면 구분선, 아이콘 자리에 글자를 넣어도 된다. opt.sub: 제목 아래 작은 글, opt.cur: 지금 고른 값 */
+function chooseAction(title,items,opt){
+  opt=opt||{};
   return new Promise(res=>{
     $("#actTitle").textContent=title;
-    $("#actBody").innerHTML=items.map(([v,t])=>`<button data-v="${v}" class="${v==="delete"?"danger":"sec"}">${esc(t)}</button>`).join("");
+    $("#actBody").innerHTML=(opt.sub?`<div class="actsub">${esc(opt.sub)}</div>`:"")+`<div class="alist">`+items.map(([v,t,sub,ic])=>v==="-"?`</div><div class="alist">`:
+      `<button data-v="${v}" class="arow${v==="delete"?" danger":""}${opt.cur===v?" cur":""}"><span class="ic">${ic?(ICON[ic]||esc(ic)):""}</span><span class="tx"><b>${esc(t)}</b>${sub?`<small>${esc(sub)}</small>`:""}</span>${opt.cur===v?'<span class="ck">보는 중</span>':""}</button>`).join("")+`</div>`;
     let done=false; const finish=v=>{ if(done) return; done=true; res(v); };
     $("#actBody").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; onSheetClose=null; closeSheets(); finish(b.dataset.v); };
     openSheet("#actSheet"); onSheetClose=()=>finish(null);
@@ -863,7 +935,8 @@ function fitPage(){
 }
 function clampView(){
   const cw=vp.clientWidth, ch=vp.clientHeight;
-  const minK=Math.min(cw/V.pw,ch/V.ph)*0.5, maxK=Math.max(minK*60, 12);
+  // 너무 크게 확대하면 아이폰이 그림 메모리를 못 버티고 화면을 새로 고친다 → 화면 맞춤의 20배, 렌더 배율 12배까지
+  const fitK=Math.min(cw/V.pw,ch/V.ph), minK=fitK*0.75, maxK=Math.max(fitK*4,Math.min(fitK*20,12/dpr()));
   V.k=Math.max(minK,Math.min(maxK,V.k));
   const w=V.pw*V.k, h=V.ph*V.k, m=60;   // 도면이 화면 밖으로 완전히 나가지 않게
   V.tx=Math.min(cw-m,Math.max(m-w,V.tx)); V.ty=Math.min(ch-m,Math.max(m-h,V.ty));
@@ -1162,7 +1235,7 @@ async function finishDraft(){
 }
 function updateModeUI(){
   $("#addBtn").classList.toggle("on",V.mode==="add");
-  $("#addBtn").textContent=V.mode==="add"?"취소":"＋ 핀 찍기";
+  $("#addBtn").innerHTML=V.mode==="add"?ICON.close:ICON.pin; $("#addBtn").setAttribute("aria-label",V.mode==="add"?"핀 찍기 취소":"핀 찍기");
   $("#expBtn").classList.toggle("on",V.mode==="capture");
   $("#expBtn").textContent=V.mode==="capture"?"캡처 취소":"내보내기";
   const h=$("#hint"), mb=$("#modeBar"), d=V.draft, n=d?d.pts.length:0;
@@ -1217,7 +1290,7 @@ $("#prevPg").addEventListener("click",()=>{if(V.pageNo>1)showPage(V.pageNo-1);})
 $("#nextPg").addEventListener("click",()=>{if(V.pageNo<V.drawing.pages)showPage(V.pageNo+1);});
 $("#pgMid").addEventListener("click",async()=>{
   const d=V.drawing; if(!d||d.pages<2) return;
-  const v=await chooseAction("쪽 고르기",Array.from({length:d.pages},(_,i)=>[String(i+1),`${i+1}쪽${pgName(d,i+1)?" · "+pgName(d,i+1):""}${i+1===V.pageNo?"  (보는 중)":""}`]));
+  const v=await chooseAction("쪽 고르기",Array.from({length:d.pages},(_,i)=>[String(i+1),pgName(d,i+1)||`${i+1}쪽`,pgName(d,i+1)?`${i+1}쪽`:"",String(i+1)]),{cur:String(V.pageNo)});
   if(v&&+v!==V.pageNo) showPage(+v);
 });
 
@@ -1387,16 +1460,17 @@ async function openCapture(pts,keep){
       <div class="captools"><button id="capPen" class="${CAP.pen?"on":""}">✎ 펜으로 그리기</button>
         ${cols.map(([c,t])=>`<button class="dot${CAP.color===c?" on":""}" data-col="${c}" style="background:${c}" aria-label="${t}"></button>`).join("")}
         <button id="capUndo" class="sm">되돌리기</button><button id="capClear" class="sm">모두 지우기</button></div>
-      <p id="capPenHint" class="caphint" ${CAP.pen?"":"hidden"}>그림 위를 손가락으로 그리세요. 다 그렸으면 ✎ 를 다시 눌러 끄세요.</p>
-      <div class="capwrap"><canvas id="capView" class="capimg"></canvas></div>`
+      <p id="capPenHint" class="caphint" ${CAP.pen?"":"hidden"}>한 손가락으로 그리고, 두 손가락으로 벌려 확대하거나 옮기세요. 다 그렸으면 ✎ 를 다시 눌러 끄세요.</p>
+      <div class="capwrap"><canvas id="capView" class="capimg"></canvas><button class="capfit" id="capFit" hidden>전체 보기</button></div>`
       +(canShare?`<button id="capShare">보내기 (카톡·메일·사진에 저장)</button>`:"")
       +(canCopy?`<button id="capCopy" class="sec">복사 (다른 앱에 붙여넣기)</button>`:"")
       +`<button id="capSave" class="sec">그림 열기·저장</button>`;
     const view=$("#capView"); view.width=cv.width; view.height=cv.height;
     capRedraw(); await capMakeFile();
     $("#capPinsSw").onchange=e=>{ capPins=e.target.checked; try{localStorage.setItem("capPins",capPins?"1":"0");}catch(_){} openCapture(pts,true); };
-    $("#capPen").onclick=()=>{ CAP.pen=!CAP.pen; $("#capPen").classList.toggle("on",CAP.pen); $("#capPenHint").hidden=!CAP.pen; view.classList.toggle("pen",CAP.pen); };
-    view.classList.toggle("pen",CAP.pen);
+    const wrap=view.parentNode;
+    $("#capPen").onclick=()=>{ CAP.pen=!CAP.pen; $("#capPen").classList.toggle("on",CAP.pen); $("#capPenHint").hidden=!CAP.pen; wrap.classList.toggle("pen",CAP.pen); };
+    wrap.classList.toggle("pen",CAP.pen);
     body.querySelectorAll("[data-col]").forEach(b=>b.onclick=()=>{ CAP.color=b.dataset.col; body.querySelectorAll("[data-col]").forEach(x=>x.classList.toggle("on",x===b));
       if(!CAP.pen) $("#capPen").click(); });
     $("#capUndo").onclick=async()=>{ CAP.strokes.pop(); capRedraw(); await capMakeFile(); };
@@ -1427,13 +1501,31 @@ async function capMakeFile(){   // 보내기·복사가 바로 되도록 그림 
   capFile=new File([blob],CAP.name,{type:"image/png"});
   if(capUrl) URL.revokeObjectURL(capUrl); capUrl=URL.createObjectURL(capFile);
 }
+/* 펜: 한 손가락 = 그리기, 두 손가락 = 확대·축소·이동 (그림 크기는 그대로, 보이는 배율만 바뀜) */
 function capPenEvents(view){
-  let cur=null;
+  const wrap=view.parentNode, fit=$("#capFit"), P=new Map();
+  let cur=null, g=null, hold=false; const Z={k:1,x:0,y:0};
   const pt=e=>{ const b=view.getBoundingClientRect(); return [Math.min(1,Math.max(0,(e.clientX-b.left)/b.width)),Math.min(1,Math.max(0,(e.clientY-b.top)/b.height))]; };
-  view.onpointerdown=e=>{ if(!CAP.pen) return; e.preventDefault(); try{view.setPointerCapture(e.pointerId);}catch(_){}
-    cur={color:CAP.color,pts:[pt(e)]}; CAP.strokes.push(cur); capRedraw(); };
-  view.onpointermove=e=>{ if(!cur) return; e.preventDefault(); cur.pts.push(pt(e)); capRedraw(); };
-  view.onpointerup=view.onpointercancel=async()=>{ if(!cur) return; cur=null; await capMakeFile(); };
+  const loc=e=>{ const b=wrap.getBoundingClientRect(); return {x:e.clientX-b.left,y:e.clientY-b.top}; };
+  const setZ=()=>{ const W=view.offsetWidth, H=view.offsetHeight;
+    Z.k=Math.max(1,Math.min(6,Z.k)); Z.x=Math.min(0,Math.max(W-W*Z.k,Z.x)); Z.y=Math.min(0,Math.max(H-H*Z.k,Z.y));
+    view.style.transform=Z.k>1.001?`translate(${Z.x}px,${Z.y}px) scale(${Z.k})`:""; fit.hidden=Z.k<=1.001; };
+  fit.onclick=()=>{ Z.k=1; Z.x=Z.y=0; setZ(); };
+  const two=()=>{ const [a,b]=[...P.values()]; return {m:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},d:Math.hypot(a.x-b.x,a.y-b.y)||1}; };
+  wrap.onpointerdown=e=>{ if(!CAP.pen||e.target===fit) return; e.preventDefault(); try{wrap.setPointerCapture(e.pointerId);}catch(_){}
+    P.set(e.pointerId,loc(e));
+    if(P.size===1&&!hold){ cur={color:CAP.color,pts:[pt(e)]}; CAP.strokes.push(cur); capRedraw(); }
+    else if(P.size===2){ if(cur){ CAP.strokes.splice(CAP.strokes.indexOf(cur),1); cur=null; capRedraw(); }   // 두 번째 손가락이 닿으면 그리던 선은 취소
+      hold=true; const t=two(); g={m:t.m,d:t.d,k:Z.k,x:Z.x,y:Z.y}; } };
+  wrap.onpointermove=e=>{ if(!P.has(e.pointerId)) return; e.preventDefault(); P.set(e.pointerId,loc(e));
+    if(g&&P.size>=2){ const t=two(), k=Math.max(1,Math.min(6,g.k*t.d/g.d));
+      const cx=(g.m.x-g.x)/g.k, cy=(g.m.y-g.y)/g.k;   // 처음 두 손가락 가운데 있던 그림 위치를 손가락 가운데에 붙여 둔다
+      Z.k=k; Z.x=t.m.x-cx*k; Z.y=t.m.y-cy*k; setZ(); }
+    else if(cur){ cur.pts.push(pt(e)); capRedraw(); } };
+  wrap.onpointerup=wrap.onpointercancel=async e=>{ P.delete(e.pointerId);
+    if(P.size<2) g=null;
+    if(!P.size){ hold=false; if(cur){ cur=null; await capMakeFile(); } } };
+  setZ();
 }
 function drawPinMark(ctx,x,y,r,no,col,done){   // 앱 화면과 같은 물방울 핀 (끝이 위치), 완료는 흐리게 + ✓
   ctx.save(); ctx.translate(x,y-r*1.42); if(done) ctx.globalAlpha*=0.6;
@@ -1450,7 +1542,7 @@ let expUrl=null, expFile=null;
 /* 내보내기: 부분 캡처(그림) 또는 핀 표시 도면 + 사진대지(PDF) */
 $("#expBtn").addEventListener("click",async()=>{
   if(V.mode==="capture"){ setMode("view"); return; }
-  const v=await chooseAction("내보내기",[["cap","부분 캡처 (끌어서 고른 부분을 그림으로)"],["pdf","핀 표시 도면 + 사진대지 (PDF)"]]);
+  const v=await chooseAction("내보내기",[["cap","부분 캡처","끌어서 고른 부분을 그림으로","crop"],["pdf","PDF 만들기","핀 표시 도면 + 사진대지","pdf"]]);
   if(v==="cap") setMode("capture"); else if(v==="pdf") showExport(V.drawing,V.pins);
 });
 /* 핀 표시 도면 + 사진대지 PDF를 만들어 보내기·저장 창을 띄운다 (도면 화면 내보내기, 목록 ⋯ 공유하기 공용) */
