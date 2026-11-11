@@ -115,6 +115,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 90px);transform:translateX(-50%);background:rgba(31,41,55,.95);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:30;max-width:90%;text-align:center}
 .exp a,.exp button{display:block;width:100%;text-align:center;padding:14px;border-radius:12px;background:var(--accent);color:#fff;font-weight:600;text-decoration:none;margin-top:10px}
 .exp .sec{background:var(--chip);color:var(--ink)}
+.exp [data-v="share"]{background:var(--accent);color:#fff}
 .exp .danger{background:#FDE8EB;color:var(--open)}
 #vTitle{cursor:pointer}
 .exp p{color:var(--sub);font-size:14px;line-height:1.6;margin:4px 0}
@@ -228,7 +229,8 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>2. 두 손가락으로 벌려 확대하고, 한 손가락으로 끌어 옮깁니다.</p>
     <p>3. <b>＋ 핀 찍기</b>를 누른 뒤 도면에서 위치를 누르면 번호 핀이 생깁니다.</p>
     <p>4. 핀 창에서 상태(미조치/조치완료), 업체, 내용, 사진을 넣습니다. 적는 즉시 저장됩니다.</p>
-    <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고, 끌어서 위치를 맞춘 뒤 떼면 놓입니다. 이미 찍은 핀도 꾹 눌러 끌면 옮겨집니다.</p>
+    <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀도 꾹 눌러 끌거나, 핀 창의 위치 옮기기로 옮깁니다. 옮긴 뒤 아래 <b>여기에 고정</b>을 눌러야 저장되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다.</p>
+    <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(핀 번호·상태·업체·내용·사진·위치도)를 PDF 한 파일로 보낼 수 있습니다.</p>
     <p>· 도면 이름은 도면 화면 위쪽 제목을 누르거나, 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
     <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 두 모서리를, 다각형은 꼭짓점을 차례로 누르고 첫 점이나 완료를 누릅니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
     <p>· <b>캡처</b>: 캡처를 누르고 영역의 두 모서리를 누르면 그 부분이 핀과 함께 그림으로 만들어집니다. 보내기·복사·저장할 수 있습니다.</p>
@@ -247,7 +249,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="1.3";
+const APP_VER="1.4";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -321,9 +323,10 @@ $("#dlist").addEventListener("click",async e=>{
   const more=e.target.closest("[data-more]");
   if(more){
     const d=await dbGet("drawings",more.dataset.more), shared=cloudOn()&&d.cloud;
-    const act=await chooseAction(d.name,[["rename","이름 바꾸기"],["delete",shared?"도면과 핀 모두 삭제 (함께 쓰는 사람 모두)":"도면과 핀 모두 삭제"]]);
+    const act=await chooseAction(d.name,[["share","공유하기 (핀 표시 도면 + 사진대지 PDF)"],["rename","이름 바꾸기"],["delete",shared?"도면과 핀 모두 삭제 (함께 쓰는 사람 모두)":"도면과 핀 모두 삭제"]]);
     try{
-      if(act==="rename"){ if(await renameDrawing(d)) renderHome(); }
+      if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted)); }
+      else if(act==="rename"){ if(await renameDrawing(d)) renderHome(); }
       else if(act==="delete"){
         const ps=(await pinsOf(d.id)).filter(p=>!p.deleted);
         if(confirm(`「${d.name}」 도면과 핀 ${ps.length}개를 삭제할까요?${shared?"\n함께 쓰는 사람들 휴대폰에서도 사라집니다. (구글 드라이브의 PDF·사진 파일은 남겨 둡니다)":" 되돌릴 수 없습니다."}`)){
@@ -467,7 +470,7 @@ async function syncPins(){
     const all=await pinsOf(d.id); let changed=false;
     for(const sp of j.pins){
       const l=all.find(p=>p.id===sp.id);
-      if(l&&(l.dirty||l.id===V.sel)) continue;
+      if(l&&(l.dirty||l.id===V.sel||(V.pending&&V.pending.pin.id===l.id))) continue;
       if(sp.deleted){ if(l){ await dbDel("pins",l.id); V.pins=V.pins.filter(q=>q.id!==l.id); changed=true; } continue; }
       if(l&&l.serverUpdated===sp.updated) continue;
       const np={...sp,deleted:false,dirty:false,serverUpdated:sp.updated,
@@ -621,7 +624,7 @@ function drawPins(){
   const list=V.pins.filter(p=>p.page===V.pageNo).sort((a,b)=>a.no-b.no);
   pinLayer.innerHTML=list.map(p=>{
     const x=V.tx+p.nx*V.pw*V.k, y=V.ty+p.ny*V.ph*V.k;
-    return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${G&&G.type==="drag"&&G.pin===p?" drag":""}" style="left:${x}px;top:${y}px"><span>${p.no}</span></div>`;
+    return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p)?" drag":""}" style="left:${x}px;top:${y}px"><span>${p.no}</span></div>`;
   }).join("");
 }
 /* 확대했을 때 보이는 부분만 선명하게 다시 그린다 */
@@ -670,6 +673,7 @@ function longPress(p){
   if(!G||G.type!=="pan"||G.moved||ptrs.size!==1) return;
   let pin=pinAt(p), temp=false;
   if(V.mode==="capture"||(V.mode==="add"&&V.addKind!=="point")) return;
+  if(V.mode==="move"&&pin!==V.pending?.pin) pin=null;
   if(!pin&&V.mode==="add"){
     const nx=(p.x-V.tx)/(V.pw*V.k), ny=(p.y-48-V.ty)/(V.ph*V.k);
     if(nx<0||nx>1||ny<0||ny>1) return;
@@ -691,13 +695,28 @@ function dragTo(p){
   if(G.shape){ const dx=G.pin.nx-G.nx, dy=G.pin.ny-G.ny; G.pin.shape.pts=G.shape.pts.map(([x,y])=>[x+dx,y+dy]); }
   drawPins();
 }
+/* 끌어서 놓으면 바로 저장하지 않고 '여기에 고정'을 눌러야 저장 */
 async function endDrag(ok){
-  const g=G; G=null; updateModeUI();
-  if(g.temp){ V.pins=V.pins.filter(q=>q!==g.pin); if(ok) await addPin(g.pin.nx,g.pin.ny); else drawPins(); return; }
-  if(!ok){ g.pin.nx=g.nx; g.pin.ny=g.ny; if(g.shape) g.pin.shape=g.shape; drawPins(); return; }
-  if(g.pin.nx===g.nx&&g.pin.ny===g.ny){ drawPins(); return; }
-  setGeom(g.pin);
-  await savePin(g.pin); drawPins(); toast(`${g.pin.no}번 핀을 옮겼습니다`);
+  const g=G; G=null;
+  if(!ok){ if(V.pending){ updateModeUI(); drawPins(); return; }
+    if(g.temp) V.pins=V.pins.filter(q=>q!==g.pin); else { g.pin.nx=g.nx; g.pin.ny=g.ny; if(g.shape) g.pin.shape=g.shape; }
+    updateModeUI(); drawPins(); return; }
+  if(!V.pending) V.pending={pin:g.pin,temp:g.temp,orig:{nx:g.nx,ny:g.ny,shape:g.shape}};
+  setMode("move"); drawPins();
+}
+function startMove(p){   // 핀 창의 '위치 옮기기'
+  V.pending={pin:p,temp:false,orig:{nx:p.nx,ny:p.ny,shape:p.shape?JSON.parse(JSON.stringify(p.shape)):null,page:p.page}};
+  setMode("move"); drawPins();
+}
+function revertPending(){
+  const pd=V.pending; V.pending=null; if(!pd) return;
+  if(pd.temp) V.pins=V.pins.filter(q=>q!==pd.pin);
+  else { pd.pin.nx=pd.orig.nx; pd.pin.ny=pd.orig.ny; if(pd.orig.page) pd.pin.page=pd.orig.page; if(pd.orig.shape) pd.pin.shape=pd.orig.shape; }
+}
+async function confirmPending(){
+  const pd=V.pending; V.pending=null; if(!pd){ setMode("view"); return; }
+  if(pd.temp){ V.pins=V.pins.filter(q=>q!==pd.pin); setMode("view"); await addPin(pd.pin.nx,pd.pin.ny); return; }
+  setGeom(pd.pin); await savePin(pd.pin); setMode("view"); drawPins(); toast(`${pd.pin.no}번 ${pd.pin.shape?"구역":"핀"} 위치를 고정했습니다`);
 }
 vp.addEventListener("pointerdown",e=>{
   if(!V.page) return;
@@ -755,7 +774,7 @@ function onTap(p){
     return;
   }
   if(V.mode==="add"){ if(inside) addPin(nx,ny); else toast("도면 안쪽을 눌러 주세요"); return; }
-  if(V.mode==="move"){ if(inside) movePin(nx,ny); return; }
+  if(V.mode==="move"){ if(inside) movePin(nx,ny); return; }   // 누를 때마다 위치만 바뀌고, 고정은 버튼으로
   // 이미 있는 핀을 눌렀는지 (핀 머리 부분까지 넉넉하게)
   const best=pinAt(p); if(best) openPin(best.id);
 }
@@ -776,13 +795,12 @@ async function addPin(nx,ny,shape){
   V.mode="view"; updateModeUI(); openPin(pin.id);
 }
 async function movePin(nx,ny){
-  const p=V.pins.find(q=>q.id===V.sel); V.mode="view"; updateModeUI();
-  if(!p) return;
+  const p=V.pending&&V.pending.pin; if(!p) return;
   if(p.shape){ const dx=nx-p.nx, dy=ny-p.ny; p.shape.pts=p.shape.pts.map(([x,y])=>[x+dx,y+dy]); if(p.page!==V.pageNo) p.shape=null; }
-  Object.assign(p,{nx,ny,page:V.pageNo}); setGeom(p);
-  await savePin(p); drawPins(); toast(`${p.no}번 핀을 옮겼습니다`);
+  Object.assign(p,{nx,ny,page:V.pageNo}); drawPins();
 }
 function setMode(mode,kind){
+  if(mode!=="move"&&V.pending) revertPending();
   V.mode=mode; if(kind) V.addKind=kind;
   V.draft=(mode==="capture")?{kind:"capture",pts:[]}:(mode==="add"&&V.addKind!=="point")?{kind:V.addKind,pts:[]}:null;
   updateModeUI(); drawShapes();
@@ -813,7 +831,11 @@ function updateModeUI(){
     mb.hidden=false;
   }
   else if(V.mode==="capture"){ h.textContent=n?"반대쪽 모서리를 누르세요":"캡처할 영역의 한쪽 모서리를 누르세요"; if(n){mb.innerHTML=`<button data-act="undo">되돌리기</button>`;mb.hidden=false;} }
-  else if(V.mode==="move") h.textContent="옮길 위치를 누르세요";
+  else if(V.mode==="move"){
+    const pp=V.pending&&V.pending.pin;
+    h.textContent=pp&&pp.temp?"위치를 맞추고 '여기에 고정'을 누르세요":`${pp?pp.no+"번 ":""}위치를 누르거나 꾹 눌러 끈 뒤 '여기에 고정'`;
+    mb.innerHTML=`<button data-act="cancelmove">취소</button><button data-act="confirm" class="go">여기에 고정</button>`; mb.hidden=false;
+  }
   else h.hidden=true;
 }
 $("#modeBar").addEventListener("pointerdown",e=>e.stopPropagation());
@@ -822,12 +844,14 @@ $("#modeBar").addEventListener("click",e=>{
   if(b.dataset.kind){ setMode("add",b.dataset.kind); return; }
   if(b.dataset.act==="undo"&&V.draft){ V.draft.pts.pop(); drawShapes(); updateModeUI(); }
   if(b.dataset.act==="done") finishDraft();
+  if(b.dataset.act==="confirm") confirmPending();
+  if(b.dataset.act==="cancelmove"){ setMode("view"); drawPins(); }
 });
 $("#vTitle").addEventListener("click",async()=>{ if(V.drawing&&await renameDrawing(V.drawing)) $("#vTitle").textContent=V.drawing.name+" ✎"; });
-$("#addBtn").addEventListener("click",()=>setMode(V.mode==="add"?"view":"add",V.addKind||"point"));
+$("#addBtn").addEventListener("click",()=>setMode(V.mode==="add"?"view":"add","point"));
 $("#capBtn").addEventListener("click",()=>setMode(V.mode==="capture"?"view":"capture"));
 $("#backBtn").addEventListener("click",()=>{
-  $("#viewer").hidden=true; $("#home").hidden=false; V.mode="view";
+  setMode("view"); $("#viewer").hidden=true; $("#home").hidden=false;
   if(V.renderTask){try{V.renderTask.cancel();}catch(e){}} V.page=null;
   if(V.pdf){V.pdf.destroy();V.pdf=null;}
   V.drawing=null; V.pins=[]; renderHome(); syncDrawings();
@@ -907,7 +931,7 @@ $("#photoInput").addEventListener("change",async e=>{
   }catch(err){toast(err.message,3000);}
 });
 $("#moveBtn").addEventListener("click",()=>{
-  const id=V.sel; onSheetClose=null; closeSheets(); V.sel=id; setMode("move"); drawPins();
+  const p=selPin(); onSheetClose=null; flushSave(); closeSheets(); V.sel=null; freeUrls(); if(p) startMove(p);
 });
 $("#delPin").addEventListener("click",async()=>{
   const p=selPin(); if(!p||!confirm(`${p.no}번 핀을 삭제할까요?`)) return;
@@ -992,48 +1016,93 @@ function drawPinMark(ctx,x,y,r,no,col){   // 앱 화면과 같은 물방울 핀 
 
 /* ---------- 내보내기: 핀 찍힌 도면 + 하자 목록 PDF ---------- */
 let expUrl=null, expFile=null;
-$("#expBtn").addEventListener("click",async()=>{
+$("#expBtn").addEventListener("click",()=>showExport(V.drawing,V.pins));
+/* 핀 표시 도면 + 사진대지 PDF를 만들어 보내기·저장 창을 띄운다 (도면 화면 내보내기, 목록 ⋯ 공유하기 공용) */
+async function showExport(drawing,pinList){
   const body=$("#expBody");
-  if(!V.pins.length){body.innerHTML=`<p>아직 찍은 핀이 없습니다.</p>`;openSheet("#expSheet");return;}
-  body.innerHTML=`<p>핀이 표시된 도면과 하자 목록(사진 포함)을 PDF로 만드는 중…</p>`;
   openSheet("#expSheet");
+  if(!pinList.length){body.innerHTML=`<p>아직 찍은 핀이 없습니다.</p>`;return;}
+  const msg=t=>{body.innerHTML=`<p>${esc(t)}</p>`;};
+  msg("핀이 표시된 도면과 사진대지를 PDF로 만드는 중…");
   try{
-    const bytes=await buildExport();
+    const bytes=await buildExport(drawing,pinList,msg);
     let name="";
     const makeFile=()=>{
-      const base=($("#expName").value.trim()||`${V.drawing.name}_하자목록_${dayStr(Date.now())}`).replace(/\.pdf$/i,"");
+      const base=($("#expName").value.trim()||`${drawing.name}_사진대지_${dayStr(Date.now())}`).replace(/\.pdf$/i,"");
       name=(base+".pdf").replace(/[\\/:*?"<>|]/g,"_");
       expFile=new File([bytes],name,{type:"application/pdf"});
       if(expUrl) URL.revokeObjectURL(expUrl); expUrl=URL.createObjectURL(expFile);
-      const a=$("#expOpen"); if(a){ a.href=expUrl; a.download=name; }
+      const el=$("#expOpen"); if(el){ el.href=expUrl; el.download=name; }
     };
-    const o=V.pins.filter(p=>p.status!=="done").length;
+    const o=pinList.filter(p=>p.status!=="done").length;
     const canShare=navigator.canShare&&navigator.canShare({files:[new File([bytes],"a.pdf",{type:"application/pdf"})]});
-    body.innerHTML=`<p>핀 ${V.pins.length}개 (미조치 ${o} · 완료 ${V.pins.length-o})</p>
-      <div class="lbl">파일 이름</div><input class="inp" id="expName" autocomplete="off" value="${esc(`${V.drawing.name}_하자목록_${dayStr(Date.now())}`)}">`
+    body.innerHTML=`<p>핀 ${pinList.length}개 (미조치 ${o} · 완료 ${pinList.length-o}) · 도면 + 사진대지</p>
+      <div class="lbl">파일 이름</div><input class="inp" id="expName" autocomplete="off" value="${esc(`${drawing.name}_사진대지_${dayStr(Date.now())}`)}">`
       +(canShare?`<button id="expShare">보내기 (카톡·메일·파일에 저장)</button>`:"")
       +`<a id="expOpen" class="${canShare?"sec":""}" target="_blank">PDF 열기·저장</a>`;
     makeFile();
     $("#expName").addEventListener("input",makeFile);
     const sb=$("#expShare"); if(sb) sb.addEventListener("click",async()=>{makeFile();try{await navigator.share({files:[expFile],title:name});}catch(e){}});
   }catch(err){console.error(err);body.innerHTML=`<p>PDF를 만들지 못했습니다: ${esc(err.message)}</p>`;}
-});
+}
 let pdfLibReady=null, fontBytes=null;
-async function buildExport(){
+/* 위치도: 도면 쪽마다 한 번 크게 그려 두고 핀 주변만 잘라 쓴다 */
+async function pageImages(drawing,pins,progress){
+  await loadPdfjs();
+  const file=await dbGet("files",drawing.id);
+  const pdf=await pdfjsLib.getDocument({data:file.data.slice(0)}).promise;
+  const out={};
+  try{
+    for(const n of [...new Set(pins.map(p=>p.page))]){
+      progress&&progress(`위치도 그리는 중… (${n}쪽)`);
+      const page=await pdf.getPage(n), v1=page.getViewport({scale:1});
+      const sc=Math.min(4096/Math.max(v1.width,v1.height),Math.sqrt(14e6/(v1.width*v1.height)),6);
+      const c=document.createElement("canvas"), v=page.getViewport({scale:sc});
+      c.width=Math.floor(v.width); c.height=Math.floor(v.height);
+      const ctx=c.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,c.width,c.height);
+      await page.render({canvasContext:ctx,viewport:v}).promise;
+      out[n]=c;
+    }
+  }finally{ pdf.destroy(); }
+  return out;
+}
+async function locCrop(full,pin,pins,aspect){
+  const W=full.width,H=full.height, [cx,cy]=[pin.nx*W,pin.ny*H];
+  let cw=Math.max(W,H)*0.2;
+  if(pin.shape){ const ps=shapePts(pin.shape); const xs=ps.map(q=>q[0]*W), ys=ps.map(q=>q[1]*H);
+    cw=Math.max(cw,(Math.max(...xs)-Math.min(...xs))*1.4,(Math.max(...ys)-Math.min(...ys))*1.4*aspect); }
+  const chh=cw/aspect, x0=cx-cw/2, y0=cy-chh/2;
+  const ow=720, oh=Math.round(ow/aspect), k=ow/cw;
+  const c=document.createElement("canvas"); c.width=ow; c.height=oh;
+  const ctx=c.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,ow,oh);
+  ctx.drawImage(full,x0,y0,cw,chh,0,0,ow,oh);
+  const P=([nx,ny])=>[(nx*W-x0)*k,(ny*H-y0)*k];
+  for(const q of pins){ if(q.page!==pin.page||!q.shape) continue;
+    const col=q.status==="done"?"21,128,61":"211,22,47", me=q===pin;
+    ctx.beginPath(); shapePts(q.shape).forEach((t,i)=>{const [x,y]=P(t); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
+    ctx.fillStyle=`rgba(${col},${me?.22:.1})`; ctx.fill(); ctx.strokeStyle=`rgba(${col},${me?1:.5})`; ctx.lineWidth=me?5:3; ctx.stroke(); }
+  for(const q of pins){ if(q.page!==pin.page||q===pin) continue; const [x,y]=P([q.nx,q.ny]);
+    if(x>-40&&y>-40&&x<ow+40&&y<oh+60){ ctx.globalAlpha=.55; drawPinMark(ctx,x,y,20,q.no,q.status==="done"?"#15803D":"#D3162F"); ctx.globalAlpha=1; } }
+  const [x,y]=P([pin.nx,pin.ny]); drawPinMark(ctx,x,y,28,pin.no,pin.status==="done"?"#15803D":"#D3162F");
+  ctx.strokeStyle="#9CA3AF"; ctx.lineWidth=2; ctx.strokeRect(1,1,ow-2,oh-2);
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.88));
+  return await blob.arrayBuffer();
+}
+async function buildExport(drawing,pinList,progress){
   if(!pdfLibReady) pdfLibReady=Promise.all([loadScript("../lib/pdf-lib.min.js"),loadScript("../lib/fontkit.umd.min.js")]);
   await pdfLibReady;
   if(!fontBytes) fontBytes=await fetch("../fonts/KoPubDotum-Medium.ttf").then(r=>{if(!r.ok)throw new Error("글꼴을 받지 못했습니다");return r.arrayBuffer();});
   const {PDFDocument,rgb,degrees,StandardFonts}=PDFLib;
-  const file=await dbGet("files",V.drawing.id);
+  const file=await dbGet("files",drawing.id);
   const doc=await PDFDocument.load(file.data.slice(0),{ignoreEncryption:true});
   doc.registerFontkit(fontkit);
   const kor=await doc.embedFont(fontBytes,{subset:true});
   const num=await doc.embedFont(StandardFonts.HelveticaBold);
-  const RED=rgb(0.83,0.09,0.18), GREEN=rgb(0.08,0.5,0.24), WHITE=rgb(1,1,1), INK=rgb(0.12,0.16,0.22), SUB=rgb(0.42,0.45,0.5), LINE=rgb(0.85,0.86,0.88);
-  const pins=[...V.pins].sort((a,b)=>a.no-b.no);
-  for(const p of pins) for(const x of p.photos) await ensurePhoto(p,x);
+  const RED=rgb(0.83,0.09,0.18), GREEN=rgb(0.08,0.5,0.24), WHITE=rgb(1,1,1), INK=rgb(0.12,0.16,0.22), SUB=rgb(0.42,0.45,0.5), LINE=rgb(0.55,0.57,0.6), HEAD=rgb(0.94,0.95,0.96);
+  const pins=[...pinList].sort((a,b)=>a.no-b.no);
+  for(const p of pins){ if(p.photos.some(x=>!x.data)) progress&&progress(`${p.no}번 핀 사진 받는 중…`); for(const x of p.photos) await ensurePhoto(p,x); }
 
-  // 1) 도면 위에 번호 핀 (원본 도면은 그대로, 선명함 유지)
+  // 1) 도면 위에 번호 핀·구역 (원본 도면은 그대로, 선명함 유지)
   for(const p of pins){
     const pg=doc.getPage(p.page-1); if(!pg) continue;
     if(p.shape&&p.shape.pdf){
@@ -1049,51 +1118,80 @@ async function buildExport(){
     pg.drawText(s,{x:p.px+ox*Math.cos(a)-oy*Math.sin(a),y:p.py+ox*Math.sin(a)+oy*Math.cos(a),size:fs,font:num,color:WHITE,rotate:degrees(rot)});
   }
 
-  // 2) 하자 목록 (A4 세로, 사진 포함)
-  const W=595.28,H=841.89,M=40; let page,y;
-  const newPage=()=>{page=doc.addPage([W,H]);y=H-M;};
+  // 2) 사진대지 (A4 세로, 한 쪽에 3칸: 왼쪽 사진, 오른쪽 핀 번호·상태·업체·내용·위치도)
+  const fulls=await pageImages(drawing,pins,progress);
+  const W=595.28,H=841.89,M=32, TOP=86, ROWS=3, GAP=10;
+  const bh=(H-TOP-M-GAP*(ROWS-1))/ROWS, PWID=(W-2*M)*0.56, IW=W-2*M-PWID, LW=50;
   const wrap=(t,size,maxW)=>{const out=[];String(t||"").split(/\n/).forEach(par=>{let line="";
     for(const ch of par){ if(kor.widthOfTextAtSize(line+ch,size)>maxW&&line){out.push(line);line=ch.trimStart();} else line+=ch; }
     out.push(line);});return out;};
-  const text=(t,x,yy,size,color=INK,f=kor)=>page.drawText(t,{x,y:yy,size,font:f,color});
-  newPage();
-  const o=pins.filter(p=>p.status!=="done").length;
-  text("하자·이슈 목록",M,y-18,18); y-=30;
-  wrap(V.drawing.name,10,W-2*M).forEach(l=>{text(l,M,y-12,10,SUB);y-=14;});
-  text(`출력 ${fmtDate(Date.now())}   ·   전체 ${pins.length}   ·   미조치 ${o}   ·   조치완료 ${pins.length-o}`,M,y-12,10,SUB); y-=24;
-  page.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:1,color:INK}); y-=10;
-
-  const PW=(W-2*M-2*10)/3, PH=PW*0.75;
-  for(const p of pins){
-    const lines=wrap(p.text||"(내용 없음)",10.5,W-2*M-40);
-    const need=30+lines.length*15+(p.photos.length?PH+10:0);
-    if(y-need<M&&y<H-M-10) newPage();
-    const col=p.status==="done"?GREEN:RED;
-    page.drawCircle({x:M+11,y:y-13,size:11,color:col});
-    const s=String(p.no), sw=num.widthOfTextAtSize(s,10);
-    text(s,M+11-sw/2,y-16.5,10,WHITE,num);
-    const st=p.status==="done"?"조치완료":"미조치";
-    text(st,M+30,y-17,11,col);
-    const head=`${p.shape?"[구역] ":""}${p.trade||"업체 미입력"}${V.drawing.pages>1?`   ·   ${p.page}쪽`:""}`;
-    text(head,M+30+kor.widthOfTextAtSize(st,11)+10,y-17,11);
-    const dt=`등록 ${fmtDate(p.created)}${p.by?" "+p.by:""}`+(p.status==="done"&&p.doneAt?`  /  완료 ${fmtDate(p.doneAt)}`:"");
-    text(dt,W-M-kor.widthOfTextAtSize(dt,8.5),y-16,8.5,SUB);
-    y-=30;
-    for(const l of lines){ if(y-15<M){newPage();} text(l,M+30,y-11,10.5); y-=15; }
-    for(let i=0;i<p.photos.length;i+=3){
-      if(y-PH-6<M) newPage();
-      for(let j=0;j<3&&i+j<p.photos.length;j++){
-        if(!p.photos[i+j].data) continue;
-        const img=await doc.embedJpg(p.photos[i+j].data);
-        const sc=Math.min(PW/img.width,PH/img.height), w=img.width*sc, h=img.height*sc;
-        const x0=M+j*(PW+10);
-        page.drawRectangle({x:x0,y:y-PH-4,width:PW,height:PH,color:rgb(0.96,0.96,0.96)});
-        page.drawImage(img,{x:x0+(PW-w)/2,y:y-4-PH+(PH-h)/2,width:w,height:h});
-      }
-      y-=PH+10;
+  // 칸 목록: 사진마다 한 칸, 사진 없는 핀도 한 칸
+  const cells=[]; pins.forEach(p=>{ const ph=p.photos.filter(x=>x.data); if(!ph.length) cells.push({p,ph:null,i:0,n:0}); else ph.forEach((x,i)=>cells.push({p,ph:x,i,n:ph.length})); });
+  const o=pins.filter(p=>p.status!=="done").length, total=Math.ceil(cells.length/ROWS);
+  let page=null, crops={};
+  for(let ci=0;ci<cells.length;ci++){
+    const slot=ci%ROWS, {p,ph,i,n}=cells[ci];
+    if(slot===0){
+      progress&&progress(`사진대지 만드는 중… (${ci/ROWS+1}/${total}쪽)`);
+      page=doc.addPage([W,H]);
+      const t="사 진 대 지", tw=kor.widthOfTextAtSize(t,20);
+      page.drawText(t,{x:(W-tw)/2,y:H-M-20,size:20,font:kor,color:INK});
+      const nm=wrap(drawing.name,9,W-2*M-200)[0];
+      page.drawText(nm,{x:M,y:H-M-38,size:9,font:kor,color:SUB});
+      const rt=`${fmtDate(Date.now()).slice(0,10)}  ·  핀 ${pins.length} (미조치 ${o} / 완료 ${pins.length-o})  ·  ${ci/ROWS+1}/${total}`;
+      page.drawText(rt,{x:W-M-kor.widthOfTextAtSize(rt,9),y:H-M-38,size:9,font:kor,color:SUB});
+      page.drawLine({start:{x:M,y:H-TOP+8},end:{x:W-M,y:H-TOP+8},thickness:1.2,color:INK});
     }
-    y-=6; page.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:0.5,color:LINE}); y-=6;
+    const top=H-TOP-slot*(bh+GAP), bot=top-bh, col=p.status==="done"?GREEN:RED;
+    // 바깥 테두리와 사진 칸
+    page.drawRectangle({x:M,y:bot,width:W-2*M,height:bh,borderColor:LINE,borderWidth:0.8});
+    page.drawLine({start:{x:M+PWID,y:bot},end:{x:M+PWID,y:top},thickness:0.8,color:LINE});
+    if(ph){
+      const img=await doc.embedJpg(ph.data), pad=6, bw=PWID-2*pad, bhh=bh-2*pad;
+      const sc=Math.min(bw/img.width,bhh/img.height), w=img.width*sc, h=img.height*sc;
+      page.drawImage(img,{x:M+pad+(bw-w)/2,y:bot+pad+(bhh-h)/2,width:w,height:h});
+    }else{
+      const t="사진 없음"; page.drawText(t,{x:M+(PWID-kor.widthOfTextAtSize(t,12))/2,y:bot+bh/2-4,size:12,font:kor,color:SUB});
+    }
+    // 오른쪽 정보 표
+    const x0=M+PWID, x1=x0+LW, xr=W-M, VW=xr-x1-8;
+    const rowH=[22,22,0,22], locH=bh*0.36;   // 번호, 업체, 내용(남는 높이), 등록 + 위치도
+    rowH[2]=bh-rowH[0]-rowH[1]-rowH[3]-locH;
+    const labels=["번호","업체·공종","내용","등록"];
+    let yy=top;
+    labels.forEach((lb,k)=>{
+      const h=rowH[k];
+      page.drawRectangle({x:x0,y:yy-h,width:LW,height:h,color:HEAD});
+      page.drawLine({start:{x:x0,y:yy-h},end:{x:xr,y:yy-h},thickness:0.6,color:LINE});
+      page.drawText(lb,{x:x0+(LW-kor.widthOfTextAtSize(lb,8.5))/2,y:yy-(k===2?14:h/2+3),size:8.5,font:kor,color:SUB});
+      if(k===0){
+        page.drawCircle({x:x1+14,y:yy-h/2,size:8.5,color:col});
+        const s=String(p.no), fs=s.length>2?7:8.5; page.drawText(s,{x:x1+14-num.widthOfTextAtSize(s,fs)/2,y:yy-h/2-fs*0.36,size:fs,font:num,color:WHITE});
+        const st=(p.status==="done"?"조치완료":"미조치")+(p.shape?"  ·  구역":"")+(drawing.pages>1?`  ·  ${p.page}쪽`:"")+(n>1?`  ·  사진 ${i+1}/${n}`:"");
+        page.drawText(st,{x:x1+28,y:yy-h/2-3.5,size:9.5,font:kor,color:col});
+      }else if(k===1){
+        page.drawText(wrap(p.trade||"-",9.5,VW)[0],{x:x1+6,y:yy-h/2-3.5,size:9.5,font:kor,color:INK});
+      }else if(k===2){
+        const maxL=Math.max(1,Math.floor((h-8)/13)); let ls=wrap(p.text||"-",9.5,VW);
+        if(ls.length>maxL){ ls=ls.slice(0,maxL); ls[maxL-1]=ls[maxL-1].slice(0,-1)+"…"; }
+        ls.forEach((l,j)=>page.drawText(l,{x:x1+6,y:yy-14-j*13,size:9.5,font:kor,color:INK}));
+      }else{
+        const dt=`${fmtDate(p.created).slice(0,10)}${p.by?" "+p.by:""}${p.status==="done"&&p.doneAt?` / 완료 ${fmtDate(p.doneAt).slice(2,10)}`:""}`;
+        page.drawText(wrap(dt,8.5,VW)[0],{x:x1+6,y:yy-h/2-3,size:8.5,font:kor,color:INK});
+      }
+      yy-=h;
+    });
+    page.drawLine({start:{x:x1,y:top},end:{x:x1,y:yy},thickness:0.6,color:LINE});
+    // 위치도 (핀 주변 도면)
+    const full=fulls[p.page];
+    if(full){
+      const pad=5, lw=xr-x0-2*pad, lh=locH-2*pad-10;
+      if(!crops[p.id]) crops[p.id]=await doc.embedJpg(await locCrop(full,p,pins,lw/lh));
+      page.drawText("위치",{x:x0+pad,y:yy-11,size:7.5,font:kor,color:SUB});
+      page.drawImage(crops[p.id],{x:x0+pad,y:bot+pad,width:lw,height:lh});
+    }
   }
+  progress&&progress("PDF 저장 중…");
   return await doc.save();
 }
 
