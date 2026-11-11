@@ -219,6 +219,8 @@ header .cloud[data-state="err"] i{background:#F87171}
     <input class="inp" id="cName" autocomplete="off" placeholder="예: 김대건">
     <p id="cMsg" style="color:var(--open);min-height:1.4em;margin-top:10px"></p>
     <button id="cOn">연결</button>
+    <button id="cLink" class="sec" hidden>자동 연결 링크 보내기</button>
+    <p id="cLinkTip" hidden style="margin-top:6px;font-size:13px;color:var(--sub)">이 링크를 받은 사람은 링크를 한 번 열고 이름만 넣으면 연결됩니다. PIN이 들어 있으니 함께 쓸 사람에게만 보내 주세요.</p>
     <button id="cOff" class="sec" hidden>연결 끊기</button>
   </div>
 </div>
@@ -271,7 +273,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="1.7";
+const APP_VER="1.8";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -549,9 +551,28 @@ async function ensurePhoto(p,x){
 /* 연결 설정 창 */
 $("#cloudBtn").addEventListener("click",()=>{
   $("#cUrl").value=cloud.url; $("#cPin").value=cloud.pin; $("#cName").value=cloud.name;
-  $("#cMsg").textContent=cloudOn()?"연결되어 있습니다.":""; $("#cOff").hidden=!cloudOn();
+  $("#cMsg").textContent=cloudOn()?"연결되어 있습니다.":""; $("#cOff").hidden=$("#cLink").hidden=$("#cLinkTip").hidden=!cloudOn();
   openSheet("#cloudSheet");
 });
+/* 자동 연결 링크: 주소 뒤 #c=… 에 URL·PIN을 담아 한 번 열면 이 휴대폰에 저장된다 */
+function inviteLink(){ return location.origin+location.pathname+"#c="+encodeURIComponent(btoa(JSON.stringify({u:cloud.url,p:cloud.pin}))); }
+$("#cLink").addEventListener("click",async()=>{
+  const link=inviteLink();
+  try{ if(navigator.share){ await navigator.share({title:"도면 하자 핀",text:"도면 하자 핀 앱 자동 연결 링크",url:link}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+  try{ await navigator.clipboard.writeText(link); toast("링크를 복사했습니다"); }catch(e){ prompt("링크를 복사해 주세요",link); }
+});
+function readInvite(){
+  const m=/[#&]c=([^&]+)/.exec(location.hash||""); if(!m) return false;
+  history.replaceState(null,"",location.pathname+location.search);
+  let o; try{ o=JSON.parse(atob(decodeURIComponent(m[1]))); }catch(e){ toast("자동 연결 링크가 올바르지 않습니다",3000); return false; }
+  if(!o||!/^https:\/\/script\.google\.com\//.test(o.u||"")||!o.p) return false;
+  if(cloudOn()&&cloud.url===o.u&&cloud.pin===o.p) return false;   // 이미 같은 곳에 연결됨
+  $("#cUrl").value=o.u; $("#cPin").value=o.p; $("#cName").value=cloud.name;
+  $("#cOff").hidden=$("#cLink").hidden=$("#cLinkTip").hidden=true;
+  openSheet("#cloudSheet");
+  if(cloud.name) $("#cOn").click(); else { $("#cMsg").textContent="자동 연결 링크로 URL과 PIN이 들어왔습니다. 이름만 넣고 '연결'을 눌러 주세요."; $("#cName").focus(); }
+  return true;
+}
 $("#cOn").addEventListener("click",async()=>{
   const old={...cloud};
   cloud={url:$("#cUrl").value.trim(),pin:$("#cPin").value.trim(),name:$("#cName").value.trim()};
@@ -1317,7 +1338,9 @@ async function buildExport(drawing,pinList,progress){
 }
 
 /* ---------- 시작 ---------- */
-renderHome(); setSync("",""); syncDrawings();
+renderHome(); setSync("",""); if(!readInvite()) syncDrawings();
+window.addEventListener("hashchange",readInvite);
+try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}   // 연결 정보·도면이 저절로 지워지지 않게 요청
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
