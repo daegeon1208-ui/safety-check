@@ -31,6 +31,9 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .dcard{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .dcard .meta{flex:1;min-width:0}
 .dcard .nm{font-weight:600;word-break:break-all}
+.ftype{display:inline-block;vertical-align:2px;margin-right:6px;padding:2px 5px;border-radius:5px;font-size:10.5px;font-weight:800;letter-spacing:.3px;line-height:1.2;color:#fff;background:#DC2626}
+.ftype.dwg{background:#2563EB}
+#vTitle .ftype{vertical-align:3px}
 .dcard .sm{color:var(--sub);font-size:13px;margin-top:4px}
 .cnt{display:inline-block;padding:1px 7px;border-radius:10px;font-size:12px;font-weight:600;margin-right:4px}
 .cnt.o{background:#FDE8EB;color:var(--open)} .cnt.d{background:#E3F4E8;color:var(--done)}
@@ -383,7 +386,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.7";
+const APP_VER="3.8";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -526,6 +529,7 @@ function centerOnPin(p){
 }
 
 /* ---------- 도면 목록 ---------- */
+const ftIcon=d=>d.kind==="dwg"?`<span class="ftype dwg">DWG</span>`:`<span class="ftype">PDF</span>`;   // 이름 앞 파일 종류 표시
 let remoteOnly=[];   // 구글에는 있지만 이 휴대폰에는 아직 없는 도면
 async function renderHome(){
   const [ds,ps]=await Promise.all([dbAll("drawings"),dbAll("pins")]);
@@ -535,10 +539,10 @@ async function renderHome(){
   if(!ds.length&&!rem.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF나 DWG를 고르세요.</div>`;return;}
   box.innerHTML=ds.map(d=>{
     const mine=ps.filter(p=>p.drawingId===d.id&&!p.deleted), o=mine.filter(p=>p.status!=="done").length, dn=mine.length-o;
-    return `<div class="dcard" data-id="${d.id}"><div class="meta"><div class="nm">${esc(d.name)}</div>
+    return `<div class="dcard" data-id="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${esc(d.name)}</div>
       <div class="sm"><span class="cnt o">미조치 ${o}</span><span class="cnt d">완료 ${dn}</span> ${d.pages}쪽 · ${fmtDate(d.created).slice(0,10)}${d.cloud&&cloudOn()?" · 공유":""}</div></div>
       <button class="more" data-more="${d.id}">⋯</button></div>`;}).join("")
-  +rem.map(d=>`<div class="dcard remote" data-remote="${d.id}"><div class="meta"><div class="nm">${esc(d.name)}</div>
+  +rem.map(d=>`<div class="dcard remote" data-remote="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${esc(d.name)}</div>
       <div class="sm"><span class="cnt o">미조치 ${d.open||0}</span><span class="cnt d">완료 ${d.done||0}</span> ${d.pages}쪽${d.by?" · "+esc(d.by):""}</div>
       <div class="sm" style="color:var(--accent);font-weight:600">구글 공유 도면 · 눌러서 받기</div></div></div>`).join("");
 }
@@ -584,7 +588,7 @@ $("#dlist").addEventListener("click",async e=>{
     try{
       const j=await api({action:"drawingFile",id:r.id});
       await dbPut("files",{id:r.id,data:b64ToBuf(j.data)});
-      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true,by:r.by||"",ver:r.ver||"",pageNames:r.pageNames||[]});
+      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true,by:r.by||"",ver:r.ver||"",pageNames:r.pageNames||[],kind:r.kind||""});
       remoteOnly=remoteOnly.filter(x=>x.id!==r.id);
       $("#toast").hidden=true; openDrawing(r.id);
     }catch(err){toast("도면을 받지 못했습니다: "+err.message,4000);}
@@ -616,7 +620,7 @@ $("#pdfInput").addEventListener("change",async e=>{
     const pdf=await pdfjsLib.getDocument({data:buf.slice(0)}).promise;
     const id=uid(), now=Date.now();
     await dbPut("files",{id,data:buf});
-    await dbPut("drawings",{id,name:src.name,pages:pdf.numPages,created:now,opened:now,by:cloud.name||""});
+    await dbPut("drawings",{id,name:src.name,pages:pdf.numPages,created:now,opened:now,by:cloud.name||"",kind:src.dwg?"dwg":"pdf"});
     pdf.destroy();
     $("#toast").hidden=true;
     openDrawing(id);
@@ -633,7 +637,7 @@ async function copyDrawing(d){
   try{
     const id=uid(), now=Date.now();
     await dbPut("files",{id,data:f.data.slice(0)});
-    await dbPut("drawings",{id,name:nm.trim(),pages:d.pages,pageNames:(d.pageNames||[]).slice(),created:now,opened:now,by:cloud.name||""});
+    await dbPut("drawings",{id,name:nm.trim(),pages:d.pages,pageNames:(d.pageNames||[]).slice(),created:now,opened:now,by:cloud.name||"",kind:d.kind||""});
     if(how==="pins"){
       for(const p of (await pinsOf(d.id)).filter(q=>!q.deleted)){
         const cp=async l=>{ const out=[]; for(const x of l||[]){ await ensurePhoto(p,x); if(x.data) out.push({k:uid(),type:x.type||"image/jpeg",data:x.data.slice(0),w:x.w,h:x.h,rep:x.rep||undefined}); } return out; };
@@ -672,7 +676,7 @@ async function showInfo(d){
     ${rows.length?rows.map(r=>`<div class="who"><i style="background:${r.col}"></i>${esc(r.n||"이름 없음")}<small>${r.made?`핀 ${r.made}개`:"수정만"}<br>${r.last?fmtDate(r.last):""}</small></div>`).join(""):`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}
     <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 팀별(공사 파랑 · 안전 주황 · 품질 보라 · 전기 노랑 · 설비 청록)입니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
   $("#infoPages").onclick=()=>editPages(d);
-  $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").textContent=d.name+" ⓘ";} showInfo(d); renderHome(); } };
+  $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").innerHTML=ftIcon(d)+esc(d.name)+" ⓘ";} showInfo(d); renderHome(); } };
   openSheet("#infoSheet");
 }
 
@@ -741,7 +745,7 @@ function schedulePush(){ if(!cloudOn()) return; clearTimeout(pushT); pushT=setTi
 async function uploadDrawing(d){
   const f=await dbGet("files",d.id);
   setSync("wait","도면 올리는 중…");
-  await api({action:"uploadDrawing",drawing:{id:d.id,name:d.name,pages:d.pages,created:d.created},data:bufToB64(f.data),by:d.by||cloud.name});
+  await api({action:"uploadDrawing",drawing:{id:d.id,name:d.name,pages:d.pages,created:d.created,kind:d.kind||""},data:bufToB64(f.data),by:d.by||cloud.name});
   d.cloud=true; if(!d.by) d.by=cloud.name; await dbPut("drawings",d);
   for(const p of await pinsOf(d.id)){ p.dirty=true; if(!p.by)p.by=cloud.name; [...p.photos,...(p.donePhotos||[])].forEach(x=>{if(!x.k)x.k=uid();}); await dbPut("pins",p); }   // 이전에 찍은 핀도 함께 올린다
 }
@@ -755,6 +759,7 @@ async function syncDrawings(){
     for(const r of j.drawings){
       const l=locals.find(d=>d.id===r.id); if(!l) continue;
       if(r.deleted){ await removeLocalDrawing(r.id); continue; }
+      if(r.kind&&!l.kind){ l.kind=r.kind; await dbPut("drawings",l); }
       if(l.name!==r.name||!l.cloud||(r.by&&l.by!==r.by)){ l.name=r.name; l.cloud=true; if(r.by) l.by=r.by; await dbPut("drawings",l); }
       if(r.pageNames&&JSON.stringify(r.pageNames)!==JSON.stringify(l.pageNames||[])){ l.pageNames=r.pageNames; await dbPut("drawings",l); if(V.drawing&&V.drawing.id===l.id){ V.drawing.pageNames=l.pageNames; updatePager(); } }
       if((r.ver||"")!==(l.ver||"")){ l.ver=r.ver||""; l.pages=r.pages; l.stale=true; await dbPut("drawings",l); }   // 다른 사람이 쪽을 바꿈 → 열 때 새 PDF를 받는다
@@ -1013,7 +1018,7 @@ async function openDrawing(id,pageNo){
   d.opened=Date.now(); dbPut("drawings",d);
   V.drawing=d; V.sel=null; setMode("view");
   $("#home").hidden=true; $("#viewer").hidden=false;
-  $("#vTitle").textContent=d.name+" ⓘ";
+  $("#vTitle").innerHTML=ftIcon(d)+esc(d.name)+" ⓘ";
   $("#vLoading").hidden=false; base.style.visibility="hidden"; pinLayer.innerHTML="";
   await loadPdfjs();
   if(V.pdf){V.pdf.destroy();V.pdf=null;}
