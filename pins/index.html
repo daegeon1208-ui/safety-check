@@ -1774,83 +1774,72 @@ async function buildExport(drawing,pinList,progress){
     pg.drawText(s,{x:p.px+ox*Math.cos(a)-oy*Math.sin(a),y:p.py+ox*Math.sin(a)+oy*Math.cos(a),size:fs,font:num,color:WHITE,rotate:degrees(rot)});
   }
 
-  // 2) 사진대지 (A4 세로, 한 쪽에 3칸: 왼쪽 사진, 오른쪽 핀 번호·상태·업체·내용·위치도)
+  // 2) 사진대지 (A4 세로, 한 쪽에 핀 2개. 핀마다 대표 사진 하나씩: 조치 전 | 조치 후, 아래에 내용 | 위치도)
   const fulls=await pageImages(drawing,pins,progress);
-  const W=595.28,H=841.89,M=32, TOP=86, ROWS=3, GAP=10;
-  const bh=(H-TOP-M-GAP*(ROWS-1))/ROWS, PWID=(W-2*M)*0.56, IW=W-2*M-PWID, LW=50;
+  const W=595.28,H=841.89,M=30, TOP=78, PER=2, GAP=14;
+  const bh=(H-TOP-M-GAP*(PER-1))/PER;
   const wrap=(t,size,maxW)=>{const out=[];String(t||"").split(/\n/).forEach(par=>{let line="";
     for(const ch of par){ if(kor.widthOfTextAtSize(line+ch,size)>maxW&&line){out.push(line);line=ch.trimStart();} else line+=ch; }
     out.push(line);});return out;};
-  // 칸 목록: 사진마다 한 칸, 사진 없는 핀도 한 칸. 조치완료 사진이 있으면 한 칸에 '조치 전 | 조치 후'를 나란히
-  const cells=[]; pins.forEach(p=>{ const ph=p.photos.filter(x=>x.data), dp=(p.donePhotos||[]).filter(x=>x.data);
-    const n=Math.max(ph.length,dp.length,1);
-    for(let i=0;i<n;i++) cells.push({p,ph:ph[i]||null,dph:dp.length?(dp[i]||null):undefined,i,n:n>1?n:0}); });
-  const o=pins.filter(p=>p.status!=="done").length, total=Math.ceil(cells.length/ROWS);
+  const repOf=list=>{ const l=(list||[]).filter(x=>x.data); return l.find(x=>x.rep)||l[0]||null; };   // 대표 사진 (없으면 첫 사진)
+  const o=pins.filter(p=>p.status!=="done").length, total=Math.ceil(pins.length/PER);
   let page=null, crops={};
-  for(let ci=0;ci<cells.length;ci++){
-    const slot=ci%ROWS, {p,ph,i,n}=cells[ci];
+  for(let ci=0;ci<pins.length;ci++){
+    const slot=ci%PER, p=pins[ci];
     if(slot===0){
-      progress&&progress(`사진대지 만드는 중… (${ci/ROWS+1}/${total}쪽)`);
+      progress&&progress(`사진대지 만드는 중… (${ci/PER+1}/${total}쪽)`);
       page=doc.addPage([W,H]);
       const t="사 진 대 지", tw=kor.widthOfTextAtSize(t,20);
       page.drawText(t,{x:(W-tw)/2,y:H-M-20,size:20,font:kor,color:INK});
-      const nm=wrap(drawing.name,9,W-2*M-200)[0];
-      page.drawText(nm,{x:M,y:H-M-38,size:9,font:kor,color:SUB});
-      const rt=`${fmtDate(Date.now()).slice(0,10)}  ·  핀 ${pins.length} (미조치 ${o} / 완료 ${pins.length-o})  ·  ${ci/ROWS+1}/${total}`;
+      page.drawText(wrap(drawing.name,9,W-2*M-220)[0],{x:M,y:H-M-38,size:9,font:kor,color:SUB});
+      const rt=`${fmtDate(Date.now()).slice(0,10)}  ·  핀 ${pins.length} (미조치 ${o} / 완료 ${pins.length-o})  ·  ${ci/PER+1}/${total}`;
       page.drawText(rt,{x:W-M-kor.widthOfTextAtSize(rt,9),y:H-M-38,size:9,font:kor,color:SUB});
       page.drawLine({start:{x:M,y:H-TOP+8},end:{x:W-M,y:H-TOP+8},thickness:1.2,color:INK});
     }
-    const top=H-TOP-slot*(bh+GAP), bot=top-bh, col=p.status==="done"?GREEN:RED, pcol=pc(p);
-    // 바깥 테두리와 사진 칸
-    page.drawRectangle({x:M,y:bot,width:W-2*M,height:bh,borderColor:LINE,borderWidth:0.8});
-    page.drawLine({start:{x:M+PWID,y:bot},end:{x:M+PWID,y:top},thickness:0.8,color:LINE});
-    const putPhoto=async(x,bx,bwid,label)=>{   // bx~bx+bwid 칸에 사진(가운데 맞춤), label이 있으면 위에 작은 제목
-      const pad=6, lh=label?14:0, bw=bwid-2*pad, bhh=bh-2*pad-lh;
-      if(label) page.drawText(label,{x:bx+pad,y:top-pad-9,size:8.5,font:kor,color:label==="조치 후"?GREEN:SUB});
+    const top=H-TOP-slot*(bh+GAP), bot=top-bh, xl=M, xr=W-M, CW=xr-xl, done=p.status==="done", col=done?GREEN:RED, pcol=pc(p);
+    page.drawRectangle({x:xl,y:bot,width:CW,height:bh,borderColor:LINE,borderWidth:0.8});
+    // 머리줄: 번호 · 상태 · 종류 · 위치 / 업체
+    const HH=24; let yy=top;
+    page.drawRectangle({x:xl,y:yy-HH,width:CW,height:HH,color:HEAD});
+    page.drawLine({start:{x:xl,y:yy-HH},end:{x:xr,y:yy-HH},thickness:0.6,color:LINE});
+    page.drawCircle({x:xl+16,y:yy-HH/2,size:9,color:pcol});
+    { const sn=String(p.no), fs=sn.length>2?7:9; page.drawText(sn,{x:xl+16-num.widthOfTextAtSize(sn,fs)/2,y:yy-HH/2-fs*0.36,size:fs,font:num,color:WHITE}); }
+    const st=(done?"조치완료":"미조치"), stw=kor.widthOfTextAtSize(st,10.5);
+    page.drawText(st,{x:xl+32,y:yy-HH/2-3.8,size:10.5,font:kor,color:col});
+    const meta=[p.shape?kindLabel(p):"",pgLabel(drawing,p.page)||""].filter(Boolean).join("  ·  ");
+    if(meta) page.drawText(meta,{x:xl+32+stw+10,y:yy-HH/2-3.5,size:9.5,font:kor,color:SUB});
+    const tr=wrap(p.trade||"",10,CW*0.42)[0]; if(tr) page.drawText(tr,{x:xr-8-kor.widthOfTextAtSize(tr,10),y:yy-HH/2-3.6,size:10,font:kor,color:INK});
+    yy-=HH;
+    // 사진 줄: 조치 전 | 조치 후 (대표 사진 하나씩)
+    const PH=bh*0.56, hw=CW/2;
+    const putPhoto=async(x,bx,label,lcol,empty)=>{
+      const pad=7, lh=13, bw=hw-2*pad, bhh=PH-2*pad-lh;
+      page.drawText(label,{x:bx+pad,y:yy-pad-9,size:9,font:kor,color:lcol});
       if(x){ const img=await doc.embedJpg(x.data), sc=Math.min(bw/img.width,bhh/img.height), w=img.width*sc, h=img.height*sc;
-        page.drawImage(img,{x:bx+pad+(bw-w)/2,y:bot+pad+(bhh-h)/2,width:w,height:h}); }
-      else{ const t="사진 없음"; page.drawText(t,{x:bx+(bwid-kor.widthOfTextAtSize(t,11))/2,y:bot+(bh-lh)/2-4,size:11,font:kor,color:SUB}); }
+        page.drawImage(img,{x:bx+pad+(bw-w)/2,y:yy-PH+pad+(bhh-h)/2,width:w,height:h}); }
+      else page.drawText(empty,{x:bx+(hw-kor.widthOfTextAtSize(empty,10.5))/2,y:yy-PH/2-8,size:10.5,font:kor,color:SUB});
     };
-    if(cells[ci].dph===undefined) await putPhoto(ph,M,PWID,"");
-    else{ const hw=PWID/2; await putPhoto(ph,M,hw,"조치 전"); await putPhoto(cells[ci].dph,M+hw,hw,"조치 후");
-      page.drawLine({start:{x:M+hw,y:bot},end:{x:M+hw,y:top},thickness:0.5,color:LINE}); }
-    // 오른쪽 정보 표
-    const x0=M+PWID, x1=x0+LW, xr=W-M, VW=xr-x1-8;
-    const rowH=[22,20,0,30], locH=bh*0.42;   // 번호, 업체, 내용(남는 높이), 등록·완료(두 줄) + 위치도
-    rowH[2]=bh-rowH[0]-rowH[1]-rowH[3]-locH;
-    const labels=["번호","업체·공종","내용","등록"];
-    let yy=top;
-    labels.forEach((lb,k)=>{
-      const h=rowH[k];
-      page.drawRectangle({x:x0,y:yy-h,width:LW,height:h,color:HEAD});
-      page.drawLine({start:{x:x0,y:yy-h},end:{x:xr,y:yy-h},thickness:0.6,color:LINE});
-      page.drawText(lb,{x:x0+(LW-kor.widthOfTextAtSize(lb,8.5))/2,y:yy-(k===2?14:h/2+3),size:8.5,font:kor,color:SUB});
-      if(k===0){
-        page.drawCircle({x:x1+14,y:yy-h/2,size:8.5,color:pcol});
-        const s=String(p.no), fs=s.length>2?7:8.5; page.drawText(s,{x:x1+14-num.widthOfTextAtSize(s,fs)/2,y:yy-h/2-fs*0.36,size:fs,font:num,color:WHITE});
-        const st=(p.status==="done"?"조치완료":"미조치")+(p.shape?"  ·  "+kindLabel(p):"")+(pgLabel(drawing,p.page)?`  ·  ${pgLabel(drawing,p.page)}`:"")+(n>1?`  ·  사진 ${i+1}/${n}`:"");
-        page.drawText(st,{x:x1+28,y:yy-h/2-3.5,size:9.5,font:kor,color:col});
-      }else if(k===1){
-        page.drawText(wrap(p.trade||"-",9.5,VW)[0],{x:x1+6,y:yy-h/2-3.5,size:9.5,font:kor,color:INK});
-      }else if(k===2){
-        const maxL=Math.max(1,Math.floor((h-8)/13)); let ls=wrap(p.text||"-",9.5,VW);
-        if(ls.length>maxL){ ls=ls.slice(0,maxL); ls[maxL-1]=ls[maxL-1].slice(0,-1)+"…"; }
-        ls.forEach((l,j)=>page.drawText(l,{x:x1+6,y:yy-14-j*13,size:9.5,font:kor,color:INK}));
-      }else{   // 등록 시각(시·분까지), 완료 시각
-        const l1=`${fmtDate(p.created)}${p.by?"  "+p.by:""}`;
-        const l2=p.status==="done"&&p.doneAt?`완료 ${fmtDate(p.doneAt)}${p.doneBy?"  "+p.doneBy:""}`:"";
-        if(l2){ page.drawText(wrap(l1,8.5,VW)[0],{x:x1+6,y:yy-11.5,size:8.5,font:kor,color:INK}); page.drawText(wrap(l2,8.5,VW)[0],{x:x1+6,y:yy-24,size:8.5,font:kor,color:GREEN}); }
-        else page.drawText(wrap(l1,8.5,VW)[0],{x:x1+6,y:yy-h/2-3,size:8.5,font:kor,color:INK});
-      }
-      yy-=h;
-    });
-    page.drawLine({start:{x:x1,y:top},end:{x:x1,y:yy},thickness:0.6,color:LINE});
-    // 위치도 (핀 주변 도면)
+    await putPhoto(repOf(p.photos),xl,"조치 전",SUB,"사진 없음");
+    await putPhoto(repOf(p.donePhotos),xl+hw,"조치 후",GREEN,done?"사진 없음":"미조치");
+    page.drawLine({start:{x:xl+hw,y:yy},end:{x:xl+hw,y:yy-PH},thickness:0.6,color:LINE});
+    page.drawLine({start:{x:xl,y:yy-PH},end:{x:xr,y:yy-PH},thickness:0.6,color:LINE});
+    yy-=PH;
+    // 아래 줄: 왼쪽 내용·등록·완료, 오른쪽 위치도
+    const BH=yy-bot, LX=xl, LWID=CW*0.56, RX=xl+LWID;
+    page.drawLine({start:{x:RX,y:yy},end:{x:RX,y:bot},thickness:0.6,color:LINE});
+    const tw2=LWID-16, l1=`등록 ${fmtDate(p.created)}${p.by?"  "+p.by:""}`, l2=done&&p.doneAt?`완료 ${fmtDate(p.doneAt)}${p.doneBy?"  "+p.doneBy:""}`:"";
+    page.drawText("내용",{x:LX+8,y:yy-14,size:8.5,font:kor,color:SUB});
+    const footH=l2?30:17, maxL=Math.max(1,Math.floor((BH-22-footH)/13.5)); let ls=wrap(p.text||"-",10,tw2);
+    if(ls.length>maxL){ ls=ls.slice(0,maxL); ls[maxL-1]=ls[maxL-1].slice(0,-1)+"…"; }
+    ls.forEach((l,j)=>page.drawText(l,{x:LX+8,y:yy-29-j*13.5,size:10,font:kor,color:INK}));
+    page.drawLine({start:{x:LX+8,y:bot+footH+4},end:{x:RX-8,y:bot+footH+4},thickness:0.4,color:LINE});
+    page.drawText(wrap(l1,8.5,tw2)[0],{x:LX+8,y:bot+(l2?19:8),size:8.5,font:kor,color:INK});
+    if(l2) page.drawText(wrap(l2,8.5,tw2)[0],{x:LX+8,y:bot+7,size:8.5,font:kor,color:GREEN});
     const full=fulls[p.page];
-    if(full){   // 위치도는 가로:세로 1.45 정도로 (너무 납작하지 않게), 칸 가운데에
-      const pad=5, lh=locH-2*pad-12, lw=Math.min(xr-x0-2*pad,lh*1.45), lx=x0+(xr-x0-lw)/2;
+    if(full){
+      const pad=6, lbl=pgName(drawing,p.page)?`위치 · ${pgName(drawing,p.page)}`:"위치", lh=BH-2*pad-13, lw=Math.min(xr-RX-2*pad,lh*1.45), lx=RX+(xr-RX-lw)/2;
+      page.drawText(lbl,{x:RX+pad,y:yy-pad-8,size:8.5,font:kor,color:SUB});
       if(!crops[p.id]) crops[p.id]=await doc.embedJpg(await locCrop(full,p,pins,lw/lh));
-      page.drawText(pgName(drawing,p.page)?`위치 · ${pgName(drawing,p.page)}`:"위치",{x:x0+pad,y:yy-11,size:pgName(drawing,p.page)?9:7.5,font:kor,color:pgName(drawing,p.page)?INK:SUB});
       page.drawImage(crops[p.id],{x:lx,y:bot+pad,width:lw,height:lh});
     }
   }
