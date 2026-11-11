@@ -253,7 +253,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(핀 번호·상태·업체·내용·사진·위치도)를 PDF 한 파일로 보낼 수 있습니다.</p>
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 참여자(사람별 핀 색)를 봅니다. 핀 색은 사람마다 다르고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
     <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
-    <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 두 모서리를, 다각형은 꼭짓점을 차례로 누르고 첫 점이나 완료를 누릅니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
+    <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 손가락으로 끌어 그리고, 다각형은 꼭짓점을 차례로 누르고 첫 점이나 완료를 누릅니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
     <p>· <b>캡처</b>: 캡처를 누르고 한 손가락으로 영역을 끌어 그리면 그 부분이 그림으로 만들어집니다. 핀 표시 스위치로 핀을 넣거나 뺄 수 있고, 보내기·복사·저장할 수 있습니다.</p>
     <p>· <b>스케치</b>: 핀 찍기 → ✎ 스케치에서 한 손가락으로 그립니다(두 손가락은 확대·이동). 완료를 누르면 번호와 메모가 붙는 스케치 핀이 됩니다.</p>
     <p>5. 이미 찍은 핀을 누르면 다시 열립니다. <b>목록</b>에서 핀을 고르면 그 위치로 이동합니다.</p>
@@ -271,7 +271,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="1.6";
+const APP_VER="1.7";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -806,11 +806,11 @@ vp.addEventListener("pointerdown",e=>{
   ptrs.set(e.pointerId,rel(e));
   V.detailJob++; if(V.detailTask){try{V.detailTask.cancel();}catch(_){}}
   if(G&&G.type==="drag") return;
-  const drawMode=V.mode==="capture"||(V.mode==="add"&&V.addKind==="sketch");
-  if(ptrs.size===1&&drawMode){ const p=rel(e); clearLP(); G={type:"draw",pts:[normPt(p)],sp:p}; if(V.mode==="capture"){V.draft.pts=[];} return; }
+  const drawMode=V.mode==="capture"||(V.mode==="add"&&(V.addKind==="sketch"||V.addKind==="rect"));
+  if(ptrs.size===1&&drawMode){ const p=rel(e); clearLP(); G={type:"draw",pts:[normPt(p)],sp:p}; if(V.draft.kind!=="sketch"){V.draft.pts=[];} return; }
   if(ptrs.size===1){ const p=rel(e); startPan(p,false); lpTimer=setTimeout(()=>longPress(p),450); }
   else if(ptrs.size===2){
-    clearLP(); if(V.mode==="capture"&&V.draft) V.draft.pts=[];
+    clearLP(); if(V.draft&&V.draft.kind!=="sketch"&&V.draft.kind!=="poly") V.draft.pts=[];
     const [a,b]=[...ptrs.values()];
     G={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y)||1,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,k:V.k,tx:V.tx,ty:V.ty,moved:true};
   }
@@ -821,7 +821,7 @@ vp.addEventListener("pointermove",e=>{
   if(G.type==="drag"){ dragTo(rel(e)); return; }
   if(G.type==="draw"){ const p=rel(e), last=G.lp||G.sp; if(Math.hypot(p.x-last.x,p.y-last.y)<3) return; G.lp=p;
     const n=normPt(p);
-    if(V.mode==="capture") V.draft.pts=[G.pts[0],n]; else G.pts.push(n);
+    if(V.draft.kind!=="sketch") V.draft.pts=[G.pts[0],n]; else G.pts.push(n);
     drawShapes(); return; }
   if(G.type==="pan"&&ptrs.size===1){
     const p=rel(e), dx=p.x-G.sx, dy=p.y-G.sy;
@@ -838,7 +838,7 @@ function endPtr(e){
   if(!ptrs.has(e.pointerId)) return;
   const p=rel(e); ptrs.delete(e.pointerId); clearLP();
   if(G&&G.type==="drag"){ ptrs.clear(); endDrag(e.type==="pointerup"); return; }
-  if(G&&G.type==="draw"){ const g=G; G=null; ptrs.clear(); if(e.type==="pointerup") endDraw(g,p); else { if(V.draft&&V.mode==="capture") V.draft.pts=[]; drawShapes(); } return; }
+  if(G&&G.type==="draw"){ const g=G; G=null; ptrs.clear(); if(e.type==="pointerup") endDraw(g,p); else { if(V.draft&&V.draft.kind!=="sketch") V.draft.pts=[]; drawShapes(); } return; }
   if(G&&G.type==="pan"&&!G.moved&&Date.now()-G.t<600&&e.type==="pointerup") onTap(p);
   if(ptrs.size===1){startPan([...ptrs.values()][0],true);}
   else if(ptrs.size===0){G=null;scheduleDetail();}
@@ -853,8 +853,8 @@ window.addEventListener("resize",()=>{if(!$("#viewer").hidden&&V.page){apply();s
 const normPt=p=>[+Math.min(1,Math.max(0,(p.x-V.tx)/(V.pw*V.k))).toFixed(5), +Math.min(1,Math.max(0,(p.y-V.ty)/(V.ph*V.k))).toFixed(5)];
 function endDraw(g,p){
   const d=V.draft; if(!d) return;
-  if(V.mode==="capture"){
-    const a=g.sp; if(Math.abs(p.x-a.x)<12||Math.abs(p.y-a.y)<12){ d.pts=[]; drawShapes(); toast("캡처할 영역을 손가락으로 끌어 그려 주세요"); return; }
+  if(d.kind==="capture"||d.kind==="rect"){
+    const a=g.sp; if(Math.abs(p.x-a.x)<12||Math.abs(p.y-a.y)<12){ d.pts=[]; drawShapes(); toast(d.kind==="rect"?"구역을 손가락으로 끌어 사각형으로 그려 주세요":"캡처할 영역을 손가락으로 끌어 그려 주세요"); return; }
     d.pts=[g.pts[0],normPt(p)]; finishDraft(); return;
   }
   if(g.pts.length<2){ drawShapes(); return; }   // 점 하나는 무시
@@ -927,11 +927,11 @@ function updateModeUI(){
   if(V.mode==="add"){
     const k=V.addKind;
     h.textContent=k==="point"?"위치를 누르세요 · 꾹 누르면 끌어서 맞춤"
-      :k==="rect"?(n?"반대쪽 모서리를 누르세요":"구역의 한쪽 모서리를 누르세요")
+      :k==="rect"?"끌어서 사각형 구역을 그리세요 (두 손가락: 확대)"
       :k==="sketch"?(n?"더 그리거나 완료 · 두 손가락은 확대·이동":"한 손가락으로 그리세요 · 두 손가락은 확대·이동")
       :(n<3?`구역의 꼭짓점을 차례로 누르세요 (${n}개)`:`꼭짓점 ${n}개 · 첫 점을 누르거나 완료`);
     mb.innerHTML=[["point","● 점"],["rect","▭ 사각형"],["poly","⬠ 다각형"],["sketch","✎ 스케치"]].map(([v,t])=>`<button data-kind="${v}" class="${k===v?"on":""}">${t}</button>`).join("")
-      +(k!=="point"&&n?`<button data-act="undo">되돌리기</button>`:"")+(k==="poly"?`<button data-act="done" class="go" ${n<3?"disabled":""}>완료</button>`:"")+(k==="sketch"?`<button data-act="done" class="go" ${n?"":"disabled"}>완료</button>`:"");
+      +(k!=="point"&&k!=="rect"&&n?`<button data-act="undo">되돌리기</button>`:"")+(k==="poly"?`<button data-act="done" class="go" ${n<3?"disabled":""}>완료</button>`:"")+(k==="sketch"?`<button data-act="done" class="go" ${n?"":"disabled"}>완료</button>`:"");
     mb.hidden=false;
   }
   else if(V.mode==="capture"){ h.textContent="끌어서 캡처 영역을 그리세요 (두 손가락: 확대)"; }
