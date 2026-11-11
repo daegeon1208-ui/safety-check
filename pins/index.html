@@ -1802,12 +1802,10 @@ async function locCrop(full,pin,pins,aspect){
   const ctx=c.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,ow,oh);
   ctx.drawImage(full,x0,y0,cw,chh,0,0,ow,oh);
   const P=([nx,ny])=>[(nx*W-x0)*k,(ny*H-y0)*k];
-  for(const q of pins){ if(q.page!==pin.page||!q.shape) continue;
-    const col=hexRgb(cOf(q)).join(","), me=q===pin, closed=traceShape(ctx,q.shape,P);
+  // 위치도에는 이 핀만 그린다 (다른 핀은 안 보이게)
+  if(pin.shape){ const col=hexRgb(cOf(pin)).join(","), closed=traceShape(ctx,pin.shape,P);
     ctx.lineCap=ctx.lineJoin="round";
-    if(closed){ ctx.fillStyle=`rgba(${col},${me?.22:.1})`; ctx.fill(); } ctx.strokeStyle=`rgba(${col},${me?1:.5})`; ctx.lineWidth=me?5:3; ctx.stroke(); }
-  for(const q of pins){ if(q.page!==pin.page||q===pin) continue; const [x,y]=P([q.nx,q.ny]);
-    if(x>-40&&y>-40&&x<ow+40&&y<oh+60){ ctx.globalAlpha=.55; drawPinMark(ctx,x,y,20,q.no,cOf(q),q.status==="done"); ctx.globalAlpha=1; } }
+    if(closed){ ctx.fillStyle=`rgba(${col},.22)`; ctx.fill(); } ctx.strokeStyle=`rgba(${col},1)`; ctx.lineWidth=5; ctx.stroke(); }
   const [x,y]=P([pin.nx,pin.ny]); drawPinMark(ctx,x,y,28,pin.no,cOf(pin),pin.status==="done");
   ctx.strokeStyle="#9CA3AF"; ctx.lineWidth=2; ctx.strokeRect(1,1,ow-2,oh-2);
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.88));
