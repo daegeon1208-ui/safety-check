@@ -53,7 +53,7 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .pin.sel::before{box-shadow:0 0 0 3px #FBBF24,0 1px 3px rgba(0,0,0,.4)}
 .pin span{position:relative;display:block;text-align:center;line-height:28px;color:#fff;font-weight:700;font-size:13px}
 .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:15px;pointer-events:none}
-.hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(31,41,55,.9);color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;white-space:nowrap;pointer-events:none}
+.hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(31,41,55,.9);color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;width:max-content;max-width:calc(100% - 24px);text-align:center;pointer-events:none}
 .pager{display:flex;align-items:center;gap:2px;font-size:14px}
 .toolbar{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);background:var(--card);border-top:1px solid var(--line);flex:none}
 .toolbar button{flex:1;padding:12px 4px;border-radius:12px;background:var(--chip);font-weight:600;font-size:15px}
@@ -65,6 +65,12 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .modebar button.on{background:var(--accent);color:#fff}
 .modebar button.go{background:var(--open);color:#fff}
 .modebar button:disabled{opacity:.4}
+.sw{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;margin:2px 0 10px;cursor:pointer}
+.sw input{display:none}
+.sw span{position:relative;width:46px;height:28px;border-radius:14px;background:#CBD5E1;transition:.15s;flex:none}
+.sw span::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:.15s}
+.sw input:checked+span{background:var(--done)}
+.sw input:checked+span::after{left:21px}
 .capimg{width:100%;border-radius:10px;border:1px solid var(--line);display:block;margin:4px 0 6px}
 
 /* 아래에서 올라오는 창 */
@@ -248,7 +254,8 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 참여자(사람별 핀 색)를 봅니다. 핀 색은 사람마다 다르고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
     <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
     <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 두 모서리를, 다각형은 꼭짓점을 차례로 누르고 첫 점이나 완료를 누릅니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
-    <p>· <b>캡처</b>: 캡처를 누르고 영역의 두 모서리를 누르면 그 부분이 핀과 함께 그림으로 만들어집니다. 보내기·복사·저장할 수 있습니다.</p>
+    <p>· <b>캡처</b>: 캡처를 누르고 한 손가락으로 영역을 끌어 그리면 그 부분이 그림으로 만들어집니다. 핀 표시 스위치로 핀을 넣거나 뺄 수 있고, 보내기·복사·저장할 수 있습니다.</p>
+    <p>· <b>스케치</b>: 핀 찍기 → ✎ 스케치에서 한 손가락으로 그립니다(두 손가락은 확대·이동). 완료를 누르면 번호와 메모가 붙는 스케치 핀이 됩니다.</p>
     <p>5. 이미 찍은 핀을 누르면 다시 열립니다. <b>목록</b>에서 핀을 고르면 그 위치로 이동합니다.</p>
     <p>6. <b>내보내기</b>를 누르면 핀이 표시된 도면과 하자 목록(사진 포함)을 PDF 한 파일로 만들어 카톡 등으로 보낼 수 있습니다.</p>
     <p>7. 위쪽 <b>구글 공유</b>에 웹 앱 URL·PIN·이름을 넣으면 같은 설정을 한 사람들과 도면과 핀을 함께 씁니다.</p>
@@ -264,7 +271,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="1.5";
+const APP_VER="1.6";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -640,11 +647,19 @@ function drawShapes(){
   const svg=$("#shapeLayer"); let h="";
   for(const p of V.pins){ if(p.page!==V.pageNo||!p.shape) continue;
     const col=colorOf(p), done=p.status==="done", sel=V.sel===p.id||(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p);
+    if(p.shape.type==="sketch"){
+      strokesOf(p.shape).forEach(st=>{ h+=`<polyline points="${st.map(q=>scr(q).join(",")).join(" ")}" fill="none" stroke="${sel?"#FBBF24":col}" stroke-opacity="${done&&!sel?0.5:0.95}" stroke-width="${sel?4:3}" stroke-linecap="round" stroke-linejoin="round"/>`; });
+      continue;
+    }
     h+=`<polygon points="${shapePts(p.shape).map(q=>scr(q).join(",")).join(" ")}" fill="${col}" fill-opacity="${sel?0.28:done?0.07:0.16}" stroke="${sel?"#FBBF24":col}" stroke-opacity="${done&&!sel?0.55:1}" stroke-width="${sel?3:2}" ${done?'stroke-dasharray="7 5"':""} stroke-linejoin="round"/>`;
   }
   // 그리는 중인 구역·캡처 영역
   const d=V.draft;
-  if(d&&d.pts.length){
+  if(d&&d.kind==="sketch"){
+    const all=[...strokesOf(d),...(G&&G.type==="draw"&&G.pts.length>1?[G.pts]:[])];
+    all.forEach(st=>{ h+=`<polyline points="${st.map(q=>scr(q).join(",")).join(" ")}" fill="none" stroke="#D3162F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`; });
+  }
+  else if(d&&d.pts.length){
     const col=d.kind==="capture"?"#2563EB":"#D3162F";
     let pts=d.pts;
     if((d.kind==="rect"||d.kind==="capture")&&pts.length===2) pts=shapePts({type:"rect",pts});
@@ -655,6 +670,15 @@ function drawShapes(){
   }
   svg.innerHTML=h;
 }
+/* 스케치: 모든 선의 점을 pts에 이어 두고, cuts에 각 선이 시작하는 위치를 적는다 */
+function strokesOf(sh,arr){ arr=arr||sh.pts; const c=[...(sh.cuts||[0]),arr.length]; const out=[];
+  for(let i=0;i<c.length-1;i++){ const st=arr.slice(c[i],c[i+1]); if(st.length) out.push(st); } return out; }
+function kindLabel(p){ return !p.shape?"핀":p.shape.type==="sketch"?"스케치":"구역"; }
+function traceShape(ctx,sh,P){   // 캔버스에 도형 경로 (스케치는 열린 선)
+  ctx.beginPath();
+  if(sh.type==="sketch"){ strokesOf(sh).forEach(st=>st.forEach((q,i)=>{const [x,y]=P(q); i?ctx.lineTo(x,y):ctx.moveTo(x,y);})); return false; }
+  shapePts(sh).forEach((q,i)=>{const [x,y]=P(q); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath(); return true;
+}
 function shapePts(sh){   // 사각형은 두 모서리 → 네 꼭짓점
   if(sh.type==="rect"){ const [[a,b],[c,d]]=sh.pts; return [[a,b],[c,b],[c,d],[a,d]]; }
   return sh.pts;
@@ -664,7 +688,13 @@ function shapeCenter(sh){
   ps.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);});
   return [(x0+x1)/2,(y0+y1)/2];
 }
-function inShape(sh,[x,y]){
+function inShape(sh,[x,y],tol){
+  if(sh.type==="sketch"){   // 선 가까이를 눌렀는지
+    for(const st of strokesOf(sh)) for(let i=0;i<st.length;i++){ const [ax,ay]=st[i],[bx,by]=st[Math.min(i+1,st.length-1)];
+      const dx=bx-ax, dy=by-ay, L=dx*dx+dy*dy, t=L?Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/L)):0;
+      if(Math.hypot(x-(ax+t*dx),y-(ay+t*dy))<tol) return true; }
+    return false;
+  }
   const ps=shapePts(sh); let c=false;
   for(let i=0,j=ps.length-1;i<ps.length;j=i++){ const [xi,yi]=ps[i],[xj,yj]=ps[j];
     if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi) c=!c; }
@@ -715,7 +745,8 @@ function pinAt(p){   // 손가락 아래(핀 머리까지 넉넉하게) 있는 �
     if(d<bd){bd=d;best=q;} }
   if(best&&bd<30) return best;
   const n=[(p.x-V.tx)/(V.pw*V.k),(p.y-V.ty)/(V.ph*V.k)];   // 구역 안쪽을 눌러도 그 핀
-  const inside=V.pins.filter(q=>q.page===V.pageNo&&q.shape&&inShape(q.shape,n));
+  const tol=14/(Math.max(V.pw,V.ph)*V.k);
+  const inside=V.pins.filter(q=>q.page===V.pageNo&&q.shape&&inShape(q.shape,n,tol));
   return inside.length?inside[inside.length-1]:null;
 }
 /* 꾹 누르기(0.45초): 핀 위면 그 핀을 들어 옮기고, 핀 찍기 중이면 새 핀을 손가락 위에 띄워 끌어 맞춘다 */
@@ -767,7 +798,7 @@ function revertPending(){
 async function confirmPending(){
   const pd=V.pending; V.pending=null; if(!pd){ setMode("view"); return; }
   if(pd.temp){ V.pins=V.pins.filter(q=>q!==pd.pin); setMode("view"); await addPin(pd.pin.nx,pd.pin.ny); return; }
-  setGeom(pd.pin); await savePin(pd.pin); setMode("view"); drawPins(); toast(`${pd.pin.no}번 ${pd.pin.shape?"구역":"핀"} 위치를 고정했습니다`);
+  setGeom(pd.pin); await savePin(pd.pin); setMode("view"); drawPins(); toast(`${pd.pin.no}번 ${kindLabel(pd.pin)} 위치를 고정했습니다`);
 }
 vp.addEventListener("pointerdown",e=>{
   if(!V.page) return;
@@ -775,9 +806,11 @@ vp.addEventListener("pointerdown",e=>{
   ptrs.set(e.pointerId,rel(e));
   V.detailJob++; if(V.detailTask){try{V.detailTask.cancel();}catch(_){}}
   if(G&&G.type==="drag") return;
+  const drawMode=V.mode==="capture"||(V.mode==="add"&&V.addKind==="sketch");
+  if(ptrs.size===1&&drawMode){ const p=rel(e); clearLP(); G={type:"draw",pts:[normPt(p)],sp:p}; if(V.mode==="capture"){V.draft.pts=[];} return; }
   if(ptrs.size===1){ const p=rel(e); startPan(p,false); lpTimer=setTimeout(()=>longPress(p),450); }
   else if(ptrs.size===2){
-    clearLP();
+    clearLP(); if(V.mode==="capture"&&V.draft) V.draft.pts=[];
     const [a,b]=[...ptrs.values()];
     G={type:"pinch",d:Math.hypot(a.x-b.x,a.y-b.y)||1,mx:(a.x+b.x)/2,my:(a.y+b.y)/2,k:V.k,tx:V.tx,ty:V.ty,moved:true};
   }
@@ -786,6 +819,10 @@ vp.addEventListener("pointermove",e=>{
   if(!ptrs.has(e.pointerId)||!G) return;
   ptrs.set(e.pointerId,rel(e));
   if(G.type==="drag"){ dragTo(rel(e)); return; }
+  if(G.type==="draw"){ const p=rel(e), last=G.lp||G.sp; if(Math.hypot(p.x-last.x,p.y-last.y)<3) return; G.lp=p;
+    const n=normPt(p);
+    if(V.mode==="capture") V.draft.pts=[G.pts[0],n]; else G.pts.push(n);
+    drawShapes(); return; }
   if(G.type==="pan"&&ptrs.size===1){
     const p=rel(e), dx=p.x-G.sx, dy=p.y-G.sy;
     if(!G.moved&&Math.hypot(dx,dy)>8){ G.moved=true; clearLP(); }
@@ -801,6 +838,7 @@ function endPtr(e){
   if(!ptrs.has(e.pointerId)) return;
   const p=rel(e); ptrs.delete(e.pointerId); clearLP();
   if(G&&G.type==="drag"){ ptrs.clear(); endDrag(e.type==="pointerup"); return; }
+  if(G&&G.type==="draw"){ const g=G; G=null; ptrs.clear(); if(e.type==="pointerup") endDraw(g,p); else { if(V.draft&&V.mode==="capture") V.draft.pts=[]; drawShapes(); } return; }
   if(G&&G.type==="pan"&&!G.moved&&Date.now()-G.t<600&&e.type==="pointerup") onTap(p);
   if(ptrs.size===1){startPan([...ptrs.values()][0],true);}
   else if(ptrs.size===0){G=null;scheduleDetail();}
@@ -812,6 +850,17 @@ vp.addEventListener("wheel",e=>{   // PC 마우스 휠 확대
 },{passive:false});
 window.addEventListener("resize",()=>{if(!$("#viewer").hidden&&V.page){apply();scheduleDetail();}});
 
+const normPt=p=>[+Math.min(1,Math.max(0,(p.x-V.tx)/(V.pw*V.k))).toFixed(5), +Math.min(1,Math.max(0,(p.y-V.ty)/(V.ph*V.k))).toFixed(5)];
+function endDraw(g,p){
+  const d=V.draft; if(!d) return;
+  if(V.mode==="capture"){
+    const a=g.sp; if(Math.abs(p.x-a.x)<12||Math.abs(p.y-a.y)<12){ d.pts=[]; drawShapes(); toast("캡처할 영역을 손가락으로 끌어 그려 주세요"); return; }
+    d.pts=[g.pts[0],normPt(p)]; finishDraft(); return;
+  }
+  if(g.pts.length<2){ drawShapes(); return; }   // 점 하나는 무시
+  d.cuts=d.cuts||[]; d.cuts.push(d.pts.length); d.pts.push(...g.pts);
+  drawShapes(); updateModeUI();
+}
 function onTap(p){
   const nx=(p.x-V.tx)/(V.pw*V.k), ny=(p.y-V.ty)/(V.ph*V.k);
   const inside=nx>=0&&nx<=1&&ny>=0&&ny<=1;
@@ -853,15 +902,18 @@ async function movePin(nx,ny){
 function setMode(mode,kind){
   if(mode!=="move"&&V.pending) revertPending();
   V.mode=mode; if(kind) V.addKind=kind;
-  V.draft=(mode==="capture")?{kind:"capture",pts:[]}:(mode==="add"&&V.addKind!=="point")?{kind:V.addKind,pts:[]}:null;
+  V.draft=(mode==="capture")?{kind:"capture",pts:[]}:(mode==="add"&&V.addKind!=="point")?{kind:V.addKind,pts:[],cuts:[]}:null;
   updateModeUI(); drawShapes();
 }
 async function finishDraft(){
   const d=V.draft; if(!d) return;
   if(d.kind==="capture"){ const pts=d.pts; setMode("view"); openCapture(pts); return; }
   if(d.kind==="poly"&&d.pts.length<3){ toast("꼭짓점을 3개 이상 찍어 주세요"); return; }
+  if(d.kind==="sketch"&&!d.pts.length){ toast("손가락으로 그려 주세요"); return; }
   const shape={type:d.kind,pts:d.pts.map(q=>q.slice())};
-  const [cx,cy]=shapeCenter(shape);
+  if(d.kind==="sketch") shape.cuts=d.cuts.slice();
+  let [cx,cy]=shapeCenter(shape);
+  if(d.kind==="sketch") [cx,cy]=d.pts[0];   // 스케치 번호 핀은 처음 그린 곳에
   V.draft=null; V.mode="view";
   await addPin(cx,cy,shape);
 }
@@ -876,12 +928,13 @@ function updateModeUI(){
     const k=V.addKind;
     h.textContent=k==="point"?"위치를 누르세요 · 꾹 누르면 끌어서 맞춤"
       :k==="rect"?(n?"반대쪽 모서리를 누르세요":"구역의 한쪽 모서리를 누르세요")
+      :k==="sketch"?(n?"더 그리거나 완료 · 두 손가락은 확대·이동":"한 손가락으로 그리세요 · 두 손가락은 확대·이동")
       :(n<3?`구역의 꼭짓점을 차례로 누르세요 (${n}개)`:`꼭짓점 ${n}개 · 첫 점을 누르거나 완료`);
-    mb.innerHTML=[["point","● 점"],["rect","▭ 사각형"],["poly","⬠ 다각형"]].map(([v,t])=>`<button data-kind="${v}" class="${k===v?"on":""}">${t}</button>`).join("")
-      +(k!=="point"&&n?`<button data-act="undo">되돌리기</button>`:"")+(k==="poly"?`<button data-act="done" class="go" ${n<3?"disabled":""}>완료</button>`:"");
+    mb.innerHTML=[["point","● 점"],["rect","▭ 사각형"],["poly","⬠ 다각형"],["sketch","✎ 스케치"]].map(([v,t])=>`<button data-kind="${v}" class="${k===v?"on":""}">${t}</button>`).join("")
+      +(k!=="point"&&n?`<button data-act="undo">되돌리기</button>`:"")+(k==="poly"?`<button data-act="done" class="go" ${n<3?"disabled":""}>완료</button>`:"")+(k==="sketch"?`<button data-act="done" class="go" ${n?"":"disabled"}>완료</button>`:"");
     mb.hidden=false;
   }
-  else if(V.mode==="capture"){ h.textContent=n?"반대쪽 모서리를 누르세요":"캡처할 영역의 한쪽 모서리를 누르세요"; if(n){mb.innerHTML=`<button data-act="undo">되돌리기</button>`;mb.hidden=false;} }
+  else if(V.mode==="capture"){ h.textContent="끌어서 캡처 영역을 그리세요 (두 손가락: 확대)"; }
   else if(V.mode==="move"){
     const pp=V.pending&&V.pending.pin;
     h.textContent=pp&&pp.temp?"위치를 맞추고 '여기에 고정'을 누르세요":`${pp?pp.no+"번 ":""}위치를 누르거나 꾹 눌러 끈 뒤 '여기에 고정'`;
@@ -893,7 +946,9 @@ $("#modeBar").addEventListener("pointerdown",e=>e.stopPropagation());
 $("#modeBar").addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.dataset.kind){ setMode("add",b.dataset.kind); return; }
-  if(b.dataset.act==="undo"&&V.draft){ V.draft.pts.pop(); drawShapes(); updateModeUI(); }
+  if(b.dataset.act==="undo"&&V.draft){ const d=V.draft;
+    if(d.kind==="sketch"){ const c=d.cuts.pop(); if(c!==undefined) d.pts.length=c; } else d.pts.pop();
+    drawShapes(); updateModeUI(); }
   if(b.dataset.act==="done") finishDraft();
   if(b.dataset.act==="confirm") confirmPending();
   if(b.dataset.act==="cancelmove"){ setMode("view"); drawPins(); }
@@ -918,7 +973,7 @@ async function openPin(id){
   const p=V.pins.find(q=>q.id===id); if(!p) return;
   V.sel=id; drawPins();
   $("#pBadge").textContent=p.no;
-  $("#pTitle").textContent=`${p.no}번 ${p.shape?"구역":"핀"}`+(V.drawing.pages>1?` · ${p.page}쪽`:"");
+  $("#pTitle").textContent=`${p.no}번 ${kindLabel(p)}`+(V.drawing.pages>1?` · ${p.page}쪽`:"");
   $("#pTrade").value=p.trade||""; $("#pText").value=p.text||"";
   setStatusUI(p);
   const trades=[...new Set((await dbAll("pins")).map(q=>(q.trade||"").trim()).filter(Boolean))];
@@ -1002,7 +1057,7 @@ function renderList(){
   $("#lItems").innerHTML=list.length?list.map(p=>`<div class="li" data-id="${p.id}">
     <span class="badge${p.status==="done"?" done":""}">${p.no}</span>
     <div class="t"><div class="t1">${esc(p.trade||"업체 미입력")}</div><div class="t2">${esc(p.text||"(내용 없음)")}</div>
-    <div class="t3">${V.drawing.pages>1?p.page+"쪽 · ":""}${p.shape?"구역 · ":""}${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}${p.photos.length?" · 사진 "+p.photos.length:""}</div></div></div>`).join("")
+    <div class="t3">${V.drawing.pages>1?p.page+"쪽 · ":""}${p.shape?kindLabel(p)+" · ":""}${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}${p.photos.length?" · 사진 "+p.photos.length:""}</div></div></div>`).join("")
     :`<div class="empty" style="padding:30px">핀이 없습니다</div>`;
 }
 $("#listBtn").addEventListener("click",()=>{renderList();openSheet("#listSheet");});
@@ -1019,10 +1074,12 @@ $("#lItems").addEventListener("click",async e=>{
 });
 
 /* ---------- 부분 캡처: 두 모서리로 고른 사각형을 그림으로 ---------- */
-let capFile=null, capUrl=null;
+let capFile=null, capUrl=null, capPins=true;
+try{ capPins=localStorage.getItem("capPins")!=="0"; }catch(e){}
 async function openCapture(pts){
   const body=$("#capBody");
   body.innerHTML=`<p>캡처 그림을 만드는 중…</p>`; openSheet("#capSheet");
+  const withPins=capPins;
   try{
     const [[a,b],[c,d]]=pts;
     const x0=Math.min(a,c)*V.pw, y0=Math.min(b,d)*V.ph, w=Math.abs(c-a)*V.pw, h=Math.abs(d-b)*V.ph;
@@ -1034,11 +1091,12 @@ async function openCapture(pts){
     await V.page.render({canvasContext:ctx,viewport:V.page.getViewport({scale:sc}),transform:[1,0,0,1,-x0*sc,-y0*sc]}).promise;
     const P=([nx,ny])=>[(nx*V.pw-x0)*sc,(ny*V.ph-y0)*sc];
     const unit=Math.max(cv.width,cv.height)/2400;
-    for(const p of V.pins){ if(p.page!==V.pageNo||!p.shape) continue;
-      const col=hexRgb(colorOf(p)).join(",");
-      ctx.beginPath(); shapePts(p.shape).forEach((q,i)=>{const [x,y]=P(q); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
-      ctx.setLineDash(p.status==="done"?[14*unit,10*unit]:[]); ctx.fillStyle=`rgba(${col},.15)`; ctx.fill(); ctx.strokeStyle=`rgba(${col},.9)`; ctx.lineWidth=4*unit; ctx.stroke(); ctx.setLineDash([]); }
-    for(const p of [...V.pins].sort((a,b)=>a.no-b.no)){ if(p.page!==V.pageNo) continue;
+    for(const p of V.pins){ if(!withPins||p.page!==V.pageNo||!p.shape) continue;
+      const col=hexRgb(colorOf(p)).join(","), closed=traceShape(ctx,p.shape,P);
+      ctx.lineCap=ctx.lineJoin="round";
+      ctx.setLineDash(p.status==="done"&&closed?[14*unit,10*unit]:[]); if(closed){ ctx.fillStyle=`rgba(${col},.15)`; ctx.fill(); }
+      ctx.strokeStyle=`rgba(${col},${closed?.9:p.status==="done"?.5:.95})`; ctx.lineWidth=(closed?4:6)*unit; ctx.stroke(); ctx.setLineDash([]); }
+    for(const p of [...V.pins].sort((a,b)=>a.no-b.no)){ if(!withPins||p.page!==V.pageNo) continue;
       const [x,y]=P([p.nx,p.ny]); if(x<-60||y<-60||x>cv.width+60||y>cv.height+60) continue;
       drawPinMark(ctx,x,y,30*unit,p.no,colorOf(p),p.status==="done"); }
     const blob=await new Promise(r=>cv.toBlob(r,"image/png"));
@@ -1047,10 +1105,11 @@ async function openCapture(pts){
     if(capUrl) URL.revokeObjectURL(capUrl); capUrl=URL.createObjectURL(capFile);
     const canShare=navigator.canShare&&navigator.canShare({files:[capFile]});
     const canCopy=!!(navigator.clipboard&&window.ClipboardItem);
-    body.innerHTML=`<img class="capimg" src="${capUrl}" alt="캡처">`
+    body.innerHTML=`<label class="sw"><input type="checkbox" id="capPinsSw" ${withPins?"checked":""}><span></span>핀·구역·스케치 표시</label><img class="capimg" src="${capUrl}" alt="캡처">`
       +(canShare?`<button id="capShare">보내기 (카톡·메일·사진에 저장)</button>`:"")
       +(canCopy?`<button id="capCopy" class="sec">복사 (다른 앱에 붙여넣기)</button>`:"")
       +`<a class="sec" href="${capUrl}" download="${esc(name)}" target="_blank">그림 열기·저장</a>`;
+    $("#capPinsSw").onchange=e=>{ capPins=e.target.checked; try{localStorage.setItem("capPins",capPins?"1":"0");}catch(_){} openCapture(pts); };
     const sb=$("#capShare"); if(sb) sb.onclick=async()=>{try{await navigator.share({files:[capFile]});}catch(e){}};
     const cb=$("#capCopy"); if(cb) cb.onclick=async()=>{
       try{ await navigator.clipboard.write([new ClipboardItem({"image/png":capFile})]); toast("복사했습니다. 카톡 등에서 붙여넣기 하세요"); }
@@ -1132,9 +1191,9 @@ async function locCrop(full,pin,pins,aspect){
   ctx.drawImage(full,x0,y0,cw,chh,0,0,ow,oh);
   const P=([nx,ny])=>[(nx*W-x0)*k,(ny*H-y0)*k];
   for(const q of pins){ if(q.page!==pin.page||!q.shape) continue;
-    const col=hexRgb(cOf(q)).join(","), me=q===pin;
-    ctx.beginPath(); shapePts(q.shape).forEach((t,i)=>{const [x,y]=P(t); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
-    ctx.fillStyle=`rgba(${col},${me?.22:.1})`; ctx.fill(); ctx.strokeStyle=`rgba(${col},${me?1:.5})`; ctx.lineWidth=me?5:3; ctx.stroke(); }
+    const col=hexRgb(cOf(q)).join(","), me=q===pin, closed=traceShape(ctx,q.shape,P);
+    ctx.lineCap=ctx.lineJoin="round";
+    if(closed){ ctx.fillStyle=`rgba(${col},${me?.22:.1})`; ctx.fill(); } ctx.strokeStyle=`rgba(${col},${me?1:.5})`; ctx.lineWidth=me?5:3; ctx.stroke(); }
   for(const q of pins){ if(q.page!==pin.page||q===pin) continue; const [x,y]=P([q.nx,q.ny]);
     if(x>-40&&y>-40&&x<ow+40&&y<oh+60){ ctx.globalAlpha=.55; drawPinMark(ctx,x,y,20,q.no,cOf(q),q.status==="done"); ctx.globalAlpha=1; } }
   const [x,y]=P([pin.nx,pin.ny]); drawPinMark(ctx,x,y,28,pin.no,cOf(pin),pin.status==="done");
@@ -1162,8 +1221,13 @@ async function buildExport(drawing,pinList,progress){
     const pg=doc.getPage(p.page-1); if(!pg) continue;
     if(p.shape&&p.shape.pdf){
       const {width,height}=pg.getSize(), col=pc(p), dn=p.status==="done", bw=Math.max(width,height)*0.0015;
+      if(p.shape.type==="sketch"){
+        strokesOf(p.shape,p.shape.pdf).forEach(st=>{ if(st.length<2) return;
+          pg.drawSvgPath(st.map(([x,y],i)=>`${i?"L":"M"}${x},${-y}`).join(" "),{x:0,y:0,borderColor:col,borderWidth:bw*1.6,borderOpacity:dn?0.5:0.95,borderLineCap:1}); });
+      }else{
       const path=p.shape.pdf.map(([x,y],i)=>`${i?"L":"M"}${x},${-y}`).join(" ")+" Z";
       pg.drawSvgPath(path,{x:0,y:0,color:col,opacity:dn?0.07:0.15,borderColor:col,borderWidth:bw,borderOpacity:dn?0.6:0.9,borderDashArray:dn?[bw*5,bw*3.5]:undefined});
+      }
     }
     const {width,height}=pg.getSize(), rot=((pg.getRotation().angle%360)+360)%360;
     const r=Math.max(width,height)*0.0065, fs=r*1.15, col=pc(p), dn=p.status==="done";
@@ -1224,7 +1288,7 @@ async function buildExport(drawing,pinList,progress){
       if(k===0){
         page.drawCircle({x:x1+14,y:yy-h/2,size:8.5,color:pcol});
         const s=String(p.no), fs=s.length>2?7:8.5; page.drawText(s,{x:x1+14-num.widthOfTextAtSize(s,fs)/2,y:yy-h/2-fs*0.36,size:fs,font:num,color:WHITE});
-        const st=(p.status==="done"?"조치완료":"미조치")+(p.shape?"  ·  구역":"")+(drawing.pages>1?`  ·  ${p.page}쪽`:"")+(n>1?`  ·  사진 ${i+1}/${n}`:"");
+        const st=(p.status==="done"?"조치완료":"미조치")+(p.shape?"  ·  "+kindLabel(p):"")+(drawing.pages>1?`  ·  ${p.page}쪽`:"")+(n>1?`  ·  사진 ${i+1}/${n}`:"");
         page.drawText(st,{x:x1+28,y:yy-h/2-3.5,size:9.5,font:kor,color:col});
       }else if(k===1){
         page.drawText(wrap(p.trade||"-",9.5,VW)[0],{x:x1+6,y:yy-h/2-3.5,size:9.5,font:kor,color:INK});
