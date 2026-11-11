@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>DWG 도면 견본</title>
+<style>
+:root{--bg:#F3F4F6;--card:#fff;--ink:#111827;--sub:#6B7280;--line:#E5E7EB;--accent:#1F2937;--pin:#D3162F;--paper:#fff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#111318;--card:#1C1F26;--ink:#F3F4F6;--sub:#9CA3AF;--line:#2D323C;--accent:#E5E7EB}}
+:root[data-theme="dark"]{--bg:#111318;--card:#1C1F26;--ink:#F3F4F6;--sub:#9CA3AF;--line:#2D323C;--accent:#E5E7EB}
+[hidden]{display:none!important}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;overscroll-behavior:none}
+body{display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:8px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:#1F2937;color:#fff}
+header h1{font-size:17px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header small{font-size:12px;opacity:.7;font-weight:500}
+.hb{border:0;border-radius:16px;padding:7px 12px;font-size:13px;font-weight:600;background:rgba(255,255,255,.14);color:#fff}
+#start{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;text-align:center;gap:14px}
+#start p{margin:0;color:var(--sub);font-size:14.5px;line-height:1.6;max-width:420px}
+.big{display:inline-block;border:0;border-radius:14px;padding:15px 22px;font-size:16px;font-weight:700;background:var(--accent);color:var(--bg)}
+#msg{font-size:14px;color:var(--sub);min-height:20px}
+#msg.err{color:#D3162F}
+#view{flex:1;position:relative;overflow:hidden;touch-action:none;background:var(--paper)}
+#view.dark{background:#000}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+#pins{position:absolute;inset:0;pointer-events:none}
+.pin{position:absolute;width:30px;height:38px;margin:-38px 0 0 -15px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.pin b{position:absolute;left:0;right:0;top:6px;text-align:center;color:#fff;font:700 13px/1 -apple-system,sans-serif}
+#info{position:absolute;left:10px;top:10px;background:rgba(17,24,39,.78);color:#fff;font-size:12px;line-height:1.5;padding:7px 10px;border-radius:10px;max-width:calc(100% - 20px)}
+#bar{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;justify-content:center;padding:10px 12px;padding-bottom:max(12px,env(safe-area-inset-bottom));pointer-events:none}
+#bar button{pointer-events:auto;border:0;border-radius:22px;padding:12px 16px;font-size:14.5px;font-weight:700;background:#fff;color:#111827;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+#bar button.on{background:#D3162F;color:#fff}
+#hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(17,24,39,.85);color:#fff;font-size:13.5px;padding:8px 14px;border-radius:18px;white-space:nowrap}
+</style>
+</head>
+<body>
+<header><h1 id="ttl">DWG 도면 견본 <small>테스트</small></h1><button class="hb" id="openBtn" hidden>다른 DWG</button></header>
+<div id="start">
+  <p>DWG 파일을 고르면 휴대폰에서 바로 도면을 그려 줍니다.<br>두 손가락으로 확대·이동하고, <b>핀 찍기</b>로 위치를 눌러 핀을 놓아 보세요.</p>
+  <button class="big" id="pick">DWG 파일 고르기</button>
+  <div id="msg"></div>
+  <p style="font-size:12.5px">처음 한 번은 도면 읽는 프로그램(약 6MB)을 받느라 조금 걸립니다. 파일은 이 휴대폰 안에서만 읽고 어디에도 올리지 않습니다.</p>
+</div>
+<div id="view" hidden>
+  <canvas id="cv"></canvas><div id="pins"></div>
+  <div id="info"></div><div id="hint" hidden>핀 놓을 위치를 누르세요</div>
+  <div id="bar"><button id="fitBtn">전체</button><button id="pinBtn">핀 찍기</button><button id="bgBtn">검은 배경</button></div>
+</div>
+<input type="file" id="file" hidden>
+<script type="module">
+const LIB = "./lib/dist/libredwg-web.js";   // libredwg-web 0.7.4 (GPL-3.0), 같은 폴더에서 받음
+const $ = s => document.querySelector(s);
+let lib = null, D = null;   // D: 그리기 목록
+const V = { k: 1, tx: 0, ty: 0, dark: false, pinMode: false, pins: [] };
+
+/* ---------- ACI 색 (오토캐드 색 번호 → RGB) ---------- */
+const ACI = (() => {
+  const t = [[0,0,0],[255,0,0],[255,255,0],[0,255,0],[0,255,255],[0,0,255],[255,0,255],[255,255,255],[128,128,128],[192,192,192]];
+  const hsv = (h, s, v) => { const f = n => { const k = (n + h / 60) % 6; return Math.round(255 * (v - v * s * Math.max(0, Math.min(k, 4 - k, 1)))); }; return [f(5), f(3), f(1)]; };
+  const vals = [1, 0.8, 0.6, 0.5, 0.3];
+  for (let i = 10; i < 250; i++) { const h = Math.floor((i - 10) / 10) * 15, sub = i % 10; t[i] = hsv(h, sub % 2 ? 0.5 : 1, vals[Math.floor(sub / 2)]); }
+  [51, 91, 132, 173, 214, 255].forEach((g, j) => t[250 + j] = [g, g, g]);
+  return t;
+})();
+
+/* ---------- DWG → 그리기 목록 (선·채움·글자) ---------- */
+function build(db) {
+  const layers = new Map(db.tables.LAYER.entries.map(l => [l.name, l]));
+  const blocks = new Map(db.tables.BLOCK_RECORD.entries.map(b => [b.name, b]));
+  const strokes = new Map(), fills = new Map(), texts = [];
+  let nEnt = 0;
+  const add = (m, key, pts) => { if (pts.length < 2) return; (m.get(key) || m.set(key, []).get(key)).push(pts); };
+  const mul = (A, B) => [A[0]*B[0]+A[2]*B[1], A[1]*B[0]+A[3]*B[1], A[0]*B[2]+A[2]*B[3], A[1]*B[2]+A[3]*B[3], A[0]*B[4]+A[2]*B[5]+A[4], A[1]*B[4]+A[3]*B[5]+A[5]];
+  const tp = (M, x, y) => [M[0]*x + M[2]*y + M[4], M[1]*x + M[3]*y + M[5]];
+  const rgbKey = c => c.join(",");
+  function colorOf(e, lay, blockColor) {
+    if (e.color != null && e.colorIndex !== 256 && e.colorIndex !== 0) return [(e.color >> 16) & 255, (e.color >> 8) & 255, e.color & 255];
+    let ci = e.colorIndex;
+    if (ci == null || ci === 256) { ci = lay ? Math.abs(lay.colorIndex) : 7; if (lay && lay.color != null && lay.color > 0 && (lay.colorIndex == null || lay.colorIndex === 256)) return [(lay.color >> 16) & 255, (lay.color >> 8) & 255, lay.color & 255]; }
+    if (ci === 0) return blockColor || [255, 255, 255];
+    return ACI[ci] || [255, 255, 255];
+  }
+  const bulgeArc = (out, M, a, b, bulge) => {   // 폴리선 호 구간
+    const th = 4 * Math.atan(bulge), dx = b[0] - a[0], dy = b[1] - a[1], c = Math.hypot(dx, dy);
+    if (c < 1e-12) return;
+    const r = c / (2 * Math.sin(th / 2)), mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, h = r * Math.cos(th / 2);
+    const cx = mx - h * dy / c, cy = my + h * dx / c, a0 = Math.atan2(a[1] - cy, a[0] - cx);
+    const n = Math.max(4, Math.min(64, Math.ceil(Math.abs(th) / (Math.PI / 24))));
+    for (let i = 1; i <= n; i++) { const t = a0 + th * i / n; out.push(tp(M, cx + Math.abs(r) * Math.cos(t) * Math.sign(r) * Math.sign(r), cy + Math.abs(r) * Math.sin(t))); }
+  };
+  const arcPts = (M, cx, cy, rx, ry, rot, a0, a1) => {
+    while (a1 <= a0) a1 += Math.PI * 2;
+    const n = Math.max(8, Math.min(128, Math.ceil((a1 - a0) / (Math.PI / 36)))), out = [], cr = Math.cos(rot), sr = Math.sin(rot);
+    for (let i = 0; i <= n; i++) { const t = a0 + (a1 - a0) * i / n, x = rx * Math.cos(t), y = ry * Math.sin(t); out.push(tp(M, cx + x * cr - y * sr, cy + x * sr + y * cr)); }
+    return out;
+  };
+  function polyPts(M, vs, closed) {
+    const out = []; if (!vs.length) return out;
+    out.push(tp(M, vs[0].x, vs[0].y));
+    const n = closed ? vs.length : vs.length - 1;
+    for (let i = 0; i < n; i++) {
+      const a = vs[i], b = vs[(i + 1) % vs.length];
+      if (a.bulge) bulgeArc(out, M, [a.x, a.y], [b.x, b.y], a.bulge); else out.push(tp(M, b.x, b.y));
+    }
+    return out;
+  }
+  function bspline(cps, deg, knots, ws) {
+    const n = cps.length; if (n < 2) return cps.map(p => [p.x, p.y]);
+    if (!knots || knots.length !== n + deg + 1) return cps.map(p => [p.x, p.y]);
+    const lo = knots[deg], hi = knots[n], out = [], steps = Math.min(400, n * 12);
+    for (let s = 0; s <= steps; s++) {
+      const u = Math.min(hi - 1e-10, lo + (hi - lo) * s / steps);
+      let k = deg; while (k < n - 1 && knots[k + 1] <= u) k++;
+      const d = []; for (let j = 0; j <= deg; j++) { const p = cps[k - deg + j], w = ws && ws.length ? ws[k - deg + j] : 1; d.push([p.x * w, p.y * w, w]); }
+      for (let r = 1; r <= deg; r++) for (let j = deg; j >= r; j--) {
+        const i = k - deg + j, den = knots[i + deg - r + 1] - knots[i], al = den ? (u - knots[i]) / den : 0;
+        d[j] = [0, 1, 2].map(q => (1 - al) * d[j - 1][q] + al * d[j][q]);
+      }
+      out.push([d[deg][0] / d[deg][2], d[deg][1] / d[deg][2]]);
+    }
+    return out;
+  }
+  const stripM = s => String(s || "")
+    .replace(/\\U\+([0-9A-Fa-f]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/\\P/g, "\n").replace(/\\[LOlo]/g, "").replace(/\\[Ff][^;]*;/g, "")
+    .replace(/\\[HhWwTtAaCcQq][^;]*;/g, "").replace(/\\S([^;]*)[\^#\/]([^;]*);/g, "$1/$2").replace(/\\p[^;]*;/g, "")
+    .replace(/%%[dD]/g, "°").replace(/%%[pP]/g, "±").replace(/%%[cC]/g, "Ø").replace(/%%%/g, "%")
+    .replace(/\\~/g, " ").replace(/\\\\/g, "\\").replace(/[{}]/g, "");
+  const stripT = s => String(s || "").replace(/%%[dD]/g, "°").replace(/%%[pP]/g, "±").replace(/%%[cC]/g, "Ø").replace(/%%[uUoO]/g, "").replace(/%%%/g, "%");
+  function addText(M, str, x, y, h, rot, ha, va, color, wf) {
+    if (!str || !(h > 0)) return;
+    const [px, py] = tp(M, x, y), [qx, qy] = tp(M, x + Math.cos(rot), y + Math.sin(rot));
+    const sc = Math.hypot(qx - px, qy - py);
+    texts.push({ s: str, x: px, y: py, h: h * sc, r: Math.atan2(qy - py, qx - px), ha, va, c: color, wf: wf || 1 });
+  }
+  function textEnt(M, t, color) {
+    const al = (t.halign || 0) !== 0 || (t.valign || 0) !== 0;
+    const p = al && t.endPoint ? t.endPoint : t.startPoint;
+    const ha = [0, 0.5, 1, 0, 0.5, 0][t.halign || 0] ?? 0, va = [0, 0, 0.5, 1][t.valign || 0] ?? 0;
+    if (t.halign === 4) { addText(M, stripT(t.text), p.x, p.y, t.textHeight, t.rotation || 0, 0.5, 0.5, color, t.xScale); return; }
+    addText(M, stripT(t.text), p.x, p.y, t.textHeight, t.rotation || 0, ha, va, color, t.xScale);
+  }
+  function walk(ents, M, blockColor, parentLayer, depth) {
+    if (depth > 12) return;
+    for (const e of ents || []) {
+      if (e.isVisible === false || e.isInPaperSpace) continue;
+      const lname = e.layer === "0" && parentLayer ? parentLayer : e.layer, lay = layers.get(lname);
+      if (lay && (lay.off || lay.frozen || lay.colorIndex < 0)) continue;
+      const col = colorOf(e, lay, blockColor), key = rgbKey(col);
+      nEnt++;
+      try { switch (e.type) {
+        case "LINE": add(strokes, key, [tp(M, e.startPoint.x, e.startPoint.y), tp(M, e.endPoint.x, e.endPoint.y)]); break;
+        case "LWPOLYLINE": add(strokes, key, polyPts(M, e.vertices || [], !!(e.flag & 512) || !!(e.flag & 1))); break;
+        case "POLYLINE2D": case "POLYLINE3D": {
+          let vs = (e.vertices || []).filter(v => !(v.flag & 16));
+          add(strokes, key, polyPts(M, e.type === "POLYLINE3D" ? vs.map(v => ({ x: v.x, y: v.y })) : vs, !!(e.flag & 1))); break; }
+        case "ARC": add(strokes, key, arcPts(M, e.center.x, e.center.y, e.radius, e.radius, 0, e.startAngle, e.endAngle)); break;
+        case "CIRCLE": add(strokes, key, arcPts(M, e.center.x, e.center.y, e.radius, e.radius, 0, 0, Math.PI * 2)); break;
+        case "ELLIPSE": { const mx = e.majorAxisEndPoint.x, my = e.majorAxisEndPoint.y, rx = Math.hypot(mx, my);
+          let a0 = e.startAngle, a1 = e.endAngle; if (Math.abs(a1 - a0) < 1e-9) { a0 = 0; a1 = Math.PI * 2; }
+          add(strokes, key, arcPts(M, e.center.x, e.center.y, rx, rx * e.axisRatio, Math.atan2(my, mx), a0, a1)); break; }
+        case "SPLINE": { const pts = e.controlPoints && e.controlPoints.length ? bspline(e.controlPoints, e.degree, e.knots, e.weights) : (e.fitPoints || []).map(p => [p.x, p.y]);
+          add(strokes, key, pts.map(p => tp(M, p[0], p[1]))); break; }
+        case "LEADER": add(strokes, key, (e.vertices || []).map(p => tp(M, p.x, p.y))); break;
+        case "3DFACE": { const c = [e.corner1, e.corner2, e.corner3, e.corner4 || e.corner3].filter(Boolean).map(p => tp(M, p.x, p.y)); c.push(c[0]); add(strokes, key, c); break; }
+        case "SOLID": case "TRACE": { const c = [e.corner1, e.corner2, e.corner4 || e.corner3, e.corner3].map(p => tp(M, p.x, p.y)); add(fills, key, c); break; }
+        case "HATCH": {
+          if (e.solidFill !== 1) break;   // 무늬 해치는 생략(견본)
+          for (const bp of e.boundaryPaths || []) {
+            let pts = [];
+            if (bp.vertices) pts = polyPts(M, bp.vertices, true);
+            else for (const ed of bp.edges || []) {
+              if (ed.type === 1) { pts.push(tp(M, ed.start.x, ed.start.y), tp(M, ed.end.x, ed.end.y)); }
+              else if (ed.type === 2) { let a0 = ed.startAngle, a1 = ed.endAngle; const p = arcPts(M, ed.center.x, ed.center.y, ed.radius, ed.radius, 0, ed.isCCW === false ? -a1 : a0, ed.isCCW === false ? -a0 : a1); pts.push(...(ed.isCCW === false ? p.reverse() : p)); }
+            }
+            if (pts.length > 2) add(fills, key, pts);
+          }
+          break; }
+        case "TEXT": textEnt(M, e, col); break;
+        case "MTEXT": {
+          const lines = stripM(e.text).split("\n"), ap = (e.attachmentPoint || 1) - 1;
+          const ha = [0, 0.5, 1][ap % 3], vrow = Math.floor(ap / 3), h = e.textHeight, ls = h * 1.66 * (e.lineSpacing || 1);
+          const rot = e.direction && (e.direction.x || e.direction.y) ? Math.atan2(e.direction.y, e.direction.x) : (e.rotation || 0);
+          const total = (lines.length - 1) * ls, top = vrow === 0 ? 0 : vrow === 1 ? total / 2 : total;
+          lines.forEach((ln, i) => { const dy = -(i * ls) + top, x = e.insertionPoint.x - Math.sin(rot) * dy, y = e.insertionPoint.y + Math.cos(rot) * dy;
+            addText(M, ln, x, y, h, rot, ha, vrow === 0 ? 1 : vrow === 1 ? 0.5 : 0, col); });
+          break; }
+        case "INSERT": {
+          const b = blocks.get(e.name); if (!b) break;
+          const bp = b.basePoint || { x: 0, y: 0 }, cr = Math.cos(e.rotation || 0), sr = Math.sin(e.rotation || 0);
+          const xs = (e.xScale || 1) * (e.extrusionDirection && e.extrusionDirection.z < 0 ? -1 : 1), ys = e.yScale || 1;
+          const cols = Math.max(1, e.columnCount || 1), rows = Math.max(1, e.rowCount || 1);
+          for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+            const ox = c * (e.columnSpacing || 0), oy = r * (e.rowSpacing || 0);
+            let ix = e.insertionPoint.x, iy = e.insertionPoint.y;
+            if (e.extrusionDirection && e.extrusionDirection.z < 0) ix = -ix;
+            const L = [cr * xs, sr * xs, -sr * ys, cr * ys, ix + cr * ox - sr * oy, iy + sr * ox + cr * oy];
+            walk(b.entities, mul(M, mul(L, [1, 0, 0, 1, -bp.x, -bp.y])), col, lname, depth + 1);
+          }
+          for (const a of e.attribs || []) if (a.text && !(a.flags & 1)) textEnt(M, a.text, colorOf(a, layers.get(a.layer), col));
+          break; }
+        case "DIMENSION": { const b = blocks.get(e.name); if (b) walk(b.entities, M, col, lname, depth + 1); break; }
+      } } catch (err) { /* 읽지 못한 개체는 건너뜀 */ }
+    }
+  }
+  const ms = db.tables.BLOCK_RECORD.entries.find(b => /^\*model_space$/i.test(b.name));
+  walk(ms && ms.entities && ms.entities.length ? ms.entities : db.entities, [1, 0, 0, 1, 0, 0], null, null, 0);
+  // 범위: 멀리 떨어진 몇 개 때문에 도면이 작아지지 않게, 가운데 98% 범위의 두 배 안쪽만 센다
+  const cx = [], cy = [];
+  const each = f => { for (const m of [strokes, fills]) for (const arr of m.values()) for (const p of arr) for (const q of p) f(q[0], q[1]);
+    for (const t of texts) { f(t.x, t.y); f(t.x + Math.cos(t.r) * t.h * t.s.length * 0.8, t.y + Math.sin(t.r) * t.h * t.s.length * 0.8); } };
+  each((x, y) => { if (isFinite(x) && isFinite(y)) { cx.push(x); cy.push(y); } });
+  if (!cx.length) return null;
+  cx.sort((a, b) => a - b); cy.sort((a, b) => a - b);
+  const q = (a, f) => a[Math.min(a.length - 1, Math.max(0, Math.floor(a.length * f)))];
+  const x0 = q(cx, .01), x1 = q(cx, .99), y0 = q(cy, .01), y1 = q(cy, .99);
+  const w = Math.max(x1 - x0, 1e-6), h = Math.max(y1 - y0, 1e-6), R = Math.max(w, h);
+  let bx0 = 1e300, bx1 = -1e300, by0 = 1e300, by1 = -1e300;
+  each((x, y) => { if (x > x0 - R && x < x1 + R && y > y0 - R && y < y1 + R) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; } });
+  if (bx1 - bx0 < 1e-9) { bx0 -= 1; bx1 += 1; } if (by1 - by0 < 1e-9) { by0 -= 1; by1 += 1; }
+  // 원점 옮겨 Path2D 만들기 (큰 좌표에서 떨림 방지)
+  const ox = bx0, oy = by0, mk = (arr, close) => { const P = new Path2D(); for (const p of arr) { P.moveTo(p[0][0] - ox, p[0][1] - oy); for (let i = 1; i < p.length; i++) P.lineTo(p[i][0] - ox, p[i][1] - oy); if (close) P.closePath(); } return P; };
+  let nSeg = 0; for (const arr of strokes.values()) for (const p of arr) nSeg += p.length - 1;
+  return {
+    strokes: [...strokes].map(([k, arr]) => ({ c: k.split(",").map(Number), p: mk(arr) })),
+    fills: [...fills].map(([k, arr]) => ({ c: k.split(",").map(Number), p: mk(arr, true) })),
+    texts: texts.map(t => Object.assign(t, { x: t.x - ox, y: t.y - oy })),
+    w: bx1 - bx0, h: by1 - by0, nEnt, nSeg, ox, oy
+  };
+}
+
+/* ---------- 그리기 ---------- */
+const cv = $("#cv"), ctx = cv.getContext("2d"), view = $("#view");
+const dpr = () => Math.min(3, window.devicePixelRatio || 1);
+function shade(c) {   // 흰 바탕에서 안 보이는 밝은 색은 어둡게
+  if (V.dark) return `rgb(${c})`;
+  const L = (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255;
+  if (L > 0.92) return "rgb(20,20,20)";
+  if (L > 0.55) { const f = 0.55 / L; return `rgb(${c.map(v => Math.round(v * f))})`; }
+  return `rgb(${c})`;
+}
+let raf = 0;
+const draw = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); };
+function render() {
+  if (!D) return;
+  const W = view.clientWidth, H = view.clientHeight, r = dpr();
+  if (cv.width !== Math.round(W * r) || cv.height !== Math.round(H * r)) { cv.width = Math.round(W * r); cv.height = Math.round(H * r); }
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+  // 도면 좌표(위가 +y) → 화면: sx = tx + x*k, sy = ty - y*k
+  ctx.setTransform(V.k * r, 0, 0, -V.k * r, V.tx * r, V.ty * r);
+  for (const f of D.fills) { ctx.fillStyle = shade(f.c); ctx.fill(f.p, "evenodd"); }
+  ctx.lineWidth = 1 / V.k; ctx.lineJoin = "round";
+  for (const s of D.strokes) { ctx.strokeStyle = shade(s.c); ctx.stroke(s.p); }
+  ctx.setTransform(r, 0, 0, r, 0, 0);
+  ctx.textBaseline = "alphabetic";
+  for (const t of D.texts) {
+    const sh = t.h * V.k; if (sh < 2.5) continue;
+    const sx = V.tx + t.x * V.k, sy = V.ty - t.y * V.k;
+    if (sx < -2000 || sx > W + 2000 || sy < -2000 || sy > H + 2000) continue;
+    const fs = sh / 0.72;
+    ctx.save(); ctx.translate(sx, sy); ctx.rotate(-t.r); ctx.scale(t.wf || 1, 1);
+    ctx.font = `${fs}px -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif`;
+    const tw = ctx.measureText(t.s).width;
+    ctx.fillStyle = shade(t.c); ctx.fillText(t.s, -tw * t.ha, sh * t.va); ctx.restore();
+  }
+  drawPins();
+}
+function fit() {
+  const W = view.clientWidth, H = view.clientHeight - 70;
+  V.k = Math.min(W / D.w, H / D.h) * 0.94;
+  V.tx = (W - D.w * V.k) / 2; V.ty = (H + D.h * V.k) / 2 + 4;
+  draw();
+}
+function drawPins() {
+  $("#pins").innerHTML = V.pins.map((p, i) => `<div class="pin" style="left:${V.tx + p.x * V.k}px;top:${V.ty - p.y * V.k}px"><svg width="30" height="38" viewBox="0 0 30 38"><path d="M15 37C15 37 2 22 2 14a13 13 0 0 1 26 0c0 8-13 23-13 23z" fill="#D3162F" stroke="#fff" stroke-width="2"/></svg><b>${i + 1}</b></div>`).join("");
+}
+
+/* ---------- 손가락 조작 ---------- */
+const ptrs = new Map(); let G = null;
+const rel = e => { const b = view.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; };
+view.addEventListener("pointerdown", e => {
+  if (e.target.closest("#bar")) return;
+  view.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, rel(e));
+  if (ptrs.size === 1) { const p = rel(e); G = { type: "pan", sx: p.x, sy: p.y, tx: V.tx, ty: V.ty, moved: false, t: Date.now() }; }
+  else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; G = { type: "pinch", d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, k: V.k, tx: V.tx, ty: V.ty }; }
+});
+view.addEventListener("pointermove", e => {
+  if (!ptrs.has(e.pointerId) || !G) return; ptrs.set(e.pointerId, rel(e));
+  if (G.type === "pan" && ptrs.size === 1) { const p = rel(e), dx = p.x - G.sx, dy = p.y - G.sy; if (Math.hypot(dx, dy) > 8) G.moved = true; if (G.moved) { V.tx = G.tx + dx; V.ty = G.ty + dy; draw(); } }
+  else if (G.type === "pinch" && ptrs.size >= 2) {
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y) || 1, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const fitK = Math.min(view.clientWidth / D.w, view.clientHeight / D.h), nk = Math.max(fitK * 0.5, Math.min(fitK * 400, G.k * d / G.d));
+    const wx = (G.mx - G.tx) / G.k, wy = (G.ty - G.my) / G.k; V.k = nk; V.tx = mx - wx * nk; V.ty = my + wy * nk; draw();
+  }
+});
+const end = e => {
+  if (!ptrs.has(e.pointerId)) return; const p = rel(e); ptrs.delete(e.pointerId);
+  if (G && G.type === "pan" && !G.moved && Date.now() - G.t < 600 && V.pinMode) {
+    V.pins.push({ x: (p.x - V.tx) / V.k, y: (V.ty - p.y) / V.k }); V.pinMode = false; $("#pinBtn").classList.remove("on"); $("#hint").hidden = true; drawPins();
+  }
+  if (ptrs.size === 1) { const q = [...ptrs.values()][0]; G = { type: "pan", sx: q.x, sy: q.y, tx: V.tx, ty: V.ty, moved: true, t: 0 }; }
+  else if (!ptrs.size) G = null;
+};
+view.addEventListener("pointerup", end); view.addEventListener("pointercancel", end);
+view.addEventListener("wheel", e => { e.preventDefault(); const p = rel(e), f = Math.exp(-e.deltaY * 0.0015), wx = (p.x - V.tx) / V.k, wy = (V.ty - p.y) / V.k; V.k *= f; V.tx = p.x - wx * V.k; V.ty = p.y + wy * V.k; draw(); }, { passive: false });
+document.addEventListener("gesturestart", e => e.preventDefault());
+window.addEventListener("resize", () => D && draw());
+
+$("#fitBtn").onclick = () => fit();
+$("#pinBtn").onclick = () => { V.pinMode = !V.pinMode; $("#pinBtn").classList.toggle("on", V.pinMode); $("#hint").hidden = !V.pinMode; };
+$("#bgBtn").onclick = () => { V.dark = !V.dark; view.classList.toggle("dark", V.dark); $("#bgBtn").textContent = V.dark ? "흰 배경" : "검은 배경"; draw(); };
+
+/* ---------- 파일 열기 ---------- */
+const msg = (t, err) => { $("#msg").textContent = t; $("#msg").className = err ? "err" : ""; };
+$("#pick").onclick = () => $("#file").click();
+$("#openBtn").onclick = () => $("#file").click();
+$("#file").onchange = async () => {
+  const f = $("#file").files[0]; $("#file").value = ""; if (!f) return;
+  $("#view").hidden = true; $("#start").hidden = false;
+  try {
+    if (!lib) { msg("도면 읽는 프로그램 받는 중… (처음 한 번)"); const m = await import(LIB); lib = await m.LibreDwg.create(); window.__T = m.Dwg_File_Type; }
+    msg(`${f.name} 읽는 중…`);
+    const t0 = performance.now(), buf = await f.arrayBuffer();
+    await new Promise(r => setTimeout(r, 30));
+    const dwg = lib.dwg_read_data(buf, window.__T.DWG);
+    if (!dwg) throw new Error("DWG 파일을 읽지 못했습니다 (지원하지 않는 버전이거나 손상된 파일)");
+    const db = lib.convert(dwg); lib.dwg_free(dwg);
+    const t1 = performance.now();
+    D = build(db);
+    if (!D) throw new Error("모형 공간에 그릴 내용이 없습니다");
+    const t2 = performance.now();
+    $("#start").hidden = true; $("#view").hidden = false; $("#openBtn").hidden = false;
+    $("#ttl").innerHTML = `${f.name.replace(/[<>&]/g, "")} <small>DWG 견본</small>`;
+    V.pins = []; fit();
+    $("#info").textContent = `개체 ${D.nEnt.toLocaleString()}개 · 선 ${D.nSeg.toLocaleString()}토막 · 글자 ${D.texts.length.toLocaleString()}개 · 읽기 ${((t1 - t0) / 1000).toFixed(1)}초 + 그리기 준비 ${((t2 - t1) / 1000).toFixed(1)}초`;
+    setTimeout(() => { $("#info").hidden = true; }, 6000); $("#info").hidden = false;
+    msg("");
+  } catch (err) { console.error(err); msg(err.message || String(err), true); }
+};
+window.V = V; window.__draw = draw;
+</script>
+</body>
+</html>
