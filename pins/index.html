@@ -91,6 +91,15 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .sw input:checked+span{background:var(--done)}
 .sw input:checked+span::after{left:21px}
 .capimg{width:100%;border-radius:10px;border:1px solid var(--line);display:block;margin:4px 0 6px}
+.capwrap{position:relative}
+#capView.pen{touch-action:none;outline:3px solid var(--accent);outline-offset:-3px}
+.captools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 6px}
+.exp .captools button{display:inline-block;width:auto;margin:0;padding:8px 12px;border-radius:18px;font-size:14px;background:var(--chip);color:var(--ink)}
+.exp .captools button.on{background:var(--accent);color:#fff}
+.exp .captools button.dot{width:30px;height:30px;padding:0;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.exp .captools button.dot.on{box-shadow:0 0 0 3px var(--accent)}
+.exp .captools button.sm{padding:8px 10px;font-size:13px}
+.caphint{font-size:13px;color:var(--sub);margin:0 0 4px}
 
 /* 아래에서 올라오는 창 */
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10}
@@ -329,7 +338,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="2.3";
+const APP_VER="2.4";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1393,8 +1402,11 @@ $("#logCsv").addEventListener("click",async()=>{
 /* ---------- 부분 캡처: 두 모서리로 고른 사각형을 그림으로 ---------- */
 let capFile=null, capUrl=null, capPins=true;
 try{ capPins=localStorage.getItem("capPins")!=="0"; }catch(e){}
-async function openCapture(pts){
+// 캡처 위 펜 그림: 선은 그림 크기에 대한 비율(0~1)로 보관해서, 핀 표시를 껐다 켜도 그대로 남는다
+let CAP={pts:null,base:null,strokes:[],color:"#D3162F",pen:false,name:""};
+async function openCapture(pts,keep){
   const body=$("#capBody");
+  if(!keep) CAP={...CAP,pts,strokes:[],pen:false};
   body.innerHTML=`<p>캡처 그림을 만드는 중…</p>`; openSheet("#capSheet");
   const withPins=capPins;
   try{
@@ -1407,31 +1419,73 @@ async function openCapture(pts){
     const ctx=cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height);
     await V.page.render({canvasContext:ctx,viewport:V.page.getViewport({scale:sc}),transform:[1,0,0,1,-x0*sc,-y0*sc]}).promise;
     const P=([nx,ny])=>[(nx*V.pw-x0)*sc,(ny*V.ph-y0)*sc];
-    const unit=Math.max(cv.width,cv.height)/2400;
+    // 핀 크기: 캡처할 때 화면에서 보이던 크기보다 조금 크게, 그림의 2.5~8% 사이
+    const long=Math.max(cv.width,cv.height), perScreenPx=cv.width/(w*V.k);
+    const r=Math.min(Math.max(17*perScreenPx,long*0.025),long*0.08), unit=r/30;
     for(const p of V.pins){ if(!withPins||p.page!==V.pageNo||!p.shape) continue;
       const col=hexRgb(colorOf(p)).join(","), closed=traceShape(ctx,p.shape,P);
       ctx.lineCap=ctx.lineJoin="round";
       ctx.setLineDash(p.status==="done"&&closed?[14*unit,10*unit]:[]); if(closed){ ctx.fillStyle=`rgba(${col},.15)`; ctx.fill(); }
-      ctx.strokeStyle=`rgba(${col},${closed?.9:p.status==="done"?.5:.95})`; ctx.lineWidth=(closed?4:6)*unit; ctx.stroke(); ctx.setLineDash([]); }
+      ctx.strokeStyle=`rgba(${col},${closed?.9:p.status==="done"?.5:.95})`; ctx.lineWidth=(closed?5:7)*unit; ctx.stroke(); ctx.setLineDash([]); }
     for(const p of [...V.pins].sort((a,b)=>a.no-b.no)){ if(!withPins||p.page!==V.pageNo) continue;
-      const [x,y]=P([p.nx,p.ny]); if(x<-60||y<-60||x>cv.width+60||y>cv.height+60) continue;
-      drawPinMark(ctx,x,y,30*unit,p.no,colorOf(p),p.status==="done"); }
-    const blob=await new Promise(r=>cv.toBlob(r,"image/png"));
-    const now=new Date(), name=`${V.drawing.name}_캡처_${dayStr(now)}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`.replace(/[\\/:*?"<>|]/g,"_");
-    capFile=new File([blob],name,{type:"image/png"});
-    if(capUrl) URL.revokeObjectURL(capUrl); capUrl=URL.createObjectURL(capFile);
-    const canShare=navigator.canShare&&navigator.canShare({files:[capFile]});
+      const [x,y]=P([p.nx,p.ny]); if(x<-2*r||y<-2*r||x>cv.width+2*r||y>cv.height+2*r) continue;
+      drawPinMark(ctx,x,y,r,p.no,colorOf(p),p.status==="done"); }
+    CAP.base=cv;
+    const now=new Date(); CAP.name=`${V.drawing.name}_캡처_${dayStr(now)}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`.replace(/[\\/:*?"<>|]/g,"_");
+    const canShare=navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]});
     const canCopy=!!(navigator.clipboard&&window.ClipboardItem);
-    body.innerHTML=`<label class="sw"><input type="checkbox" id="capPinsSw" ${withPins?"checked":""}><span></span>핀·구역·스케치 표시</label><img class="capimg" src="${capUrl}" alt="캡처">`
+    const cols=[["#D3162F","빨강"],["#2563EB","파랑"],["#111827","검정"],["#FACC15","노랑"]];
+    body.innerHTML=`<label class="sw"><input type="checkbox" id="capPinsSw" ${withPins?"checked":""}><span></span>핀·구역·스케치 표시</label>
+      <div class="captools"><button id="capPen" class="${CAP.pen?"on":""}">✎ 펜으로 그리기</button>
+        ${cols.map(([c,t])=>`<button class="dot${CAP.color===c?" on":""}" data-col="${c}" style="background:${c}" aria-label="${t}"></button>`).join("")}
+        <button id="capUndo" class="sm">되돌리기</button><button id="capClear" class="sm">모두 지우기</button></div>
+      <p id="capPenHint" class="caphint" ${CAP.pen?"":"hidden"}>그림 위를 손가락으로 그리세요. 다 그렸으면 ✎ 를 다시 눌러 끄세요.</p>
+      <div class="capwrap"><canvas id="capView" class="capimg"></canvas></div>`
       +(canShare?`<button id="capShare">보내기 (카톡·메일·사진에 저장)</button>`:"")
       +(canCopy?`<button id="capCopy" class="sec">복사 (다른 앱에 붙여넣기)</button>`:"")
-      +`<a class="sec" href="${capUrl}" download="${esc(name)}" target="_blank">그림 열기·저장</a>`;
-    $("#capPinsSw").onchange=e=>{ capPins=e.target.checked; try{localStorage.setItem("capPins",capPins?"1":"0");}catch(_){} openCapture(pts); };
+      +`<button id="capSave" class="sec">그림 열기·저장</button>`;
+    const view=$("#capView"); view.width=cv.width; view.height=cv.height;
+    capRedraw(); await capMakeFile();
+    $("#capPinsSw").onchange=e=>{ capPins=e.target.checked; try{localStorage.setItem("capPins",capPins?"1":"0");}catch(_){} openCapture(pts,true); };
+    $("#capPen").onclick=()=>{ CAP.pen=!CAP.pen; $("#capPen").classList.toggle("on",CAP.pen); $("#capPenHint").hidden=!CAP.pen; view.classList.toggle("pen",CAP.pen); };
+    view.classList.toggle("pen",CAP.pen);
+    body.querySelectorAll("[data-col]").forEach(b=>b.onclick=()=>{ CAP.color=b.dataset.col; body.querySelectorAll("[data-col]").forEach(x=>x.classList.toggle("on",x===b));
+      if(!CAP.pen) $("#capPen").click(); });
+    $("#capUndo").onclick=async()=>{ CAP.strokes.pop(); capRedraw(); await capMakeFile(); };
+    $("#capClear").onclick=async()=>{ if(!CAP.strokes.length||!confirm("그린 선을 모두 지울까요?")) return; CAP.strokes=[]; capRedraw(); await capMakeFile(); };
+    capPenEvents(view);
     const sb=$("#capShare"); if(sb) sb.onclick=async()=>{try{await navigator.share({files:[capFile]});}catch(e){}};
     const cb=$("#capCopy"); if(cb) cb.onclick=async()=>{
       try{ await navigator.clipboard.write([new ClipboardItem({"image/png":capFile})]); toast("복사했습니다. 카톡 등에서 붙여넣기 하세요"); }
       catch(e){ toast("이 브라우저에서는 복사가 안 됩니다. 보내기를 써 주세요",3500); } };
+    $("#capSave").onclick=()=>{ const a=document.createElement("a"); a.href=capUrl; a.download=capFile.name; a.target="_blank"; a.click(); };
   }catch(err){ console.error(err); body.innerHTML=`<p>캡처하지 못했습니다: ${esc(err.message)}</p>`; }
+}
+function capRedraw(){
+  const view=$("#capView"); if(!view||!CAP.base) return;
+  const ctx=view.getContext("2d"), W=view.width, H=view.height, lw=Math.max(W,H)*0.006;
+  ctx.drawImage(CAP.base,0,0);
+  ctx.lineCap=ctx.lineJoin="round";
+  for(const st of CAP.strokes){ if(!st.pts.length) continue;
+    ctx.strokeStyle=st.color; ctx.globalAlpha=st.color==="#FACC15"?0.55:1; ctx.lineWidth=st.color==="#FACC15"?lw*3:lw;
+    ctx.beginPath(); st.pts.forEach(([x,y],i)=>i?ctx.lineTo(x*W,y*H):ctx.moveTo(x*W,y*H));
+    if(st.pts.length===1) ctx.lineTo(st.pts[0][0]*W+0.1,st.pts[0][1]*H);
+    ctx.stroke(); }
+  ctx.globalAlpha=1;
+}
+async function capMakeFile(){   // 보내기·복사가 바로 되도록 그림 파일을 미리 만들어 둔다
+  const view=$("#capView"); if(!view) return;
+  const blob=await new Promise(r=>view.toBlob(r,"image/png"));
+  capFile=new File([blob],CAP.name,{type:"image/png"});
+  if(capUrl) URL.revokeObjectURL(capUrl); capUrl=URL.createObjectURL(capFile);
+}
+function capPenEvents(view){
+  let cur=null;
+  const pt=e=>{ const b=view.getBoundingClientRect(); return [Math.min(1,Math.max(0,(e.clientX-b.left)/b.width)),Math.min(1,Math.max(0,(e.clientY-b.top)/b.height))]; };
+  view.onpointerdown=e=>{ if(!CAP.pen) return; e.preventDefault(); try{view.setPointerCapture(e.pointerId);}catch(_){}
+    cur={color:CAP.color,pts:[pt(e)]}; CAP.strokes.push(cur); capRedraw(); };
+  view.onpointermove=e=>{ if(!cur) return; e.preventDefault(); cur.pts.push(pt(e)); capRedraw(); };
+  view.onpointerup=view.onpointercancel=async()=>{ if(!cur) return; cur=null; await capMakeFile(); };
 }
 function drawPinMark(ctx,x,y,r,no,col,done){   // 앱 화면과 같은 물방울 핀 (끝이 위치), 완료는 흐리게 + ✓
   ctx.save(); ctx.translate(x,y-r*1.42); if(done) ctx.globalAlpha*=0.6;
