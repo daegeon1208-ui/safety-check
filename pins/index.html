@@ -44,7 +44,7 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .pin.drag{transform:scale(1.25);transform-origin:50% 100%;z-index:2}
 .pin.drag::after{content:"";position:absolute;left:50%;top:34px;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:2px solid #FBBF24;background:rgba(251,191,36,.3)}
 #base{position:absolute;left:0;top:0;transform-origin:0 0;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
-#detail{position:absolute;left:0;top:0;pointer-events:none}
+#detail{position:absolute;left:0;top:0;pointer-events:none;transform-origin:0 0}
 #pinLayer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .pin{position:absolute;width:30px;height:30px;margin:-34px 0 0 -15px}
 .pin::before{content:"";position:absolute;inset:0;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--pc,var(--open));border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
@@ -76,7 +76,7 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .toolbar button#addBtn{flex:none;width:64px;height:64px;padding:0;margin:0 6px;border-radius:50%;display:grid;place-items:center;background:var(--open);color:#fff;border:3px solid #fff;box-shadow:0 4px 12px rgba(211,22,47,.45)}
 .toolbar button#addBtn svg{width:30px;height:30px;display:block}
 .toolbar button#addBtn{transition:transform .18s}
-.toolbar button#addBtn.arm{transform:scale(1.16);animation:pinGlow 1.3s ease-in-out infinite}
+.toolbar button#addBtn.arm{transform:scale(1.16);box-shadow:0 0 0 6px rgba(239,68,68,.28),0 0 24px 8px rgba(248,113,113,.6)}   /* 찍는 중: 반짝이지 않고 은은하게 빛나는 상태로 고정 */
 @keyframes pinGlow{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55),0 4px 14px rgba(211,22,47,.5)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0),0 0 26px 8px rgba(248,113,113,.75)}}
 .modebar button.cancel{background:#374151;color:#fff}
 #shapeLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible}
@@ -377,7 +377,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.4";
+const APP_VER="3.5";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1055,7 +1055,7 @@ function fitPage(){
 }
 function clampView(){
   const cw=vp.clientWidth, ch=vp.clientHeight, R=resv();
-  // 너무 크게 확대하면 아이폰이 그림 메모리를 못 버티고 화면을 새로 고친다 → 화면 맞춤의 20배, 렌더 배율 12배까지
+  // 너무 크게 확대하면 아이폰이 그림 메모리를 못 버티고 화면을 새로 고친다 → 화면 맞춤의 40배, 렌더 배율 24배까지
   const [minK,maxK]=kLimits(); V.k=Math.max(minK,Math.min(maxK,V.k));
   const w=V.pw*V.k, h=V.ph*V.k, m=60;   // 도면이 화면 밖으로 완전히 나가지 않게
   // 도면이 화면보다 작은 방향은 가운데에 고정 (축소했을 때 옆으로 밀리지 않게)
@@ -1065,12 +1065,15 @@ function clampView(){
 }
 function kLimits(){   // [최대 축소, 최대 확대]
   const R=resv(), cw=vp.clientWidth-R.l-R.r, ch=vp.clientHeight-R.b, fitK=Math.min(cw/V.pw,ch/V.ph);
-  return [fitK*0.75*0.96, Math.max(fitK*4,Math.min(fitK*20,12/dpr()))];
+  return [fitK*0.75*0.96, Math.max(fitK*4,Math.min(fitK*40,24/dpr()))];   // 최대 확대: 화면 맞춤의 40배 (선명한 그림 배율 24 이하)
 }
 function apply(){
   clampView();
   base.style.transform=`translate(${V.tx}px,${V.ty}px) scale(${V.k})`;
-  detail.hidden=true;
+  // 선명한 그림(detail)은 숨기지 않고 손가락을 따라 함께 옮긴다 → 움직이는 동안 흐려지지 않게. 손을 떼면 새로 그린다
+  if(!detail.hidden&&V.dk){ const sc=V.k/V.dk;
+    if(sc>6||sc<0.2) detail.hidden=true;
+    else detail.style.transform=`translate(${V.tx-sc*V.dtx}px,${V.ty-sc*V.dty}px) scale(${sc})`; }
   drawPins();
 }
 /* 사람별 핀 색: 도면에서 처음 핀을 찍은 순서대로 색을 정한다 */
@@ -1194,6 +1197,7 @@ async function renderDetail(){
   if(job!==V.detailJob||tx!==V.tx||ty!==V.ty||k!==V.k) return;
   detail.width=c.width; detail.height=c.height; detail.style.width=cw+"px"; detail.style.height=ch+"px";
   detail.getContext("2d").drawImage(c,0,0);
+  V.dk=k; V.dtx=tx; V.dty=ty; detail.style.transform="";
   detail.hidden=false;
 }
 
