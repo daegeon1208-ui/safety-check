@@ -128,7 +128,7 @@ function pinOut_(o) {
 }
 function pins_(drawingId) { return rows_('핀').list.filter(o => o.drawingId === drawingId).map(pinOut_); }
 function pinRow_(p) {
-  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, photos: (p.photos || []).map(x => ({ k: x.k, id: x.id, w: x.w, h: x.h })) };
+  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, photos: (p.photos || []).map(x => ({ k: x.k, id: x.id, w: x.w, h: x.h })) };
   return Object.assign({}, p, { deleted: p.deleted ? 'true' : 'false', doneAt: p.doneAt || '', 'data(JSON)': JSON.stringify(extra) });
 }
 function savePin_(p, photos) {
