@@ -321,6 +321,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>6. <b>내보내기</b>를 누르면 핀이 표시된 도면과 하자 목록(사진 포함)을 PDF 한 파일로 만들어 카톡 등으로 보낼 수 있습니다.</p>
     <p>7. 위쪽 <b>구글 공유</b>에 웹 앱 URL·PIN·이름을 넣으면 같은 설정을 한 사람들과 도면과 핀을 함께 씁니다.</p>
     <p style="margin-top:12px">구글 공유를 켜지 않으면 기록은 이 휴대폰 브라우저 안에만 저장됩니다. 사파리 방문 기록을 지우면 함께 지워질 수 있으니, 공유 → <b>홈 화면에 추가</b>로 앱처럼 쓰시고 중요한 기록은 PDF로 내보내 두세요.</p>
+    <p id="verTxt" style="margin-top:14px;font-size:12px;color:var(--sub)"></p>
   </div>
 </div>
 
@@ -332,7 +333,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="2.8";
+const APP_VER="2.9";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -395,6 +396,7 @@ const ICON={
   doc:svgI('<rect x="5" y="3" width="14" height="18" rx="2"/>'),
 };
 $("#addBtn").innerHTML=ICON.pin;
+$("#verTxt").textContent="앱 버전 "+APP_VER;
 
 /* ---------- 창 열고 닫기 ---------- */
 const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet"];
@@ -939,10 +941,15 @@ function fitPage(){
 function clampView(){
   const cw=vp.clientWidth, ch=vp.clientHeight;
   // 너무 크게 확대하면 아이폰이 그림 메모리를 못 버티고 화면을 새로 고친다 → 화면 맞춤의 20배, 렌더 배율 12배까지
-  const fitK=Math.min(cw/V.pw,ch/V.ph), minK=fitK*0.75, maxK=Math.max(fitK*4,Math.min(fitK*20,12/dpr()));
-  V.k=Math.max(minK,Math.min(maxK,V.k));
+  const [minK,maxK]=kLimits(); V.k=Math.max(minK,Math.min(maxK,V.k));
   const w=V.pw*V.k, h=V.ph*V.k, m=60;   // 도면이 화면 밖으로 완전히 나가지 않게
-  V.tx=Math.min(cw-m,Math.max(m-w,V.tx)); V.ty=Math.min(ch-m,Math.max(m-h,V.ty));
+  // 도면이 화면보다 작은 방향은 가운데에 고정 (축소했을 때 옆으로 밀리지 않게)
+  if(w<=cw) V.tx=(cw-w)/2; else V.tx=Math.min(cw-m,Math.max(m-w,V.tx));
+  if(h<=ch-84) V.ty=(ch-84-h)/2; else V.ty=Math.min(ch-m,Math.max(m-h,V.ty));
+}
+function kLimits(){   // [최대 축소, 최대 확대]
+  const cw=vp.clientWidth, ch=vp.clientHeight-84, fitK=Math.min(cw/V.pw,ch/V.ph);
+  return [fitK*0.75*0.96, Math.max(fitK*4,Math.min(fitK*20,12/dpr()))];
 }
 function apply(){
   clampView();
@@ -1149,7 +1156,7 @@ vp.addEventListener("pointermove",e=>{
   }else if(G.type==="pinch"&&ptrs.size>=2){
     const [a,b]=[...ptrs.values()];
     const d=Math.hypot(a.x-b.x,a.y-b.y)||1, mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
-    const nk=G.k*d/G.d, cx=(G.mx-G.tx)/G.k, cy=(G.my-G.ty)/G.k;
+    const [k0,k1]=kLimits(), nk=Math.max(k0,Math.min(k1,G.k*d/G.d)), cx=(G.mx-G.tx)/G.k, cy=(G.my-G.ty)/G.k;   // 한도에 닿으면 배율을 먼저 묶고 위치를 계산 (옆으로 밀리지 않게)
     V.k=nk; V.tx=mx-cx*nk; V.ty=my-cy*nk; apply();
   }
 });
@@ -1165,7 +1172,7 @@ function endPtr(e){
 vp.addEventListener("pointerup",endPtr); vp.addEventListener("pointercancel",endPtr);
 vp.addEventListener("wheel",e=>{   // PC 마우스 휠 확대
   e.preventDefault(); const p=rel(e), f=Math.exp(-e.deltaY*0.0015);
-  const cx=(p.x-V.tx)/V.k, cy=(p.y-V.ty)/V.k; V.k*=f; V.tx=p.x-cx*V.k; V.ty=p.y-cy*V.k; apply(); scheduleDetail();
+  const cx=(p.x-V.tx)/V.k, cy=(p.y-V.ty)/V.k, [k0,k1]=kLimits(); V.k=Math.max(k0,Math.min(k1,V.k*f)); V.tx=p.x-cx*V.k; V.ty=p.y-cy*V.k; apply(); scheduleDetail();
 },{passive:false});
 window.addEventListener("resize",()=>{if(!$("#viewer").hidden&&V.page){apply();scheduleDetail();}});
 
