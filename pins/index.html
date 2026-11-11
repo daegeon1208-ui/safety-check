@@ -56,6 +56,10 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(31,41,55,.9);color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;width:max-content;max-width:calc(100% - 24px);text-align:center;pointer-events:none}
 .teambar{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--card);border-bottom:1px solid var(--line);flex:none;overflow-x:auto}
 .teambar small{font-size:12px;color:var(--sub);flex:none}
+#viewer .teambar{gap:4px}
+#viewer .teambar small{display:none}
+#viewer .teambar .tchip{padding:5px 7px;gap:4px}
+#viewer .teambar .tchip i{width:8px;height:8px}   /* 팀 5개가 한 줄에 들어가게 */
 .tchip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;font-size:13px;font-weight:600;background:var(--chip);color:var(--sub);flex:none;border:1.5px solid transparent}
 .tchip i{width:10px;height:10px;border-radius:50%;background:var(--tc);opacity:.35}
 .tchip.on{background:#fff;color:var(--ink);border-color:var(--tc)}
@@ -356,7 +360,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀은 핀 창의 위치 옮기기로 옮깁니다. 핀 번호는 지워진 앞 번호부터 다시 씁니다. 위치를 맞춘 뒤 가운데 <b>핀 버튼</b>을 눌러야 고정되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다. 사각형은 끌어 그린 뒤 모서리 손잡이로, 다각형은 점을 차례로 누른 뒤 점을 꾹 누르거나 바깥 손잡이를 끌어 다듬고 핀 버튼으로 고정합니다.</p>
     <p>· 찍힌 핀을 누르면 위에는 그 핀이 가운데 오게 도면이, 아래에는 핀 내용이 반씩 보입니다. 손잡이를 위로 올리면 내용이 크게, 내리면 다시 반반, 한 번 더 내리면 닫힙니다.</p>
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(한 쪽에 핀 2개: 조치 전·후 대표 사진, 내용, 위치도)를 PDF 한 파일로 보낼 수 있습니다. 내보낼 팀을 먼저 고릅니다.</p>
-    <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
+    <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀·전기팀·설비팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라·전기 노랑·설비 청록)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
     <p>· <b>대표 사진</b>: 사진이 여러 장이면 사진을 눌러 크게 본 뒤 <b>☆ 대표 사진으로</b>를 누르세요. 사진대지에는 조치 전·조치 후 대표 사진이 한 장씩 들어갑니다(안 고르면 첫 사진).</p>
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 팀별 핀 수, 참여자를 봅니다. 핀 색은 팀별이고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
     <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
@@ -379,7 +383,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.6";
+const APP_VER="3.7";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -666,7 +670,7 @@ async function showInfo(d){
     ${pins.some(p=>!p.team)?`<div class="who"><i style="background:${NO_TEAM}"></i>팀 없음<small>핀 ${pins.filter(p=>!p.team).length}개</small></div>`:""}
     <div class="lbl">참여자</div>
     ${rows.length?rows.map(r=>`<div class="who"><i style="background:${r.col}"></i>${esc(r.n||"이름 없음")}<small>${r.made?`핀 ${r.made}개`:"수정만"}<br>${r.last?fmtDate(r.last):""}</small></div>`).join(""):`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}
-    <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 팀별(공사팀 파랑 · 안전팀 주황 · 품질팀 보라)입니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
+    <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 팀별(공사 파랑 · 안전 주황 · 품질 보라 · 전기 노랑 · 설비 청록)입니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
   $("#infoPages").onclick=()=>editPages(d);
   $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").textContent=d.name+" ⓘ";} showInfo(d); renderHome(); } };
   openSheet("#infoSheet");
@@ -1081,12 +1085,14 @@ function apply(){
 /* 사람별 핀 색: 도면에서 처음 핀을 찍은 순서대로 색을 정한다 */
 const PALETTE=["#D3162F","#2563EB","#9333EA","#EA580C","#0891B2","#DB2777","#4D7C0F","#92400E","#0F766E","#4338CA"];
 /* 팀: 핀 색은 팀별로. 팀 없는 예전 핀은 회색 */
-const TEAMS=[["공사","공사팀","#2563EB"],["안전","안전팀","#EA580C"],["품질","품질팀","#9333EA"]], NO_TEAM="#6B7280";
+const TEAMS=[["공사","공사팀","#2563EB"],["안전","안전팀","#EA580C"],["품질","품질팀","#9333EA"],["전기","전기팀","#CA8A04"],["설비","설비팀","#0D9488"]], NO_TEAM="#6B7280";
 const teamColor=t=>(TEAMS.find(x=>x[0]===t)||[0,0,NO_TEAM])[2];
 const teamName=t=>(TEAMS.find(x=>x[0]===t)||[0,"팀 없음"])[1];
 let teamFilter=new Set(TEAMS.map(x=>x[0]).concat([""]));
-try{ const f=JSON.parse(localStorage.getItem("teamFilter")||"null"); if(Array.isArray(f)&&f.length) teamFilter=new Set(f); }catch(e){}
-const saveTeamFilter=()=>{ try{localStorage.setItem("teamFilter",JSON.stringify([...teamFilter]));}catch(e){} };
+try{ const f=JSON.parse(localStorage.getItem("teamFilter")||"null"); if(Array.isArray(f)&&f.length){ teamFilter=new Set(f);
+  const known=JSON.parse(localStorage.getItem("teamFilterKnown")||'["공사","안전","품질"]');   // 새로 생긴 팀은 처음엔 보이게
+  TEAMS.forEach(([v])=>{ if(!known.includes(v)) teamFilter.add(v); }); } }catch(e){}
+const saveTeamFilter=()=>{ try{localStorage.setItem("teamFilter",JSON.stringify([...teamFilter])); localStorage.setItem("teamFilterKnown",JSON.stringify(TEAMS.map(x=>x[0])));}catch(e){} };
 const teamShown=p=>p.id==="temp"||teamFilter.has(p.team||"")||V.sel===p.id||(V.pending&&V.pending.pin===p);
 const visPins=()=>V.pins.filter(teamShown);
 /* 팀 고르기 칩: sel은 Set, 바뀌면 onChange */
