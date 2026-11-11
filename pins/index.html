@@ -965,7 +965,7 @@ async function openCapture(pts){
       ctx.fillStyle=`rgba(${col},.15)`; ctx.fill(); ctx.strokeStyle=`rgba(${col},.9)`; ctx.lineWidth=4*unit; ctx.stroke(); }
     for(const p of [...V.pins].sort((a,b)=>a.no-b.no)){ if(p.page!==V.pageNo) continue;
       const [x,y]=P([p.nx,p.ny]); if(x<-60||y<-60||x>cv.width+60||y>cv.height+60) continue;
-      drawPinMark(ctx,x,y,22*unit,p.no,p.status==="done"?"#15803D":"#D3162F"); }
+      drawPinMark(ctx,x,y,30*unit,p.no,p.status==="done"?"#15803D":"#D3162F"); }
     const blob=await new Promise(r=>cv.toBlob(r,"image/png"));
     const now=new Date(), name=`${V.drawing.name}_캡처_${dayStr(now)}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`.replace(/[\\/:*?"<>|]/g,"_");
     capFile=new File([blob],name,{type:"image/png"});
