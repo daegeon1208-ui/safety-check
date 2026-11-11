@@ -63,7 +63,21 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .toolbar{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);background:var(--card);border-top:1px solid var(--line);flex:none}
 .toolbar button{flex:1;padding:12px 4px;border-radius:12px;background:var(--chip);font-weight:600;font-size:15px}
 .toolbar button.on{background:var(--open);color:#fff}
-.toolbar button#addBtn{flex:1.3}
+.toolbar button#addBtn{flex:1.3;background:var(--open);color:#fff;box-shadow:0 2px 6px rgba(211,22,47,.35)}
+.toolbar button#addBtn.on{background:#7F1D1D}
+.toolbar{gap:6px}
+.toolbar button{font-size:14px;white-space:nowrap;padding:12px 2px}
+#logFilter button{font-size:13px;padding:9px 2px;white-space:nowrap}
+.lg{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.lg i{width:10px;height:10px;border-radius:50%;flex:none;margin-top:5px}
+.lg .b{flex:1;min-width:0}
+.lg .a{font-weight:600}
+.lg .a em{font-style:normal;padding:1px 7px;border-radius:9px;font-size:12px;margin-left:4px;background:var(--chip);color:var(--sub)}
+.lg .a em.k-찍기{background:#FDE8EB;color:var(--open)} .lg .a em.k-조치완료{background:#DCFCE7;color:var(--done)}
+.lg .a em.k-삭제{background:#1F2937;color:#fff} .lg .a em.k-위치{background:#DBEAFE;color:#1D4ED8}
+.lg .d{color:var(--sub);font-size:12.5px;margin-top:2px;word-break:break-all}
+.lg .w{color:var(--sub);font-size:12px;white-space:nowrap}
+.lg.go{cursor:pointer}
 #shapeLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .modebar{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;pointer-events:auto}
 .modebar button{padding:9px 14px;border-radius:20px;background:rgba(255,255,255,.95);font-weight:600;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
@@ -179,6 +193,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <button id="addBtn">＋ 핀 찍기</button>
     <button id="capBtn">캡처</button>
     <button id="expBtn">내보내기</button>
+    <button id="logBtn">기록</button>
   </div>
 </section>
 
@@ -202,6 +217,17 @@ header .cloud[data-state="err"] i{background:#F87171}
     <div class="dates" id="pDates"></div>
     <div class="row2"><button id="moveBtn">위치 옮기기</button><button class="del" id="delPin">삭제</button></div>
     <div class="row2" style="margin-top:8px"><button class="ok" data-close>저장하고 닫기</button></div>
+  </div>
+</div>
+
+<!-- 변경 기록 -->
+<div class="sheet" id="logSheet" hidden>
+  <div class="sh"><h2 id="logTitle">기록</h2><button class="x" data-close>✕</button></div>
+  <div class="sb">
+    <div class="seg" id="logFilter"><button data-v="all" class="a on">전체</button><button data-v="add" class="a">찍기</button><button data-v="done" class="a">완료</button><button data-v="mv" class="a">옮김·삭제</button><button data-v="etc" class="a">그 밖</button></div>
+    <div id="logWho" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+    <div id="logItems" style="margin-top:4px"></div>
+    <div class="exp"><button class="sec" id="logCsv">기록을 엑셀(CSV) 파일로 보내기</button></div>
   </div>
 </div>
 
@@ -303,7 +329,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="2.2";
+const APP_VER="2.3";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -319,11 +345,12 @@ function loadScript(src){return new Promise((res,rej)=>{const s=document.createE
 
 /* ---------- 저장소 (휴대폰 브라우저 IndexedDB) ---------- */
 const DB=new Promise((res,rej)=>{
-  const r=indexedDB.open("drawing-pins",1);
-  r.onupgradeneeded=()=>{const d=r.result;
-    d.createObjectStore("drawings",{keyPath:"id"});
-    d.createObjectStore("files",{keyPath:"id"});            // 도면 PDF 원본
-    d.createObjectStore("pins",{keyPath:"id"}).createIndex("drawing","drawingId");
+  const r=indexedDB.open("drawing-pins",2);
+  r.onupgradeneeded=()=>{const d=r.result, has=n=>d.objectStoreNames.contains(n);
+    if(!has("drawings")) d.createObjectStore("drawings",{keyPath:"id"});
+    if(!has("files")) d.createObjectStore("files",{keyPath:"id"});            // 도면 PDF 원본
+    if(!has("pins")) d.createObjectStore("pins",{keyPath:"id"}).createIndex("drawing","drawingId");
+    if(!has("logs")) d.createObjectStore("logs",{keyPath:"id"}).createIndex("drawing","drawingId");   // 공유 안 한 도면의 변경 기록
   };
   r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
 });
@@ -347,7 +374,7 @@ function loadPdfjs(){
 }
 
 /* ---------- 창 열고 닫기 ---------- */
-const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet"];
+const sheets=["#pinSheet","#listSheet","#logSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet"];
 let onSheetClose=null;
 function openSheet(id){sheets.forEach(s=>$(s).hidden=(s!==id));$("#sheetBg").hidden=false;}
 function closeSheets(){const cb=onSheetClose;onSheetClose=null;sheets.forEach(s=>$(s).hidden=true);$("#sheetBg").hidden=true;if(cb)cb();}
@@ -375,17 +402,19 @@ async function renderHome(){
 async function removeLocalDrawing(id){
   for(const p of await pinsOf(id)) await dbDel("pins",p.id);
   await dbDel("files",id); await dbDel("drawings",id);
+  for(const l of await store("logs","readonly",s=>s.index("drawing").getAll(id))) await dbDel("logs",l.id);
 }
 $("#dlist").addEventListener("click",async e=>{
   const more=e.target.closest("[data-more]");
   if(more){
     const d=await dbGet("drawings",more.dataset.more), shared=cloudOn()&&d.cloud;
-    const act=await chooseAction(d.name,[["info","도면 정보 (올린 사람·참여자)"],["share","공유하기 (핀 표시 도면 + 사진대지 PDF)"],["rename","이름 바꾸기"],["pages","쪽 편집 (쪽 이름·다른 PDF 합치기·빼기)"],["delete",shared?"도면과 핀 모두 삭제 (함께 쓰는 사람 모두)":"도면과 핀 모두 삭제"]]);
+    const act=await chooseAction(d.name,[["info","도면 정보 (올린 사람·참여자)"],["share","공유하기 (핀 표시 도면 + 사진대지 PDF)"],["rename","이름 바꾸기"],["pages","쪽 편집 (쪽 이름·다른 PDF 합치기·빼기)"],["log","기록 (누가 언제 찍고·완료하고·옮기고·지웠는지)"],["delete",shared?"도면과 핀 모두 삭제 (함께 쓰는 사람 모두)":"도면과 핀 모두 삭제"]]);
     try{
       if(act==="info"){ showInfo(d); }
       else if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted)); }
       else if(act==="rename"){ if(await renameDrawing(d)) renderHome(); }
       else if(act==="pages"){ editPages(d); }
+      else if(act==="log"){ openLog(d); }
       else if(act==="delete"){
         const ps=(await pinsOf(d.id)).filter(p=>!p.deleted);
         if(confirm(`「${d.name}」 도면과 핀 ${ps.length}개를 삭제할까요?${shared?"\n함께 쓰는 사람들 휴대폰에서도 사라집니다. (구글 드라이브의 PDF·사진 파일은 남겨 둡니다)":" 되돌릴 수 없습니다."}`)){
@@ -507,6 +536,8 @@ function setSync(state,txt){
 }
 /* 핀을 고치면 휴대폰에 먼저 저장하고, 공유 중이면 곧 구글로 보낸다 */
 async function savePin(p){
+  const shared=cloudOn()&&V.drawing&&V.drawing.cloud;
+  if(!shared&&V.drawing) await localLog(await dbGet("pins",p.id),p);   // 공유 중이면 기록은 구글 서버가 남긴다
   p.updated=Date.now(); if(canEdit(p)) p.editor=cloud.name||p.editor||"";
   if(cloudOn()&&V.drawing&&V.drawing.cloud) p.dirty=true;
   await dbPut("pins",p); schedulePush();
@@ -1264,7 +1295,7 @@ $("#moveBtn").addEventListener("click",()=>{
 $("#delPin").addEventListener("click",async()=>{
   const p=selPin(); if(!p||!confirm(`${p.no}번 핀을 삭제할까요?`)) return;
   V.pins=V.pins.filter(q=>q.id!==p.id);
-  if(cloudOn()&&V.drawing.cloud){p.deleted=true;p.photos=[];await savePin(p);} else await dbDel("pins",p.id);
+  if(cloudOn()&&V.drawing.cloud){p.deleted=true;p.photos=[];await savePin(p);} else { await addLocalLog(p,"삭제",[kindLabel(p),pgLabel(V.drawing,p.page),snip(p.text)].filter(Boolean).join(" · ")); await dbDel("pins",p.id); }
   closeSheets(); toast(`${p.no}번 핀을 삭제했습니다`);
 });
 
@@ -1284,15 +1315,79 @@ function renderList(){
 }
 $("#listBtn").addEventListener("click",()=>{renderList();openSheet("#listSheet");});
 $("#lFilter").addEventListener("click",e=>{const b=e.target.closest("button");if(b){lFilter=b.dataset.v;renderList();}});
-$("#lItems").addEventListener("click",async e=>{
+$("#lItems").addEventListener("click",e=>{
   const it=e.target.closest(".li"); if(!it) return;
-  const p=V.pins.find(q=>q.id===it.dataset.id);
+  const p=V.pins.find(q=>q.id===it.dataset.id); if(p) goToPin(p);
+});
+async function goToPin(p){
   closeSheets();
   if(p.page!==V.pageNo) await showPage(p.page);
   const cw=vp.clientWidth, ch=vp.clientHeight;
   V.k=Math.max(V.k,Math.min(cw/V.pw,ch/V.ph)*3);
   V.tx=cw/2-p.nx*V.pw*V.k; V.ty=ch*0.4-p.ny*V.ph*V.k; apply(); scheduleDetail();
   openPin(p.id);
+}
+
+/* ---------- 변경 기록: 누가 언제 핀을 찍고·완료하고·옮기고·지웠는지 ---------- */
+const snip=t=>{ t=String(t||"").replace(/\s+/g," ").trim(); return t.length>30?t.slice(0,30)+"…":t; };
+// 공유하지 않은 도면은 휴대폰에 기록(구글 서버의 기록과 같은 규칙)
+function pinChanges(old,p,d){
+  const out=[], loc=pgLabel(d,p.page);
+  if(!old){ out.push(["찍기",[kindLabel(p),loc,snip(p.text)].filter(Boolean).join(" · ")]); return out; }
+  if((old.status||"open")!==(p.status||"open")) out.push([p.status==="done"?"조치완료":"미조치로 되돌림",snip(p.text)]);
+  if(old.page!==p.page||Math.abs(old.nx-p.nx)>1e-6||Math.abs(old.ny-p.ny)>1e-6)
+    out.push(["위치 옮김",old.page!==p.page?`${pgLabel(d,old.page)||old.page+"쪽"} → ${loc||p.page+"쪽"}`:loc]);
+  if((old.text||"")!==(p.text||"")||(old.trade||"")!==(p.trade||"")) out.push(["내용 수정",[p.trade,snip(p.text)].filter(Boolean).join(" · ")]);
+  const a=(old.photos||[]).length, b=(p.photos||[]).length;
+  if(b>a) out.push(["사진 추가",`${b-a}장 (모두 ${b}장)`]); else if(b<a) out.push(["사진 삭제",`${a-b}장 (모두 ${b}장)`]);
+  return out;
+}
+async function localLog(old,p){ for(const [a,dt] of pinChanges(old,p,V.drawing)) await addLocalLog(p,a,dt); }
+async function addLocalLog(p,action,detail){
+  const t=Date.now(), by=cloud.name||"";
+  if(/^(내용 수정|사진)/.test(action)){   // 10분 안에 같은 핀을 또 고치면 앞 줄을 고친다
+    const prev=(await store("logs","readonly",s=>s.index("drawing").getAll(p.drawingId))).filter(l=>l.pinId===p.id&&l.by===by&&l.action.slice(0,2)===action.slice(0,2)&&t-l.t<6e5).sort((x,y)=>y.t-x.t)[0];
+    if(prev){ prev.t=t; prev.detail=detail; if(prev.action!==action&&action.startsWith("사진")) prev.action="사진 추가·삭제"; await dbPut("logs",prev); return; }
+  }
+  await dbPut("logs",{id:uid(),drawingId:p.drawingId,pinId:p.id,no:p.no,t,by,action,detail});
+}
+let LOG={items:[],f:"all",who:""};
+const logKind=a=>a==="찍기"?"add":a==="조치완료"||a==="미조치로 되돌림"?"done":a==="위치 옮김"||a==="삭제"?"mv":"etc";
+async function openLog(d){
+  d=d||V.drawing; LOG={items:[],f:"all",who:"",d};
+  $("#logTitle").textContent=`기록 · ${d.name}`; $("#logItems").innerHTML=`<div class="empty" style="padding:30px">기록을 불러오는 중…</div>`; $("#logWho").innerHTML="";
+  openSheet("#logSheet");
+  let items=(await store("logs","readonly",s=>s.index("drawing").getAll(d.id))), err="";
+  if(cloudOn()&&d.cloud){ try{ items=items.concat((await api({action:"logs",drawingId:d.id})).logs); }catch(e){ err=e.message; } }
+  LOG.items=items.sort((a,b)=>b.t-a.t); LOG.err=err;
+  if(LOG.d===d) renderLog();
+}
+function renderLog(){
+  const all=LOG.items, cOf=colorsOf(V.drawing&&V.drawing.id===LOG.d.id?V.pins:[]), byCol={};
+  (V.pins||[]).forEach(p=>{ if(p.by&&!byCol[p.by]) byCol[p.by]=cOf(p); });
+  document.querySelectorAll("#logFilter button").forEach(b=>b.classList.toggle("on",b.dataset.v===LOG.f));
+  const ppl=[...new Set(all.map(l=>l.by).filter(Boolean))];
+  $("#logWho").innerHTML=ppl.length>1?[["","모든 사람"],...ppl.map(n=>[n,n])].map(([v,t])=>`<button class="ibtn" data-who="${esc(v)}" style="margin:0;${LOG.who===v?"background:var(--accent);color:#fff":""}">${esc(t)}</button>`).join(""):"";
+  const list=all.filter(l=>(LOG.f==="all"||logKind(l.action)===LOG.f)&&(!LOG.who||l.by===LOG.who));
+  $("#logItems").innerHTML=(LOG.err?`<p style="color:var(--open);font-size:13px">구글 기록을 받지 못했습니다: ${esc(LOG.err)}</p>`:"")
+    +(list.length?list.map((l,i)=>{ const live=l.pinId&&V.drawing&&V.drawing.id===LOG.d.id&&V.pins.some(p=>p.id===l.pinId);
+      const k=l.action==="위치 옮김"?"위치":l.action;
+      return `<div class="lg${live?" go":""}" data-pin="${live?esc(l.pinId):""}"><i style="background:${byCol[l.by]||"#9CA3AF"}"></i><div class="b">
+        <div class="a">${esc(l.by||"이 휴대폰")} · ${l.no!=null&&l.no!==""?`${l.no}번 `:""}<em class="k-${esc(k)}">${esc(l.action)}</em></div>
+        ${l.detail?`<div class="d">${esc(l.detail)}</div>`:""}</div><div class="w">${fmtDate(l.t)}</div></div>`; }).join("")
+    :`<div class="empty" style="padding:30px">${all.length?"이 조건의 기록이 없습니다":"아직 기록이 없습니다.<br>이 기능을 넣은 뒤부터 쌓입니다."}</div>`);
+}
+$("#logBtn").addEventListener("click",()=>openLog());
+$("#logFilter").addEventListener("click",e=>{const b=e.target.closest("button");if(b){LOG.f=b.dataset.v;renderLog();}});
+$("#logWho").addEventListener("click",e=>{const b=e.target.closest("[data-who]");if(b){LOG.who=b.dataset.who;renderLog();}});
+$("#logItems").addEventListener("click",e=>{ const r=e.target.closest(".lg.go"); if(!r) return; const p=V.pins.find(q=>q.id===r.dataset.pin); if(p) goToPin(p); });
+$("#logCsv").addEventListener("click",async()=>{
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const rows=[["시각","사람","핀 번호","내용","자세히"],...LOG.items.map(l=>[fmtDate(l.t),l.by,l.no??"",l.action,l.detail])];
+  const csv="\ufeff"+rows.map(r=>r.map(q).join(",")).join("\r\n");   // 엑셀에서 한글이 깨지지 않게 BOM
+  const name=`${LOG.d.name} 기록 ${fmtDate(Date.now()).slice(0,10).replace(/\./g,"")}.csv`, file=new File([csv],name,{type:"text/csv"});
+  try{ if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:name}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 });
 
 /* ---------- 부분 캡처: 두 모서리로 고른 사각형을 그림으로 ---------- */
