@@ -8,12 +8,19 @@
  *      → 위쪽 함수 선택에서 setup 실행(권한 승인)
  *      → 배포 > 새 배포 > 유형: 웹 앱, 실행: 나, 액세스 권한: 모든 사용자 → 배포 → 웹 앱 URL 복사
  *      → 앱의 '구글 공유'에 URL과 PIN 입력
+ *
+ * 사람별 비밀번호: 앱에서 이름과 비밀번호를 처음 넣으면 시트 '사용자'에 등록된다(비밀번호는 암호화해서 저장).
+ *   - 맨 처음 등록한 사람이 관리자가 된다. 관리자를 바꾸려면 '사용자' 시트의 admin 칸에 true / false 를 적는다.
+ *   - 비밀번호를 잊으면 관리자가 '사용자' 시트에서 그 사람의 줄을 지운다 → 다시 넣는 비밀번호로 새로 등록된다.
+ *   - 다른 사람의 핀은 관리자만 고치거나 지울 수 있다. 다른 사람은 조치완료(되돌리기 포함)만 할 수 있고,
+ *     완료를 누른 사람 이름과 시각이 저장된다.
  */
 const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세요. 함께 쓸 사람에게만 알려 주세요.
 
 const SS_NAME = '도면 하자 핀';
 const ROOT_NAME = '도면 하자 핀';
 const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by'];
+const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
 const P_COLS = ['id', 'drawingId', 'no', 'page', 'status', 'trade', 'text', 'by', 'editor', 'created', 'updated', 'doneAt', 'deleted', 'data(JSON)'];
 
 function doGet() { return out_({ ok: true, app: 'drawing-pins', time: Date.now() }); }
@@ -22,19 +29,21 @@ function doPost(e) {
   try {
     const req = JSON.parse(e.postData.contents || '{}');
     if (String(req.pin) !== String(PIN)) return out_({ ok: false, error: 'PIN이 맞지 않습니다' });
-    if (req.action === 'drawingFile') return out_({ ok: true, data: drawingFile_(req.id) });   // 읽기만 하는 큰 요청은 잠금 없이
-    if (req.action === 'photo') return out_({ ok: true, data: photo_(req.id) });
+    if (req.action === 'drawingFile') { auth_(req); return out_({ ok: true, data: drawingFile_(req.id) }); }   // 읽기만 하는 큰 요청은 잠금 없이
+    if (req.action === 'photo') { auth_(req); return out_({ ok: true, data: photo_(req.id) }); }
     const lock = LockService.getScriptLock(); lock.waitLock(25000);
     try {
+      if (req.action === 'login') return out_(Object.assign({ ok: true }, login_(req)));
+      const me = auth_(req);
       switch (req.action) {
-        case 'ping': ss_(); return out_({ ok: true, time: Date.now() });
-        case 'drawings': return out_({ ok: true, drawings: drawings_() });
-        case 'uploadDrawing': return out_({ ok: true, drawing: uploadDrawing_(req.drawing, req.data, req.by) });
+        case 'ping': ss_(); return out_({ ok: true, time: Date.now(), me: me });
+        case 'drawings': return out_({ ok: true, drawings: drawings_(), me: me });
+        case 'uploadDrawing': return out_({ ok: true, drawing: uploadDrawing_(req.drawing, req.data, me.name) });
         case 'renameDrawing': return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
         case 'deleteDrawing': return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
         case 'pins': return out_({ ok: true, pins: pins_(req.drawingId), time: Date.now() });
-        case 'savePin': return out_({ ok: true, pin: savePin_(req.item, req.photos || {}) });
-        case 'deletePin': return out_({ ok: true, pin: deletePin_(req.id, req.by) });
+        case 'savePin': return out_({ ok: true, pin: savePin_(req.item, req.photos || {}, me) });
+        case 'deletePin': return out_({ ok: true, pin: deletePin_(req.id, me) });
         default: return out_({ ok: false, error: '알 수 없는 요청' });
       }
     } finally { lock.releaseLock(); }
@@ -56,6 +65,10 @@ function ss_() {
     p.getRange(1, 1, 1, P_COLS.length).setValues([P_COLS]); p.setFrozenRows(1);
     props.setProperty('PINS_SS_ID', ss.getId());
   }
+  if (!ss.getSheetByName('사용자')) {   // 예전 버전에서 만든 시트에는 '사용자' 시트가 없다
+    const u = ss.insertSheet('사용자');
+    u.getRange(1, 1, 1, U_COLS.length).setValues([U_COLS]); u.setFrozenRows(1);
+  }
   return ss;
 }
 function folder_(parts) {
@@ -69,7 +82,7 @@ function folder_(parts) {
 function rows_(name) {   // [{row, obj}]
   const sh = ss_().getSheetByName(name), n = sh.getLastRow();
   if (n < 2) return { sh, list: [] };
-  const cols = name === '도면' ? D_COLS : P_COLS;
+  const cols = name === '도면' ? D_COLS : name === '사용자' ? U_COLS : P_COLS;
   const v = sh.getRange(2, 1, n - 1, cols.length).getValues();
   return { sh, list: v.map((r, i) => { const o = {}; cols.forEach((c, j) => o[c] = r[j]); o._row = i + 2; return o; }) };
 }
@@ -78,6 +91,37 @@ function writeRow_(sh, cols, row, o) {
   if (!row) row = sh.getLastRow() + 1;
   sh.getRange(row, 1, 1, cols.length).setNumberFormat('@').setValues(vals.map(r => r.map(x => typeof x === 'string' ? x : String(x))));
   return row;
+}
+
+/* ---------- 사용자 ---------- */
+function hash_(salt, pw) {
+  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + ':' + pw, Utilities.Charset.UTF_8));
+}
+function userOut_(u) { return { name: u.name, admin: u.admin === 'true' || u.admin === true || String(u.admin).toUpperCase() === 'TRUE' }; }
+function auth_(req) {
+  const name = String(req.user || '').trim(), pw = String(req.pw || '');
+  if (!name || !pw) throw new Error('로그인이 필요합니다');
+  const u = rows_('사용자').list.find(x => String(x.name).trim() === name);
+  if (!u) throw new Error('등록되지 않은 이름입니다');
+  if (hash_(u.salt, pw) !== u.hash) throw new Error('비밀번호가 맞지 않습니다');
+  return userOut_(u);
+}
+function login_(req) {
+  const name = String(req.user || '').trim(), pw = String(req.pw || '');
+  if (!name) throw new Error('이름을 넣어 주세요');
+  if (pw.length < 4) throw new Error('비밀번호는 4자 이상으로 해 주세요');
+  const { sh, list } = rows_('사용자');
+  const u = list.find(x => String(x.name).trim() === name);
+  if (u) {
+    if (hash_(u.salt, pw) !== u.hash) throw new Error('비밀번호가 맞지 않습니다');
+    u.lastLogin = Date.now(); writeRow_(sh, U_COLS, u._row, u);
+    return { me: userOut_(u), time: Date.now() };
+  }
+  if (!req.register) return { newUser: true };   // 처음 보는 이름: 앱에서 한 번 더 확인받고 등록
+  const salt = Utilities.getUuid(), now = Date.now();
+  const o = { name: name, salt: salt, hash: hash_(salt, pw), admin: list.length ? 'false' : 'true', created: now, lastLogin: now };   // 첫 사용자 = 관리자
+  writeRow_(sh, U_COLS, 0, o);
+  return { me: userOut_(o), created: true, time: now };
 }
 
 /* ---------- 도면 ---------- */
@@ -128,13 +172,33 @@ function pinOut_(o) {
 }
 function pins_(drawingId) { return rows_('핀').list.filter(o => o.drawingId === drawingId).map(pinOut_); }
 function pinRow_(p) {
-  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, photos: (p.photos || []).map(x => ({ k: x.k, id: x.id, w: x.w, h: x.h })) };
+  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '', photos: (p.photos || []).map(x => ({ k: x.k, id: x.id, w: x.w, h: x.h })) };
   return Object.assign({}, p, { deleted: p.deleted ? 'true' : 'false', doneAt: p.doneAt || '', 'data(JSON)': JSON.stringify(extra) });
 }
-function savePin_(p, photos) {
+function savePin_(p, photos, me) {
   const { sh, list } = rows_('핀');
   const ex = list.find(o => o.id === p.id);
   if (ex && ex.deleted === 'true') return pinOut_(ex);   // 다른 사람이 지운 핀은 되살리지 않는다
+  const now = Date.now(), old = ex ? pinOut_(ex) : null;
+  // 상태: 조치완료로 바뀌면 누른 사람과 시각을 서버에서 적는다
+  const setDone = (q, status) => {
+    const was = old ? old.status : 'open';
+    q.status = status === 'done' ? 'done' : 'open';
+    if (q.status === 'done' && was !== 'done') { q.doneAt = now; q.doneBy = me.name; }
+    else if (q.status === 'done') { q.doneAt = old.doneAt; q.doneBy = old.doneBy || ''; }
+    else { q.doneAt = ''; q.doneBy = ''; }
+  };
+  // 다른 사람의 핀: 관리자가 아니면 상태(조치완료)만 바꾼다
+  if (old && old.by && old.by !== me.name && !me.admin) {
+    const q = Object.assign({}, old);
+    setDone(q, p.status);
+    if (q.status !== old.status) { q.editor = me.name; q.updated = now; }
+    writeRow_(sh, P_COLS, ex._row, pinRow_(q));
+    return pinOut_(pinRow_(q));
+  }
+  p.by = old ? (old.by || me.name) : me.name;   // 만든 사람은 바뀌지 않는다
+  p.editor = me.name;
+  setDone(p, p.status);
   // 번호: 새 핀이 이미 쓰인 번호를 달고 오면(동시에 찍은 경우) 다음 번호로 바꾼다
   const others = list.filter(o => o.drawingId === p.drawingId && o.id !== p.id);
   if (!ex && others.some(o => +o.no === +p.no)) p.no = others.reduce((m, o) => Math.max(m, +o.no), 0) + 1;
@@ -151,16 +215,17 @@ function savePin_(p, photos) {
   }).filter(x => x.id);
   const keep = p.photos.map(x => x.id);
   before.forEach(x => { if (x.id && keep.indexOf(x.id) < 0) { try { DriveApp.getFileById(x.id).setTrashed(true); } catch (e) {} } });
-  p.updated = Date.now();
+  p.updated = now;
   writeRow_(sh, P_COLS, ex ? ex._row : 0, pinRow_(p));
   return pinOut_(pinRow_(p));
 }
-function deletePin_(id, by) {
+function deletePin_(id, me) {
   const { sh, list } = rows_('핀');
   const o = list.find(x => x.id === id); if (!o) return null;
   const p = pinOut_(o);
+  if (p.by && p.by !== me.name && !me.admin) return p;   // 다른 사람의 핀은 지우지 않는다(앱은 다음 동기화 때 다시 받는다)
   (p.photos || []).forEach(x => { try { DriveApp.getFileById(x.id).setTrashed(true); } catch (e) {} });
-  p.deleted = true; p.editor = by || p.editor; p.updated = Date.now(); p.photos = [];
+  p.deleted = true; p.editor = me.name; p.updated = Date.now(); p.photos = [];
   writeRow_(sh, P_COLS, o._row, pinRow_(p));
   return p;
 }

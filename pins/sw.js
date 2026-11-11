@@ -1,5 +1,5 @@
 // 도면 하자 핀 앱: 오프라인에서도 열리도록 앱 파일을 저장해 둔다 (도면·핀 기록은 IndexedDB에 따로 저장됨)
-const CACHE="drawing-pins-v9";
+const CACHE="drawing-pins-v10";
 const FILES=["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png","../lib/pdfjs.min.js","../lib/pdfjs.worker.min.js","../lib/pdf-lib.min.js","../lib/fontkit.umd.min.js","../fonts/KoPubDotum-Medium.ttf"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(u=>new Request(u,{cache:"reload"})))));self.skipWaiting();});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("drawing-pins-")&&k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
