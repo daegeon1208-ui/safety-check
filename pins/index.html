@@ -54,8 +54,12 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .pin span{position:relative;display:block;text-align:center;line-height:28px;color:#fff;font-weight:700;font-size:13px}
 .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:15px;pointer-events:none}
 .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(31,41,55,.9);color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;width:max-content;max-width:calc(100% - 24px);text-align:center;pointer-events:none}
-.pager{display:flex;align-items:center;gap:2px;font-size:14px}
-#pgTxt{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pgbar{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--card);border-bottom:1px solid var(--line);flex:none}
+.pgbar>button:not(.pgmid){width:48px;height:40px;border-radius:10px;background:var(--chip);font-size:24px;font-weight:700;line-height:1;color:var(--ink);flex:none}
+.pgbar>button:disabled{opacity:.3}
+.pgbar .pgmid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;background:none;color:var(--ink)}
+.pgbar .pgmid b{font-size:16px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pgbar .pgmid small{font-size:12px;color:var(--sub)}
 .toolbar{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);background:var(--card);border-top:1px solid var(--line);flex:none}
 .toolbar button{flex:1;padding:12px 4px;border-radius:12px;background:var(--chip);font-weight:600;font-size:15px}
 .toolbar button.on{background:var(--open);color:#fff}
@@ -159,8 +163,8 @@ header .cloud[data-state="err"] i{background:#F87171}
   <header>
     <button class="hbtn" id="backBtn">‹ 목록</button>
     <h1 id="vTitle" title="눌러서 도면 정보"></h1><span class="sync" id="syncTxt" hidden></span>
-    <div class="pager" id="pager"><button class="hbtn" id="prevPg">‹</button><span id="pgTxt"></span><button class="hbtn" id="nextPg">›</button></div>
   </header>
+  <div class="pgbar" id="pager" hidden><button id="prevPg" aria-label="이전 쪽">‹</button><button class="pgmid" id="pgMid"><b id="pgTxt"></b><small id="pgNum"></small></button><button id="nextPg" aria-label="다음 쪽">›</button></div>
   <div id="vp">
     <canvas id="base"></canvas>
     <canvas id="detail" hidden></canvas>
@@ -299,7 +303,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="2.1";
+const APP_VER="2.2";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -527,7 +531,7 @@ async function syncDrawings(){
       const l=locals.find(d=>d.id===r.id); if(!l) continue;
       if(r.deleted){ await removeLocalDrawing(r.id); continue; }
       if(l.name!==r.name||!l.cloud||(r.by&&l.by!==r.by)){ l.name=r.name; l.cloud=true; if(r.by) l.by=r.by; await dbPut("drawings",l); }
-      if(r.pageNames&&JSON.stringify(r.pageNames)!==JSON.stringify(l.pageNames||[])){ l.pageNames=r.pageNames; await dbPut("drawings",l); if(V.drawing&&V.drawing.id===l.id) V.drawing.pageNames=l.pageNames; }
+      if(r.pageNames&&JSON.stringify(r.pageNames)!==JSON.stringify(l.pageNames||[])){ l.pageNames=r.pageNames; await dbPut("drawings",l); if(V.drawing&&V.drawing.id===l.id){ V.drawing.pageNames=l.pageNames; updatePager(); } }
       if((r.ver||"")!==(l.ver||"")){ l.ver=r.ver||""; l.pages=r.pages; l.stale=true; await dbPut("drawings",l); }   // 다른 사람이 쪽을 바꿈 → 열 때 새 PDF를 받는다
     }
     remoteOnly=live.filter(r=>!locals.some(d=>d.id===r.id));
@@ -738,7 +742,7 @@ $("#pgSave").addEventListener("click",async()=>{
       if(shared) await api({action:"setPageNames",id:d.id,names});
       d.pageNames=names; await dbPut("drawings",d);
       PE=null; pe.srcs.forEach(s=>s.pdf.destroy()); onSheetClose=null; closeSheets(); toast("쪽 이름을 저장했습니다");
-      if(V.drawing&&V.drawing.id===d.id&&!$("#viewer").hidden){ V.drawing.pageNames=names; $("#pager").hidden=d.pages<2&&!pgName(d,1); showPage(V.pageNo); } else renderHome();
+      if(V.drawing&&V.drawing.id===d.id&&!$("#viewer").hidden){ V.drawing.pageNames=names; showPage(V.pageNo); } else renderHome();
       return;
     }
     msg("새 PDF 만드는 중…");
@@ -782,12 +786,11 @@ async function openDrawing(id,pageNo){
   V.drawing=d; V.sel=null; setMode("view");
   $("#home").hidden=true; $("#viewer").hidden=false;
   $("#vTitle").textContent=d.name+" ⓘ";
-  $("#pager").hidden=d.pages<2&&!pgName(d,1);
   $("#vLoading").hidden=false; base.style.visibility="hidden"; pinLayer.innerHTML="";
   await loadPdfjs();
   if(V.pdf){V.pdf.destroy();V.pdf=null;}
   V.pdf=await pdfjsLib.getDocument({data:f.data.slice(0)}).promise;
-  if(V.pdf.numPages!==d.pages){ d.pages=V.pdf.numPages; dbPut("drawings",d); $("#pager").hidden=d.pages<2&&!pgName(d,1); }
+  if(V.pdf.numPages!==d.pages){ d.pages=V.pdf.numPages; dbPut("drawings",d); }
   V.pins=(await pinsOf(id)).filter(p=>!p.deleted);
   for(const p of V.pins) if(p.photos.some(x=>!x.k)){ p.photos.forEach(x=>{if(!x.k)x.k=uid();}); await dbPut("pins",p); }
   await showPage(Math.min(pageNo||1,d.pages));
@@ -795,7 +798,7 @@ async function openDrawing(id,pageNo){
 }
 async function showPage(n){
   if(V.draft) V.draft.pts=[];
-  V.pageNo=n; $("#pgTxt").textContent=`${n}/${V.drawing.pages}`+(pgName(V.drawing,n)?` ${pgName(V.drawing,n)}`:"");
+  V.pageNo=n; updatePager();
   $("#vLoading").hidden=false; detail.hidden=true;
   if(V.renderTask){try{V.renderTask.cancel();}catch(e){}}
   V.page=await V.pdf.getPage(n);
@@ -1164,8 +1167,21 @@ $("#backBtn").addEventListener("click",()=>{
   if(V.pdf){V.pdf.destroy();V.pdf=null;}
   V.drawing=null; V.pins=[]; renderHome(); syncDrawings();
 });
+/* 쪽 넘김 바: ‹ 이전 · 가운데 쪽 이름 · 다음 › (가운데를 누르면 쪽 목록에서 고르기) */
+function updatePager(){
+  const d=V.drawing; if(!d) return; const n=V.pageNo, nm=pgName(d,n);
+  const show=d.pages>1||!!nm, bar=$("#pager");
+  if(bar.hidden===show){ bar.hidden=!show; if(V.page) requestAnimationFrame(()=>apply()); }
+  $("#pgTxt").textContent=nm||`${n}쪽`; $("#pgNum").textContent=`${n} / ${d.pages}쪽`;
+  $("#prevPg").disabled=n<=1; $("#nextPg").disabled=n>=d.pages;
+}
 $("#prevPg").addEventListener("click",()=>{if(V.pageNo>1)showPage(V.pageNo-1);});
 $("#nextPg").addEventListener("click",()=>{if(V.pageNo<V.drawing.pages)showPage(V.pageNo+1);});
+$("#pgMid").addEventListener("click",async()=>{
+  const d=V.drawing; if(!d||d.pages<2) return;
+  const v=await chooseAction("쪽 고르기",Array.from({length:d.pages},(_,i)=>[String(i+1),`${i+1}쪽${pgName(d,i+1)?" · "+pgName(d,i+1):""}${i+1===V.pageNo?"  (보는 중)":""}`]));
+  if(v&&+v!==V.pageNo) showPage(+v);
+});
 
 /* ---------- 핀 메모 창 ---------- */
 let urls=[];
