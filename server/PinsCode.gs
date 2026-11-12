@@ -16,6 +16,7 @@
  *   - 다른 사람의 핀은 관리자만 고치거나 지울 수 있다. 다른 사람은 조치완료(되돌리기 포함)만 할 수 있고,
  *     완료를 누른 사람 이름과 시각이 저장된다.
  *   - 도면마다 원래 파일 종류(PDF·DWG)가 저장되어 앱 목록에 표시된다.
+ *   - 핀 번호는 도면 안에서 팀마다 따로 매긴다(공1, 안1 …). 팀을 바꾼 핀은 그 팀의 번호로 바뀐다.
  *   - 핀마다 팀(공사·안전·품질·전기·설비)이 저장되고, 앱에서 팀별 색으로 보인다. 사진마다 대표 사진(★) 표시가 저장된다.
  *   - 도면 비밀번호: 도면을 올린 사람(또는 관리자)이 도면마다 비밀번호를 걸 수 있다(암호화해서 '도면' 시트에 저장).
  *     잠긴 도면은 비밀번호를 넣어야 파일과 핀을 받는다. 도면을 올린 사람과 관리자는 비밀번호 없이 연다.
@@ -270,7 +271,7 @@ function savePin_(p, photos, me) {
   if (old && old.by && old.by !== me.name && !me.admin) {
     const q = Object.assign({}, old);
     setDone(q, p.status);
-    const dp = syncPhotos_(p.donePhotos, old.donePhotos, photos, ['사진', dname], old.no + '번 핀 조치완료');
+    const dp = syncPhotos_(p.donePhotos, old.donePhotos, photos, ['사진', dname], label_(old) + ' 핀 조치완료');
     const dpChanged = JSON.stringify(dp.map(x => [x.id, !!x.rep])) !== JSON.stringify((old.donePhotos || []).map(x => [x.id, !!x.rep]));
     q.donePhotos = dp;
     if (q.status !== old.status || dpChanged) { q.editor = me.name; q.updated = now; }
@@ -280,17 +281,21 @@ function savePin_(p, photos, me) {
   p.by = old ? (old.by || me.name) : me.name;   // 만든 사람은 바뀌지 않는다
   p.editor = me.name;
   setDone(p, p.status);
-  // 번호: 새 핀이 이미 쓰인 번호를 달고 오면(동시에 찍은 경우) 비어 있는 가장 앞 번호로 바꾼다 (지워진 핀 번호는 다시 쓴다)
-  const others = list.filter(o => o.drawingId === p.drawingId && o.id !== p.id && String(o.deleted) !== 'true');
-  if (!ex && others.some(o => +o.no === +p.no)) { const used = {}; others.forEach(o => { used[+o.no] = 1; }); let n = 1; while (used[n]) n++; p.no = n; }
-  if (ex) p.no = +ex.no;
+  // 번호: 팀마다 따로 매긴다(공1, 안1 …). 새 핀이나 팀을 바꾼 핀이 그 팀에서 이미 쓰인 번호를 달고 오면
+  // (동시에 찍은 경우) 그 팀에서 비어 있는 가장 앞 번호로 바꾼다 (지워진 핀 번호는 다시 쓴다)
+  const teamOf = o => String(pinOut_(o).team || '');
+  const others = list.filter(o => o.drawingId === p.drawingId && o.id !== p.id && String(o.deleted) !== 'true' && teamOf(o) === String(p.team || ''));
+  const sameTeam = ex && String(old.team || '') === String(p.team || '');
+  if (sameTeam) p.no = +ex.no;
+  else if (others.some(o => +o.no === +p.no) || !(+p.no > 0)) { const used = {}; others.forEach(o => { used[+o.no] = 1; }); let n = 1; while (used[n]) n++; p.no = n; }
   // 사진(조치 전)과 조치완료 사진
-  p.photos = syncPhotos_(p.photos, old ? old.photos : [], photos, ['사진', dname], p.no + '번 핀');
-  p.donePhotos = syncPhotos_(p.donePhotos, old ? old.donePhotos : [], photos, ['사진', dname], p.no + '번 핀 조치완료');
+  p.photos = syncPhotos_(p.photos, old ? old.photos : [], photos, ['사진', dname], label_(p) + ' 핀');
+  p.donePhotos = syncPhotos_(p.donePhotos, old ? old.donePhotos : [], photos, ['사진', dname], label_(p) + ' 핀 조치완료');
   p.updated = now;
   writeRow_(sh, P_COLS, ex ? ex._row : 0, pinRow_(p));
   return pinOut_(pinRow_(p));
 }
+function label_(p) { return String(p.team || '').charAt(0) + p.no; }   // 핀 이름: 팀 글자 + 번호 (공1)
 function deletePin_(id, me) {
   const { sh, list } = rows_('핀');
   const o = list.find(x => x.id === id); if (!o) return null;
