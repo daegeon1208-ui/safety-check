@@ -25,6 +25,8 @@ header{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-
 header h1{font-size:17px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header .hbtn{color:#fff;padding:6px 8px;border-radius:8px;font-size:15px;white-space:nowrap}
 header .hbtn:active{background:rgba(255,255,255,.15)}
+header{position:relative}
+.appver{position:absolute;right:8px;top:calc(env(safe-area-inset-top) + 1px);font-size:10px;line-height:1;color:rgba(255,255,255,.55);pointer-events:none}
 
 /* 도면 목록 */
 #home main{flex:1;overflow:auto;padding:14px 16px calc(env(safe-area-inset-bottom) + 90px)}
@@ -33,6 +35,10 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .dcard .nm{font-weight:600;word-break:break-all}
 .ftype{display:inline-block;vertical-align:2px;margin-right:6px;padding:2px 5px;border-radius:5px;font-size:10.5px;font-weight:800;letter-spacing:.3px;line-height:1.2;color:#fff;background:#DC2626}
 .ftype.dwg{background:#2563EB}
+.tchip .tcnt{font-weight:800;margin-left:2px}
+.lpages{font-size:13px;color:var(--sub);margin:-2px 0 10px;line-height:1.9}.lpages:empty{display:none}.lpages b{color:var(--ink);margin-right:4px}
+.lpages span{display:inline-block;margin-right:10px;white-space:nowrap}.lpages span.cur{color:var(--ink);font-weight:700}.lpages em{font-style:normal;font-weight:800;color:var(--ink)}.lpages small{margin-left:2px;color:var(--open)}
+.arow .ic .ftype{font-size:9.5px;padding:2px 3px}
 #vTitle .ftype{vertical-align:3px}
 .lk{margin-right:4px;font-size:.92em}
 .dcard .sm{color:var(--sub);font-size:13px;margin-top:4px}
@@ -243,7 +249,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <!-- 도면 목록 -->
 <section id="home" class="screen">
-  <header><h1>도면 하자 핀</h1><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">구글 공유</span></button><button class="hbtn" id="helpBtn">사용법</button></header>
+  <header><span class="appver" id="appVer"></span><h1>도면 하자 핀</h1><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">구글 공유</span></button><button class="hbtn" id="helpBtn">사용법</button></header>
   <main id="dlist"></main>
   <button class="fab" id="importBtn">＋ 도면 불러오기 (PDF·DWG)</button>
   <input type="file" id="pdfInput" hidden>
@@ -306,6 +312,7 @@ header .cloud[data-state="err"] i{background:#F87171}
   <div class="sh"><h2 id="lTitle">핀 목록</h2><button class="x" data-close>✕</button></div>
   <div class="sb">
     <div class="tchips" id="lTeams"></div>
+    <div class="lpages" id="lPages"></div>
     <div class="seg" id="lFilter"><button data-v="all" class="a on">전체</button><button data-v="open" class="o">미조치</button><button data-v="done" class="d">조치완료</button></div>
     <div id="lItems" style="margin-top:6px"></div>
   </div>
@@ -398,6 +405,8 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(한 쪽에 핀 2개: 조치 전·후 대표 사진, 내용, 위치도)를 PDF 한 파일로 보낼 수 있습니다. 내보낼 팀을 먼저 고릅니다.</p>
     <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀·전기팀·설비팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라·전기 노랑·설비 청록)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
     <p>· <b>도면 비밀번호</b>: 구글 공유한 도면은 목록의 ⋯ → <b>비밀번호 걸기</b>로 잠글 수 있습니다(도면을 올린 사람과 관리자만). 잠긴 도면(🔒)은 비밀번호를 넣어야 도면과 핀을 볼 수 있고, 올린 사람과 관리자는 비밀번호 없이 엽니다. 같은 메뉴에서 바꾸거나 풀 수 있습니다.</p>
+    <p>· <b>핀 개수</b>: <b>목록</b> 맨 위에 전체·미조치·완료 개수, 팀 버튼마다 팀별 개수, 쪽이 여러 개면 쪽별 개수가 나옵니다. 도면 정보에서도 팀별·쪽별 핀 수를 볼 수 있습니다.</p>
+    <p>· <b>파일 종류 표시</b>: 도면 이름 앞의 PDF(빨강)·DWG(파랑)는 처음 불러온 파일 종류입니다. 예전에 올려 종류를 모르는 도면은 표시가 없고, 목록의 ⋯ → <b>파일 종류 바꾸기</b>로 올린 사람이나 관리자가 고칠 수 있습니다.</p>
     <p>· <b>사진 회전</b>: 사진을 눌러 크게 본 뒤 <b>↻ 회전</b>을 누를 때마다 시계 방향으로 90° 돌아가고 바로 저장됩니다.</p>
     <p>· <b>대표 사진</b>: 사진이 여러 장이면 사진을 눌러 크게 본 뒤 <b>☆ 대표 사진</b>을 누르세요. 사진대지에는 조치 전·조치 후 대표 사진이 한 장씩 들어갑니다(안 고르면 첫 사진).</p>
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 팀별 핀 수, 참여자를 봅니다. 핀 색은 팀별이고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
@@ -421,7 +430,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.12";
+const APP_VER="3.14";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -482,10 +491,11 @@ const ICON={
   pdf:svgI('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>'),
   layers:svgI('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>'),
   doc:svgI('<rect x="5" y="3" width="14" height="18" rx="2"/>'),
+  ftpdf:`<span class="ftype" style="margin:0">PDF</span>`, ftdwg:`<span class="ftype dwg" style="margin:0">DWG</span>`,
   lock:svgI('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
 };
 $("#addBtn").innerHTML=ICON.pin;
-$("#verTxt").textContent="앱 버전 "+APP_VER;
+$("#verTxt").textContent="앱 버전 "+APP_VER; $("#appVer").textContent="v"+APP_VER;
 
 /* ---------- 창 열고 닫기 ---------- */
 const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet","#lockSheet"];
@@ -565,7 +575,7 @@ function centerOnPin(p){
 }
 
 /* ---------- 도면 목록 ---------- */
-const ftIcon=d=>d.kind==="dwg"?`<span class="ftype dwg">DWG</span>`:`<span class="ftype">PDF</span>`;   // 이름 앞 파일 종류 표시
+const ftIcon=d=>d.kind==="dwg"?`<span class="ftype dwg">DWG</span>`:d.kind==="pdf"?`<span class="ftype">PDF</span>`:"";   // 이름 앞 파일 종류 표시 (모르면 비움)
 let remoteOnly=[];   // 구글에는 있지만 이 휴대폰에는 아직 없는 도면
 async function renderHome(){
   const [ds,ps]=await Promise.all([dbAll("drawings"),dbAll("pins")]);
@@ -600,6 +610,7 @@ $("#dlist").addEventListener("click",async e=>{
       ["rename","이름 바꾸기","","edit"],
       ["pages","쪽 편집","쪽 이름 · 다른 PDF 합치기 · 빼기","pages"],
       ["copy","도면 복사","핀·사진까지 또는 도면만","copy"],
+      ...(!shared||lockMine(d)?[["kind","파일 종류 바꾸기",d.kind==="dwg"?"지금: DWG":d.kind==="pdf"?"지금: PDF":"지금: 모름","doc"]]:[]),
       ...(canLock?[["lock",d.locked?"비밀번호 바꾸기·풀기":"비밀번호 걸기",d.locked?"🔒 걸려 있음 · 올린 사람과 관리자는 그냥 열림":"알려 준 사람만 열 수 있게","lock"]]:[]),
       ["-"],
       ["delete","삭제",shared?"도면과 핀 모두 · 함께 쓰는 사람 모두에게서":"도면과 핀 모두 · 되돌릴 수 없음","trash"]],
@@ -611,6 +622,13 @@ $("#dlist").addEventListener("click",async e=>{
       else if(act==="pages"){ editPages(d); }
       else if(act==="copy"){ await copyDrawing(d); }
       else if(act==="lock"){ await lockMenu(d); }
+      else if(act==="kind"){
+        const k=await chooseAction("원래 파일 종류",[["pdf","PDF","도면 이름 앞에 빨간 PDF","ftpdf"],["dwg","DWG","도면 이름 앞에 파란 DWG","ftdwg"]],{cur:d.kind});
+        if(k&&k!==d.kind){
+          if(shared) await api({action:"setKind",id:d.id,kind:k});
+          d.kind=k; await dbPut("drawings",d); renderHome(); toast(`파일 종류를 ${k.toUpperCase()}(으)로 바꿨습니다`);
+        }
+      }
       else if(act==="delete"){
         const ps=(await pinsOf(d.id)).filter(p=>!p.deleted);
         if(confirm(`「${d.name}」 도면과 핀 ${ps.length}개를 삭제할까요?${shared?"\n함께 쓰는 사람들 휴대폰에서도 사라집니다. (구글 드라이브의 PDF·사진 파일은 남겨 둡니다)":" 되돌릴 수 없습니다."}`)){
@@ -714,6 +732,7 @@ async function showInfo(d){
     <div class="lbl">팀별 핀 (핀 색)</div>
     ${TEAMS.map(([v,n,c])=>{const l=pins.filter(p=>p.team===v), lo=l.filter(p=>p.status!=="done").length; return `<div class="who"><i style="background:${c}"></i>${n}<small>핀 ${l.length}개 · 미조치 ${lo}</small></div>`;}).join("")}
     ${pins.some(p=>!p.team)?`<div class="who"><i style="background:${NO_TEAM}"></i>팀 없음<small>핀 ${pins.filter(p=>!p.team).length}개</small></div>`:""}
+    ${d.pages>1?`<div class="lbl">쪽별 핀</div>${pageCounts(d,pins).map(([n,nm,c,oc])=>`<div class="who"><i style="background:#9CA3AF;border-radius:3px"></i>${esc(nm)}<small>핀 ${c}개 · 미조치 ${oc}</small></div>`).join("")||`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}`:""}
     <div class="lbl">참여자</div>
     ${rows.length?rows.map(r=>`<div class="who"><i style="background:${r.col}"></i>${esc(r.n||"이름 없음")}<small>${r.made?`핀 ${r.made}개`:"수정만"}<br>${r.last?fmtDate(r.last):""}</small></div>`).join(""):`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}
     <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 팀별(공사 파랑 · 안전 주황 · 품질 보라 · 전기 노랑 · 설비 청록)입니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
@@ -875,7 +894,8 @@ async function syncDrawings(){
     for(const r of j.drawings){
       const l=locals.find(d=>d.id===r.id); if(!l) continue;
       if(r.deleted){ await removeLocalDrawing(r.id); continue; }
-      if(r.kind&&!l.kind){ l.kind=r.kind; await dbPut("drawings",l); }
+      if(r.kind&&r.kind!==l.kind){ l.kind=r.kind; await dbPut("drawings",l); }
+      else if(!r.kind&&l.kind&&lockMine(l)){ try{ await api({action:"setKind",id:l.id,kind:l.kind}); }catch(e){} }   // 휴대폰에만 있던 파일 종류를 서버에도 적는다
       if(!!r.locked!==!!l.locked){ l.locked=!!r.locked; await dbPut("drawings",l); if(V.drawing&&V.drawing.id===l.id) V.drawing.locked=l.locked; }
       if(l.name!==r.name||!l.cloud||(r.by&&l.by!==r.by)){ l.name=r.name; l.cloud=true; if(r.by) l.by=r.by; await dbPut("drawings",l); }
       if(r.pageNames&&JSON.stringify(r.pageNames)!==JSON.stringify(l.pageNames||[])){ l.pageNames=r.pageNames; await dbPut("drawings",l); if(V.drawing&&V.drawing.id===l.id){ V.drawing.pageNames=l.pageNames; updatePager(); } }
@@ -1229,8 +1249,13 @@ const saveTeamFilter=()=>{ try{localStorage.setItem("teamFilter",JSON.stringify(
 const teamShown=p=>p.id==="temp"||teamFilter.has(p.team||"")||V.sel===p.id||(V.pending&&V.pending.pin===p);
 const visPins=()=>V.pins.filter(teamShown);
 /* 팀 고르기 칩: sel은 Set, 바뀌면 onChange */
-function teamChips(sel,withNone){ return TEAMS.map(([v,n,c])=>[v,n,c]).concat(withNone?[["","팀 없음",NO_TEAM]]:[])
-  .map(([v,n,c])=>`<button class="tchip${sel.has(v)?" on":""}" data-team="${v}" style="--tc:${c}"><i></i>${n}</button>`).join(""); }
+function teamChips(sel,withNone,cnt){ return TEAMS.map(([v,n,c])=>[v,n,c]).concat(withNone?[["","팀 없음",NO_TEAM]]:[])
+  .map(([v,n,c])=>`<button class="tchip${sel.has(v)?" on":""}" data-team="${v}" style="--tc:${c}"><i></i>${n}${cnt?` <b class="tcnt">${cnt(v)}</b>`:""}</button>`).join(""); }
+/* 핀 개수: 쪽별 [쪽 번호, 이름, 전체, 미조치] (핀이 있는 쪽만) */
+function pageCounts(d,pins){
+  const out=[]; for(let n=1;n<=(d.pages||1);n++){ const l=pins.filter(p=>p.page===n); if(l.length) out.push([n,pgLabel(d,n)||`${n}쪽`,l.length,l.filter(p=>p.status!=="done").length]); }
+  return out;
+}
 function toggleTeam(sel,v){ if(sel.has(v)){ if(sel.size>1) sel.delete(v); } else sel.add(v); }
 function renderTeamBar(){
   const none=V.pins.some(p=>p.id!=="temp"&&!p.team);
@@ -1802,9 +1827,11 @@ let lFilter="all";
 function renderList(){
   const all=[...V.pins].sort(pinCmp);
   const o=all.filter(p=>p.status!=="done").length;
-  $("#lTitle").textContent=`핀 목록 (미조치 ${o} · 완료 ${all.length-o})`;
+  $("#lTitle").textContent=`핀 목록 (전체 ${all.length} · 미조치 ${o} · 완료 ${all.length-o})`;
   document.querySelectorAll("#lFilter button").forEach(b=>b.classList.toggle("on",b.dataset.v===lFilter));
-  $("#lTeams").innerHTML=teamChips(teamFilter,all.some(p=>!p.team));
+  $("#lTeams").innerHTML=teamChips(teamFilter,all.some(p=>!p.team),v=>all.filter(p=>(p.team||"")===v).length);
+  const pc=pageCounts(V.drawing,all);
+  $("#lPages").innerHTML=V.drawing.pages>1&&pc.length?`<b>쪽별</b> `+pc.map(([n,nm,c,oc])=>`<span${n===V.pageNo?' class="cur"':""}>${esc(nm)} <em>${c}</em>${oc&&oc!==c?`<small>(미조치 ${oc})</small>`:""}</span>`).join(""):"";
   const list=all.filter(p=>teamFilter.has(p.team||"")).filter(p=>lFilter==="all"||(lFilter==="done")===(p.status==="done"));
   $("#lItems").innerHTML=list.length?list.map(p=>`<div class="li" data-id="${p.id}">
     <span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${pinLabel(p)}</span>

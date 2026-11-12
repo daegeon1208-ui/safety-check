@@ -50,6 +50,7 @@ function doPost(e) {
         case 'deleteDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
         case 'replaceDrawingFile': gate_(req.id, me, req); return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names) });
         case 'setPageNames': gate_(req.id, me, req); return out_({ ok: true, drawing: setPageNames_(req.id, req.names) });
+        case 'setKind': gate_(req.id, me, req); return out_({ ok: true, drawing: setKind_(req.id, req.kind, me) });
         case 'unlock': gate_(req.id, me, req); return out_({ ok: true });
         case 'setLock': return out_({ ok: true, drawing: setLock_(req.id, req.lockNew, me) });
         case 'pins': gate_(req.drawingId, me, req); return out_({ ok: true, pins: pins_(req.drawingId), ver: drawingVer_(req.drawingId), time: Date.now() });
@@ -157,6 +158,14 @@ function setLock_(id, pw, me) {
   if (pw && pw.length < 4) throw new Error('도면 비밀번호는 4자 이상으로 해 주세요');
   if (pw) { o.lockSalt = Utilities.getUuid(); o.lockHash = hash_(o.lockSalt, pw); } else { o.lockSalt = ''; o.lockHash = ''; }
   o.updated = Date.now();
+  writeRow_(sh, D_COLS, o._row, o);
+  return drawingOut_(o);
+}
+function setKind_(id, kind, me) {   // 원래 파일 종류(PDF·DWG) 고치기
+  const { sh, list } = rows_('도면');
+  const o = list.find(x => x.id === id); if (!o) throw new Error('도면이 없습니다');
+  if (!me.admin && !(o.by && o.by === me.name)) throw new Error('도면을 올린 사람과 관리자만 파일 종류를 바꿀 수 있습니다');
+  o.kind = kind === 'dwg' ? 'dwg' : 'pdf';
   writeRow_(sh, D_COLS, o._row, o);
   return drawingOut_(o);
 }
