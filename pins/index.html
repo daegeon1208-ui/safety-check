@@ -181,6 +181,22 @@ header .cloud[data-state="err"] i{background:#F87171}
 .sync{font-size:12px;color:#D1D5DB;white-space:nowrap}
 .sync[data-state="on"]{color:#86EFAC} .sync[data-state="wait"]{color:#FDE68A} .sync[data-state="err"]{color:#FCA5A5}
 .photos .phw{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--sub)}
+.tourGo{display:block;width:100%;margin:16px 0 0;padding:12px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;font-size:15px}
+#tour{position:fixed;inset:0;z-index:40;pointer-events:none}
+#tour .spot{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgba(17,24,39,.55);transition:all .25s;pointer-events:none}
+#tour .spot.none{box-shadow:0 0 0 9999px rgba(17,24,39,.55);width:0!important;height:0!important}
+#tour .ring{position:absolute;inset:-6px;border-radius:16px;border:3px solid #FBBF24;animation:tourRing 1.2s ease-out infinite}
+@keyframes tourRing{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.12)}}
+#tour .card{position:fixed;left:12px;right:12px;max-width:420px;margin:0 auto;background:#fff;border-radius:16px;padding:14px 16px 12px;box-shadow:0 10px 30px rgba(0,0,0,.35);pointer-events:auto;font-size:15px;line-height:1.5}
+#tour .card .st{font-size:12px;color:var(--sub);margin-bottom:4px}
+#tour .card .tx b{color:var(--open)}
+#tour .card .bt{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+#tour .card .bt button{padding:9px 16px;border-radius:10px;font-weight:700;font-size:14px;background:var(--chip);color:var(--ink)}
+#tour .card .bt button.nx{background:var(--accent);color:#fff}
+#tour .card.sm{font-size:13.5px;padding:10px 12px 8px}
+#tour .card.sm .bt{margin-top:6px}
+#tour .card.sm .bt button{padding:7px 12px}
+#tour .card .do{display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:#B45309}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 100px);transform:translateX(-50%);background:rgba(31,41,55,.95);color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:30;max-width:90%;text-align:center}
 .exp a,.exp button{display:block;width:100%;text-align:center;padding:14px;border-radius:12px;background:var(--accent);color:#fff;font-weight:600;text-decoration:none;margin-top:10px}
 .exp .sec{background:var(--chip);color:var(--ink)}
@@ -257,6 +273,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 </section>
 
 <div class="sheet-bg" id="sheetBg" hidden></div>
+<div id="tour" hidden><div class="spot"><div class="ring"></div></div><div class="card"><div class="st"></div><div class="tx"></div><div class="bt"></div></div></div>
 
 <!-- 핀 메모 -->
 <div class="sheet" id="pinSheet" hidden>
@@ -355,6 +372,8 @@ header .cloud[data-state="err"] i{background:#F87171}
 <div class="sheet" id="helpSheet" hidden>
   <div class="sh"><h2>사용법</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp">
+    <button class="tourGo" data-tour style="margin:0 0 12px">▶ 연습 도면으로 따라하기 (버튼을 직접 눌러 보며 배우기)</button>
+    <p style="margin-top:0">· 사진으로 보는 처음 사용 가이드: <a href="guide/" target="_blank" rel="noopener">가이드 열기</a></p>
     <p>1. <b>도면 불러오기</b>로 도면을 고릅니다. (카톡·파일 앱에 받은 PDF 또는 캐드 DWG)</p>
     <p>· <b>DWG</b>를 고르면 휴대폰 안에서 PDF로 바꿔 넣습니다(모형 공간만, 처음 한 번 읽는 프로그램 약 6MB를 받음). 빗금 같은 무늬 해치는 빠지고, 글자는 앱 글꼴로 바뀌어 보일 수 있습니다. 구글 공유에는 바뀐 PDF가 올라갑니다.</p>
     <p>2. 두 손가락으로 벌려 확대하고, 한 손가락으로 끌어 옮깁니다.</p>
@@ -386,7 +405,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.8";
+const APP_VER="3.9";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -536,11 +555,11 @@ async function renderHome(){
   ds.sort((a,b)=>(b.opened||b.created)-(a.opened||a.created));
   const box=$("#dlist");
   const rem=remoteOnly.filter(r=>!ds.some(d=>d.id===r.id));
-  if(!ds.length&&!rem.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF나 DWG를 고르세요.</div>`;return;}
+  if(!ds.length&&!rem.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF나 DWG를 고르세요.<br><button class="tourGo" data-tour>▶ 처음이세요? 연습 도면으로 따라하기</button></div>`;return;}
   box.innerHTML=ds.map(d=>{
     const mine=ps.filter(p=>p.drawingId===d.id&&!p.deleted), o=mine.filter(p=>p.status!=="done").length, dn=mine.length-o;
     return `<div class="dcard" data-id="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${esc(d.name)}</div>
-      <div class="sm"><span class="cnt o">미조치 ${o}</span><span class="cnt d">완료 ${dn}</span> ${d.pages}쪽 · ${fmtDate(d.created).slice(0,10)}${d.cloud&&cloudOn()?" · 공유":""}</div></div>
+      <div class="sm"><span class="cnt o">미조치 ${o}</span><span class="cnt d">완료 ${dn}</span> ${d.pages}쪽 · ${d.sample?"연습용 · 공유 안 됨":fmtDate(d.created).slice(0,10)}${d.cloud&&cloudOn()?" · 공유":""}</div></div>
       <button class="more" data-more="${d.id}">⋯</button></div>`;}).join("")
   +rem.map(d=>`<div class="dcard remote" data-remote="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${esc(d.name)}</div>
       <div class="sm"><span class="cnt o">미조치 ${d.open||0}</span><span class="cnt d">완료 ${d.done||0}</span> ${d.pages}쪽${d.by?" · "+esc(d.by):""}</div>
@@ -766,7 +785,7 @@ async function syncDrawings(){
     }
     remoteOnly=live.filter(r=>!locals.some(d=>d.id===r.id));
     await renderHome();
-    for(const l of locals) if(!l.cloud&&!j.drawings.some(r=>r.id===l.id)){ await uploadDrawing(l); }
+    for(const l of locals) if(!l.cloud&&!l.sample&&!j.drawings.some(r=>r.id===l.id)){ await uploadDrawing(l); }
     for(const l of await dbAll("drawings")) if(l.cloud) await pushDirty(l.id);
     await renderHome();
     setSync("on","공유 중");
@@ -797,7 +816,7 @@ async function pushDirty_(drawingId){
 }
 let syncing=false, syncAgain=false;
 async function syncPins(){
-  if(!cloudOn()||!V.drawing||$("#viewer").hidden) return;
+  if(!cloudOn()||!V.drawing||V.drawing.sample||$("#viewer").hidden) return;
   if(syncing){syncAgain=true;return;} syncing=true;
   const d=V.drawing;
   try{
@@ -1999,9 +2018,97 @@ async function buildExport(drawing,pinList,progress,teamsTxt){
   return await doc.save();
 }
 
+/* ---------- 따라하기: 연습 도면에서 실제 버튼을 눌러 보며 배우기 ---------- */
+const TOUR_ID="sample";
+async function ensureSample(){
+  if(await dbGet("drawings",TOUR_ID)&&await dbGet("files",TOUR_ID)) return;
+  const buf=await (await fetch("sample.pdf")).arrayBuffer(), now=Date.now();
+  await dbPut("files",{id:TOUR_ID,data:buf});
+  await dbPut("drawings",{id:TOUR_ID,name:"견본 도면 (연습용)",pages:1,created:now,opened:now+1e9,by:"",kind:"pdf",sample:true});   // 맨 위에 오게
+}
+const T={i:-1,flag:false,timer:null};
+const vis=sel=>{const e=typeof sel==="function"?sel():$(sel); return e&&!e.hidden&&e.offsetParent!==null?e:null;};
+const sheetOpen=id=>!$(id).hidden;
+const TOUR=[
+  {t:()=>$('.dcard[data-id="sample"]'),x:"<b>견본 도면</b>을 눌러 열어 보세요.",go:()=>!$("#viewer").hidden&&V.drawing&&V.drawing.id===TOUR_ID&&V.page},
+  {t:"#vp",x:"도면을 <b>두 손가락으로 벌리면 확대</b>, <b>한 손가락으로 끌면 이동</b>해요. 한 번 해 보고 다음을 누르세요.",next:1},
+  {t:"#addBtn",x:"가운데 빨간 <b>핀 버튼</b>을 누르세요. 핀 찍기가 시작돼요.",go:()=>V.mode==="add"},
+  {t:"#modeBar",x:"핀 모양은 <b>점·사각형·다각형·스케치</b>에서 고를 수 있어요. 지금은 <b>점</b>으로 해 볼게요.",next:1,pre:()=>{ if(!V.pending&&(V.mode!=="add"||V.addKind!=="point")) setMode("add","point"); }},
+  {t:"#vp",x:"도면에서 <b>하자 위치(예: 거실)</b>를 한 번 누르세요.",go:()=>V.pending&&V.pending.temp},
+  {t:"#addBtn",x:"빨간 핀이 놓였어요. <b>핀 버튼을 한 번 더</b> 누르면 그 자리에 고정돼요. (다른 곳을 누르면 위치가 바뀌어요)",go:()=>sheetOpen("#pinSheet")},
+  {t:"#pTeam",x:"핀 창이 열렸어요. 먼저 <b>팀</b>을 하나 눌러 보세요. 핀 색이 팀 색으로 바뀌어요.",go:()=>T.flag,pre:()=>{T.flag=false; $("#pTeam").addEventListener("click",()=>T.flag=true,{once:true});}},
+  {t:"#pText",x:"여기에 <b>하자 내용</b>을 적어요. (예: 거실 벽 균열) 적는 즉시 저장돼요.",next:1},
+  {t:"#pPhotos",x:"<b>사진</b> 칸을 누르면 사진을 찍거나 앨범에서 고를 수 있어요. 연습에서는 건너뛰어도 돼요.",next:1},
+  {t:"#pStatus",x:"조치가 끝나면 <b>조치완료</b>를 눌러요. 그러면 조치 후 사진 칸이 생기고 핀이 흐리게 ✓로 바뀌어요.",next:1},
+  {t:()=>$("#pinSheet .ok"),x:"<b>저장하고 닫기</b>를 누르세요.",go:()=>!sheetOpen("#pinSheet")},
+  {t:"#teamBar",x:"위쪽 <b>팀 버튼</b>으로 보고 싶은 팀의 핀만 골라 볼 수 있어요. (여러 팀 가능)",next:1},
+  {t:"#listBtn",x:"<b>목록</b>을 누르세요.",go:()=>sheetOpen("#listSheet")},
+  {t:"#listSheet",x:"찍은 핀이 모두 나와요. <b>미조치·조치완료</b>, 팀으로 거를 수 있고, 핀을 누르면 그 위치로 이동해요.",next:1,post:()=>closeSheets()},
+  {t:"#expBtn",x:"<b>내보내기</b>를 누르세요.",go:()=>sheetOpen("#actSheet")||sheetOpen("#expSheet")},
+  {t:"#actSheet",x:"<b>부분 캡처</b>는 도면 일부를 그림으로, <b>PDF 만들기</b>는 핀 표시 도면과 사진대지를 한 파일로 만들어요. <b>PDF 만들기</b>를 눌러 보세요.",go:()=>sheetOpen("#expSheet")},
+  {t:"#expSheet",x:"보낼 <b>팀</b>을 고르고 만들면, 핀 표시 도면 + <b>사진대지</b>(한 쪽에 핀 2개: 조치 전·후 사진, 내용, 위치도) PDF를 카톡 등으로 바로 보낼 수 있어요.",next:1,post:()=>closeSheets()},
+  {t:"#backBtn",x:"<b>‹ 목록</b>을 눌러 도면 목록으로 돌아가세요.",go:()=>!$("#home").hidden},
+  {t:"#cloudBtn",x:"여러 사람이 함께 쓰려면 <b>구글 공유</b>에 웹 앱 주소·PIN·이름을 넣어요. 주소와 PIN은 관리자에게 받으세요.",next:1},
+  {t:"#importBtn",x:"이제 실제 도면을 쓰려면 <b>도면 불러오기</b>로 카톡·파일 앱에 받은 PDF나 DWG를 고르면 돼요.",next:1},
+  {t:null,x:"다 됐어요! 👏<br>연습한 <b>견본 도면</b>은 지울까요? 남겨 두면 언제든 다시 연습할 수 있어요.",end:1}
+];
+async function startTour(){
+  closeSheets();
+  try{ await ensureSample(); }catch(e){ toast("연습 도면을 불러오지 못했습니다: "+e.message,3000); return; }
+  if(!$("#viewer").hidden) $("#backBtn").click();
+  await renderHome(); $("#home").scrollTop=0; window.scrollTo(0,0);
+  $("#tour").hidden=false; tourStep(0);
+  clearInterval(T.timer); T.timer=setInterval(tourTick,150);
+}
+function endTour(delSample){
+  clearInterval(T.timer); T.i=-1; $("#tour").hidden=true;
+  try{ localStorage.setItem("tourDone","1"); }catch(e){}
+  if(delSample){ (async()=>{ if(!$("#viewer").hidden&&V.drawing&&V.drawing.id===TOUR_ID) $("#backBtn").click(); await removeLocalDrawing(TOUR_ID); renderHome(); toast("견본 도면을 지웠습니다"); })(); }
+}
+function tourStep(i){
+  const prev=TOUR[T.i]; if(prev&&prev.post&&i>T.i) prev.post();
+  T.i=i; const s=TOUR[i]; if(!s){ endTour(false); return; }
+  if(s.pre) s.pre();
+  const c=$("#tour .card");
+  c.querySelector(".st").textContent=s.end?"따라하기 끝":`따라하기 ${i+1} / ${TOUR.length-1}`;
+  c.querySelector(".tx").innerHTML=s.x+(s.go?'<br><span class="do">👆 직접 눌러 보세요</span>':"");
+  const bt=c.querySelector(".bt");
+  bt.innerHTML=s.end?'<button data-a="keep">남겨 두기</button><button class="nx" data-a="del">지우기</button>'
+    :`<button data-a="stop">그만하기</button>${s.next?'<button class="nx" data-a="next">다음</button>':""}`;
+  const t=s.t&&vis(s.t); if(t&&t.closest(".sb")) t.scrollIntoView({block:"center",behavior:"smooth"});
+  tourTick();
+}
+$("#tour .card").addEventListener("click",e=>{ const a=e.target.closest("[data-a]"); if(!a) return; a.blur();
+  if(a.dataset.a==="next") tourStep(T.i+1); else if(a.dataset.a==="stop") endTour(false); else endTour(a.dataset.a==="del"); });
+function tourTick(){
+  const s=TOUR[T.i]; if(!s) return;
+  if(s.go&&s.go()){ tourStep(T.i+1); return; }
+  const spot=$("#tour .spot"), card=$("#tour .card"), H=innerHeight, W=innerWidth;
+  const t=s.t&&vis(s.t);
+  if(!t){ spot.classList.add("none"); spot.style.left=W/2+"px"; spot.style.top=H/2+"px"; spot.querySelector(".ring").hidden=true;
+    card.style.top=Math.max(20,H/2-card.offsetHeight/2)+"px"; card.style.bottom="auto"; return; }
+  spot.classList.remove("none"); spot.querySelector(".ring").hidden=!s.go;
+  let r=t.getBoundingClientRect(); const pad=t.id==="vp"||r.height>H*0.5?-4:6;
+  const top=Math.max(2,r.top-pad), bot=Math.min(H-2,r.bottom+pad), left=Math.max(2,r.left-pad), right=Math.min(W-2,r.right+pad);
+  Object.assign(spot.style,{left:left+"px",top:top+"px",width:(right-left)+"px",height:(bot-top)+"px",borderRadius:t.id==="addBtn"?"50%":"14px"});
+  const land=W>H, big=bot-top>H*0.5, wide=right-left>=400;
+  // 가로 화면: 넓은 영역은 그 안 왼쪽 위에 작게, 좁고 긴 영역(오른쪽 버튼 줄 등)은 그 왼쪽 옆에
+  const side=land&&big&&!wide&&left>340, inTop=land&&big&&wide;
+  Object.assign(card.style,inTop?{left:(left+10)+"px",right:"auto",margin:"0",maxWidth:Math.min(330,right-left-20)+"px"}
+    :side?{left:Math.max(8,left-340)+"px",right:"auto",margin:"0",maxWidth:"330px"}:land?{left:"",right:"",margin:"0 auto",maxWidth:"420px"}:{left:"",right:"",margin:"",maxWidth:""});
+  card.classList.toggle("sm",land);
+  const ch=card.offsetHeight;
+  if(side){ card.style.top=Math.max(8,Math.min(H-ch-8,(top+bot)/2-ch/2))+"px"; card.style.bottom="auto"; }
+  else if(big){ card.style.top=(top+10)+"px"; card.style.bottom="auto"; }   // 큰 영역: 영역 위쪽 안에
+  else if((top+bot)/2>H/2){ card.style.top=Math.max(8,top-ch-14)+"px"; card.style.bottom="auto"; }   // 아래쪽 버튼: 카드는 위에
+  else { card.style.top=Math.min(H-ch-8,bot+14)+"px"; card.style.bottom="auto"; }
+}
+document.addEventListener("click",e=>{ if(e.target.closest("[data-tour]")) startTour(); });
+
 /* ---------- 시작 ---------- */
 renderHome(); setSync("",""); if(!readInvite()){ if(cloudSet()&&!cloudOn()) openCloudSheet(); else syncDrawings(); }
 window.addEventListener("hashchange",readInvite);
+if(/[?&]tour=1/.test(location.search)){ try{history.replaceState(null,"",location.pathname+location.hash);}catch(e){} setTimeout(startTour,300); }   // 가이드의 "따라하기" 링크
 try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}   // 연결 정보·도면이 저절로 지워지지 않게 요청
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
