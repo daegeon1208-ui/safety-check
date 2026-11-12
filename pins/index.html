@@ -55,7 +55,8 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .pin.done::before{opacity:.55}
 .pin .ck{position:absolute;right:-7px;top:-7px;width:17px;height:17px;border-radius:50%;background:var(--done);color:#fff;border:2px solid #fff;font-size:10px;font-style:normal;font-weight:700;line-height:13px;text-align:center}
 .pin.sel::before{box-shadow:0 0 0 3px #FBBF24,0 1px 3px rgba(0,0,0,.4)}
-.pin span{position:relative;display:block;text-align:center;line-height:28px;color:#fff;font-weight:700;font-size:13px}
+.pin span{position:relative;display:block;text-align:center;line-height:28px;color:#fff;font-weight:700;font-size:13px;letter-spacing:-.5px;white-space:nowrap}
+.pin span.l3{font-size:11px}.pin span.l4{font-size:9.5px;letter-spacing:-.7px}
 .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink);font-size:15px;pointer-events:none}
 .hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(31,41,55,.9);color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;width:max-content;max-width:calc(100% - 24px);text-align:center;pointer-events:none}
 .teambar{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--card);border-bottom:1px solid var(--line);flex:none;overflow-x:auto}
@@ -392,7 +393,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>2. 두 손가락으로 벌려 확대하고, 한 손가락으로 끌어 옮깁니다.</p>
     <p>3. <b>＋ 핀 찍기</b>를 누른 뒤 도면에서 위치를 누르면 번호 핀이 생깁니다.</p>
     <p>4. 핀 창에서 상태(미조치/조치완료), 업체, 내용, 사진을 넣습니다. 적는 즉시 저장됩니다.</p>
-    <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀은 핀 창의 위치 옮기기로 옮깁니다. 핀 번호는 지워진 앞 번호부터 다시 씁니다. 위치를 맞춘 뒤 가운데 <b>핀 버튼</b>을 눌러야 고정되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다. 사각형은 끌어 그린 뒤 모서리 손잡이로, 다각형은 점을 차례로 누른 뒤 점을 꾹 누르거나 바깥 손잡이를 끌어 다듬고 핀 버튼으로 고정합니다.</p>
+    <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀은 핀 창의 위치 옮기기로 옮깁니다. 핀 이름은 팀 글자 + 팀 안 번호(공1, 안1, 품1 …)이고, 번호는 팀마다 지워진 앞 번호부터 다시 씁니다. 핀의 팀을 바꾸면 그 팀의 번호로 바뀝니다. 위치를 맞춘 뒤 가운데 <b>핀 버튼</b>을 눌러야 고정되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다. 사각형은 끌어 그린 뒤 모서리 손잡이로, 다각형은 점을 차례로 누른 뒤 점을 꾹 누르거나 바깥 손잡이를 끌어 다듬고 핀 버튼으로 고정합니다.</p>
     <p>· 찍힌 핀을 누르면 위에는 그 핀이 가운데 오게 도면이, 아래에는 핀 내용이 반씩 보입니다. 손잡이를 위로 올리면 내용이 크게, 내리면 다시 반반, 한 번 더 내리면 닫힙니다.</p>
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(한 쪽에 핀 2개: 조치 전·후 대표 사진, 내용, 위치도)를 PDF 한 파일로 보낼 수 있습니다. 내보낼 팀을 먼저 고릅니다.</p>
     <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀·전기팀·설비팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라·전기 노랑·설비 청록)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
@@ -420,7 +421,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.11";
+const APP_VER="3.12";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -709,7 +710,7 @@ async function showInfo(d){
     <div class="kv"><b>공유</b><span>${shared?"구글 공유 중":"이 휴대폰에만 저장"}</span></div>
     ${d.locked?`<div class="kv"><b>비밀번호</b><span>🔒 걸려 있음${lockMine(d)?`<button class="ibtn" id="infoLock">바꾸기·풀기</button>`:""}</span></div>`:shared&&lockMine(d)?`<div class="kv"><b>비밀번호</b><span>없음<button class="ibtn" id="infoLock">걸기</button></span></div>`:""}
     <div class="kv"><b>핀</b><span>전체 ${pins.length} · 미조치 ${o} · 완료 ${pins.length-o}${zones?` · 구역 ${zones}`:""}</span></div>
-    <div class="kv"><b>최근 핀 변경</b><span>${last?`${fmtDate(last.updated)} · ${last.no}번${(last.editor||last.by)?" · "+esc(last.editor||last.by):""}`:"-"}</span></div>
+    <div class="kv"><b>최근 핀 변경</b><span>${last?`${fmtDate(last.updated)} · ${pinLabel(last)}${(last.editor||last.by)?" · "+esc(last.editor||last.by):""}`:"-"}</span></div>
     <div class="lbl">팀별 핀 (핀 색)</div>
     ${TEAMS.map(([v,n,c])=>{const l=pins.filter(p=>p.team===v), lo=l.filter(p=>p.status!=="done").length; return `<div class="who"><i style="background:${c}"></i>${n}<small>핀 ${l.length}개 · 미조치 ${lo}</small></div>`;}).join("")}
     ${pins.some(p=>!p.team)?`<div class="who"><i style="background:${NO_TEAM}"></i>팀 없음<small>핀 ${pins.filter(p=>!p.team).length}개</small></div>`:""}
@@ -902,8 +903,8 @@ async function pushDirty_(drawingId){
       delete pin.dirty; delete pin.serverUpdated;
       const j=await api({action:"savePin",item:pin,photos});
       const cur=V.pins.find(q=>q.id===p0.id)||await dbGet("pins",p0.id); if(!cur) continue;
-      if(j.pin.deleted){ V.pins=V.pins.filter(q=>q.id!==cur.id); await dbDel("pins",cur.id); toast(`${cur.no}번 핀은 다른 사람이 삭제했습니다`); continue; }
-      if(cur.no!==j.pin.no) toast(`다른 사람과 번호가 겹쳐 ${cur.no}번 → ${j.pin.no}번으로 바꿨습니다`,3500);
+      if(j.pin.deleted){ V.pins=V.pins.filter(q=>q.id!==cur.id); await dbDel("pins",cur.id); toast(`${pinLabel(cur)} 핀은 다른 사람이 삭제했습니다`); continue; }
+      if(cur.no!==j.pin.no&&(cur.team||"")===(j.pin.team||"")) toast(`다른 사람과 번호가 겹쳐 ${pinLabel(cur)} → ${pinLabel({...cur,no:j.pin.no})}(으)로 바꿨습니다`,3500);
       cur.no=j.pin.no; cur.serverUpdated=j.pin.updated;
       if(cur.updated===p0.updated){ cur.by=j.pin.by; cur.status=j.pin.status; cur.doneAt=j.pin.doneAt; cur.doneBy=j.pin.doneBy||""; }   // 만든 사람·완료한 사람은 서버 기록을 따른다
       for(const sp of [...(j.pin.photos||[]),...(j.pin.donePhotos||[])]){ const lp=[...cur.photos,...(cur.donePhotos||[])].find(x=>x.k===sp.k); if(lp) lp.id=sp.id; }
@@ -1211,6 +1212,14 @@ const PALETTE=["#D3162F","#2563EB","#9333EA","#EA580C","#0891B2","#DB2777","#4D7
 /* 팀: 핀 색은 팀별로. 팀 없는 예전 핀은 회색 */
 const TEAMS=[["공사","공사팀","#2563EB"],["안전","안전팀","#EA580C"],["품질","품질팀","#9333EA"],["전기","전기팀","#CA8A04"],["설비","설비팀","#0D9488"]], NO_TEAM="#6B7280";
 const teamColor=t=>(TEAMS.find(x=>x[0]===t)||[0,0,NO_TEAM])[2];
+/* 핀 이름 = 팀 글자 + 팀 안 번호 (공1, 안1 …). 번호는 도면 안에서 팀마다 따로 매긴다. 팀 없는 예전 핀은 번호만 */
+const pinLabel=p=>p?(p.team||"").charAt(0)+p.no:"";
+const pinCls=p=>{ const n=pinLabel(p).length; return n>=4?"l4":n===3?"l3":""; };
+const teamIdx=t=>{ const i=TEAMS.findIndex(x=>x[0]===t); return i<0?99:i; };
+const pinCmp=(a,b)=>teamIdx(a.team)-teamIdx(b.team)||a.no-b.no;
+function nextNo(list,team,exceptId){   // 그 팀에서 비어 있는 가장 앞 번호 (지워진 번호부터 다시 쓴다)
+  const used=new Set(list.filter(p=>!p.deleted&&p.id!==exceptId&&(p.team||"")===(team||"")).map(p=>+p.no)); let no=1; while(used.has(no)) no++; return no;
+}
 const teamName=t=>(TEAMS.find(x=>x[0]===t)||[0,"팀 없음"])[1];
 let teamFilter=new Set(TEAMS.map(x=>x[0]).concat([""]));
 try{ const f=JSON.parse(localStorage.getItem("teamFilter")||"null"); if(Array.isArray(f)&&f.length){ teamFilter=new Set(f);
@@ -1302,10 +1311,10 @@ function inShape(sh,[x,y],tol){
 }
 function drawPins(){
   drawShapes();
-  const list=visPins().filter(p=>p.page===V.pageNo).sort((a,b)=>a.no-b.no);
+  const list=visPins().filter(p=>p.page===V.pageNo).sort(pinCmp);
   pinLayer.innerHTML=list.map(p=>{
     const x=V.tx+p.nx*V.pw*V.k, y=V.ty+p.ny*V.ph*V.k;
-    return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p)?" drag":""}" style="left:${x}px;top:${y}px;--pc:${p.id==="temp"?"#D3162F":colorOf(p)}"><span>${p.no}</span>${p.status==="done"?'<i class="ck">✓</i>':""}</div>`;
+    return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p)?" drag":""}" style="left:${x}px;top:${y}px;--pc:${p.id==="temp"?"#D3162F":colorOf(p)}"><span class="${pinCls(p)}">${pinLabel(p)}</span>${p.status==="done"?'<i class="ck">✓</i>':""}</div>`;
   }).join("");
 }
 /* 확대했을 때 보이는 부분만 선명하게 다시 그린다 */
@@ -1367,7 +1376,7 @@ function longPress(p){
   if(!canEdit(pin)){ toast(`${pin.by}님이 만든 핀은 옮길 수 없습니다`); return; }
   G={type:"drag",pin,temp,sx:p.x,sy:p.y,nx:pin.nx,ny:pin.ny,shape:pin.shape?JSON.parse(JSON.stringify(pin.shape)):null};
   if(navigator.vibrate) try{navigator.vibrate(20);}catch(_){}
-  const h=$("#hint"); h.textContent=temp?"끌어서 위치를 맞추고 손가락을 떼세요":`${pin.no}번 핀 · 끌어서 옮기고 손가락을 떼세요`; h.hidden=false;
+  const h=$("#hint"); h.textContent=temp?"끌어서 위치를 맞추고 손가락을 떼세요":`${pinLabel(pin)} 핀 · 끌어서 옮기고 손가락을 떼세요`; h.hidden=false;
   drawPins();
 }
 function dragTo(p){
@@ -1401,7 +1410,7 @@ function revertPending(){
 async function confirmPending(){
   const pd=V.pending; V.pending=null; if(!pd){ setMode("view"); return; }
   if(pd.temp){ V.pins=V.pins.filter(q=>q!==pd.pin); setMode("view"); await addPin(pd.pin.nx,pd.pin.ny); return; }
-  setGeom(pd.pin); await savePin(pd.pin); setMode("view"); drawPins(); toast(`${pd.pin.no}번 ${kindLabel(pd.pin)} 위치를 고정했습니다`);
+  setGeom(pd.pin); await savePin(pd.pin); setMode("view"); drawPins(); toast(`${pinLabel(pd.pin)} ${kindLabel(pd.pin)} 위치를 고정했습니다`);
 }
 vp.addEventListener("pointerdown",e=>{
   if(!V.page) return;
@@ -1544,11 +1553,11 @@ function setGeom(p){
   if(p.shape) p.shape.pdf=shapePts(p.shape).map(([x,y])=>{const q=pdfPoint(x,y);return [q.px,q.py];});
 }
 async function addPin(nx,ny,shape){
-  const used=new Set((await pinsOf(V.drawing.id)).filter(p=>!p.deleted).map(p=>+p.no)); let no=1; while(used.has(no)) no++;   // 지워진 앞 번호부터 다시 쓴다
   const now=Date.now();
   let team=""; try{ team=localStorage.getItem("lastTeam")||""; }catch(e){}
   const shownTeams=TEAMS.map(x=>x[0]).filter(t=>teamFilter.has(t));
   if(shownTeams.length===1) team=shownTeams[0]; else if(!TEAMS.some(x=>x[0]===team)) team=TEAMS[0][0];   // 한 팀만 보고 있으면 그 팀으로
+  const no=nextNo(await pinsOf(V.drawing.id),team);
   const pin={id:uid(),drawingId:V.drawing.id,page:V.pageNo,nx,ny,no,status:"open",team,trade:"",text:"",photos:[],by:cloud.name||"",created:now,updated:now};
   if(shape) pin.shape=shape;
   setGeom(pin);
@@ -1605,7 +1614,7 @@ function updateModeUI(){
   else if(V.mode==="capture"){ h.textContent="끌어서 캡처 영역을 그리세요 (두 손가락: 확대)"; }
   else if(V.mode==="move"){
     const pp=V.pending&&V.pending.pin;
-    h.textContent=pp&&pp.temp?"다른 곳을 누르거나 꾹 눌러 끌어 맞춘 뒤 핀 버튼으로 고정":`${pp?pp.no+"번 ":""}위치를 누르거나 꾹 눌러 끈 뒤 핀 버튼으로 고정`;
+    h.textContent=pp&&pp.temp?"다른 곳을 누르거나 꾹 눌러 끌어 맞춘 뒤 핀 버튼으로 고정":`${pp?pinLabel(pp)+" ":""}위치를 누르거나 꾹 눌러 끈 뒤 핀 버튼으로 고정`;
     mb.innerHTML=`<button data-act="cancelmove" class="cancel">취소</button>`; mb.hidden=false;
   }
   else h.hidden=true;
@@ -1655,8 +1664,8 @@ async function openPin(id){
   const p=V.pins.find(q=>q.id===id); if(!p) return;
   flushSave();   // 다른 핀 창이 열려 있었으면 그 내용부터 저장
   V.sel=id; drawPins();
-  $("#pBadge").textContent=p.no;
-  $("#pTitle").textContent=`${p.no}번 ${kindLabel(p)}`+(pgLabel(V.drawing,p.page)?` · ${pgLabel(V.drawing,p.page)}`:"");
+  $("#pBadge").textContent=pinLabel(p);
+  $("#pTitle").textContent=pinTitle(p);
   $("#pTrade").value=p.trade||""; $("#pText").value=p.text||"";
   const ed=canEdit(p);
   $("#pTrade").readOnly=$("#pText").readOnly=!ed; $("#moveBtn").hidden=$("#delPin").hidden=!ed; $("#imgDel").hidden=!ed;
@@ -1677,8 +1686,13 @@ function setTeamUI(p){
   $("#pBadge").style.background=p.status==="done"?"":teamColor(p.team);
 }
 $("#pTeam").addEventListener("click",e=>{ const b=e.target.closest("button"), p=selPin(); if(!b||!p||!canEdit(p)||p.team===b.dataset.v) return;
+  const before=pinLabel(p);
   p.team=b.dataset.v; try{localStorage.setItem("lastTeam",p.team);}catch(_){}
-  savePin(p); setTeamUI(p); drawPins(); renderTeamBar(); });
+  p.no=nextNo([...V.pins],p.team,p.id);   // 팀이 바뀌면 그 팀의 번호로
+  $("#pBadge").textContent=pinLabel(p); $("#pTitle").textContent=pinTitle(p);
+  savePin(p); setTeamUI(p); drawPins(); renderTeamBar(); if(!$("#listSheet").hidden) renderList();
+  if(before!==pinLabel(p)) toast(`${before} → ${pinLabel(p)}(으)로 바뀌었습니다`); });
+function pinTitle(p){ return `${pinLabel(p)} ${kindLabel(p)}`+(pgLabel(V.drawing,p.page)?` · ${pgLabel(V.drawing,p.page)}`:""); }
 function setStatusUI(p){
   document.querySelectorAll("#pStatus button").forEach(b=>b.classList.toggle("on",b.dataset.v===(p.status||"open")));
   $("#pBadge").classList.toggle("done",p.status==="done"); $("#pBadge").style.background=p.status==="done"?"":teamColor(p.team);
@@ -1777,23 +1791,23 @@ $("#moveBtn").addEventListener("click",()=>{
   const p=selPin(); onSheetClose=null; flushSave(); closeSheets(); V.sel=null; freeUrls(); if(p) startMove(p);
 });
 $("#delPin").addEventListener("click",async()=>{
-  const p=selPin(); if(!p||!confirm(`${p.no}번 핀을 삭제할까요?`)) return;
+  const p=selPin(); if(!p||!confirm(`${pinLabel(p)} 핀을 삭제할까요?`)) return;
   V.pins=V.pins.filter(q=>q.id!==p.id);
   if(cloudOn()&&V.drawing.cloud){p.deleted=true;p.photos=[];await savePin(p);} else await dbDel("pins",p.id);
-  closeSheets(); toast(`${p.no}번 핀을 삭제했습니다`);
+  closeSheets(); toast(`${pinLabel(p)} 핀을 삭제했습니다`);
 });
 
 /* ---------- 핀 목록 ---------- */
 let lFilter="all";
 function renderList(){
-  const all=[...V.pins].sort((a,b)=>a.no-b.no);
+  const all=[...V.pins].sort(pinCmp);
   const o=all.filter(p=>p.status!=="done").length;
   $("#lTitle").textContent=`핀 목록 (미조치 ${o} · 완료 ${all.length-o})`;
   document.querySelectorAll("#lFilter button").forEach(b=>b.classList.toggle("on",b.dataset.v===lFilter));
   $("#lTeams").innerHTML=teamChips(teamFilter,all.some(p=>!p.team));
   const list=all.filter(p=>teamFilter.has(p.team||"")).filter(p=>lFilter==="all"||(lFilter==="done")===(p.status==="done"));
   $("#lItems").innerHTML=list.length?list.map(p=>`<div class="li" data-id="${p.id}">
-    <span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${p.no}</span>
+    <span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${pinLabel(p)}</span>
     <div class="t"><div class="t1">${esc(p.trade||"업체 미입력")}</div><div class="t2">${esc(p.text||"(내용 없음)")}</div>
     <div class="t3"><b style="color:${teamColor(p.team)}">${teamName(p.team)}</b> · ${pgLabel(V.drawing,p.page)?esc(pgLabel(V.drawing,p.page))+" · ":""}${p.shape?kindLabel(p)+" · ":""}${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}${p.photos.length?" · 사진 "+p.photos.length:""}</div></div></div>`).join("")
     :`<div class="empty" style="padding:30px">핀이 없습니다</div>`;
@@ -1841,9 +1855,9 @@ async function openCapture(pts,keep){
       ctx.lineCap=ctx.lineJoin="round";
       ctx.setLineDash(p.status==="done"&&closed?[14*unit,10*unit]:[]); if(closed){ ctx.fillStyle=`rgba(${col},.15)`; ctx.fill(); }
       ctx.strokeStyle=`rgba(${col},${closed?.9:p.status==="done"?.5:.95})`; ctx.lineWidth=(closed?5:7)*unit; ctx.stroke(); ctx.setLineDash([]); }
-    for(const p of visPins().sort((a,b)=>a.no-b.no)){ if(!withPins||p.page!==V.pageNo) continue;
+    for(const p of visPins().sort(pinCmp)){ if(!withPins||p.page!==V.pageNo) continue;
       const [x,y]=P([p.nx,p.ny]); if(x<-2*r||y<-2*r||x>cv.width+2*r||y>cv.height+2*r) continue;
-      drawPinMark(ctx,x,y,r,p.no,colorOf(p),p.status==="done"); }
+      drawPinMark(ctx,x,y,r,pinLabel(p),colorOf(p),p.status==="done"); }
     CAP.base=cv;
     const now=new Date(); CAP.name=`${V.drawing.name}_캡처_${dayStr(now)}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`.replace(/[\\/:*?"<>|]/g,"_");
     const canShare=navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]});
@@ -1924,7 +1938,9 @@ function drawPinMark(ctx,x,y,r,no,col,done){   // 앱 화면과 같은 물방울
   ctx.save(); ctx.translate(x,y-r*1.42); if(done) ctx.globalAlpha*=0.6;
   ctx.beginPath(); ctx.arc(0,0,r,Math.PI*0.75,Math.PI*0.25); ctx.lineTo(0,r*1.42); ctx.closePath();
   ctx.fillStyle=col; ctx.fill(); ctx.lineWidth=r*0.15; ctx.strokeStyle="#fff"; ctx.stroke();
-  ctx.fillStyle="#fff"; ctx.font=`bold ${r*0.95}px -apple-system,sans-serif`; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(String(no),0,r*0.05);
+  ctx.fillStyle="#fff"; let fz=r*0.95; ctx.font=`bold ${fz}px -apple-system,sans-serif`;
+  const tw=ctx.measureText(String(no)).width; if(tw>r*1.55){ fz*=r*1.55/tw; ctx.font=`bold ${fz}px -apple-system,sans-serif`; }   // 공12 같은 긴 이름은 글자를 줄인다
+  ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(String(no),0,r*0.05);
   if(done){ ctx.globalAlpha=1; ctx.beginPath(); ctx.arc(r*0.85,-r*0.85,r*0.5,0,Math.PI*2); ctx.fillStyle="#15803D"; ctx.fill(); ctx.lineWidth=r*0.12; ctx.strokeStyle="#fff"; ctx.stroke();
     ctx.fillStyle="#fff"; ctx.font=`bold ${r*0.6}px -apple-system,sans-serif`; ctx.fillText("✓",r*0.85,-r*0.82); }
   ctx.restore();
@@ -2018,8 +2034,8 @@ async function locCrop(full,pin,pins,aspect){
     ctx.lineCap=ctx.lineJoin="round";
     if(closed){ ctx.fillStyle=`rgba(${col},${me?.22:.1})`; ctx.fill(); } ctx.strokeStyle=`rgba(${col},${me?1:.5})`; ctx.lineWidth=me?5:3; ctx.stroke(); }
   for(const q of pins){ if(q.page!==pin.page||q===pin) continue; const [x,y]=P([q.nx,q.ny]);
-    if(x>-40&&y>-40&&x<ow+40&&y<oh+60){ ctx.globalAlpha=.55; drawPinMark(ctx,x,y,20,q.no,cOf(q),q.status==="done"); ctx.globalAlpha=1; } }
-  const [x,y]=P([pin.nx,pin.ny]); drawPinMark(ctx,x,y,28,pin.no,cOf(pin),pin.status==="done");
+    if(x>-40&&y>-40&&x<ow+40&&y<oh+60){ ctx.globalAlpha=.55; drawPinMark(ctx,x,y,20,pinLabel(q),cOf(q),q.status==="done"); ctx.globalAlpha=1; } }
+  const [x,y]=P([pin.nx,pin.ny]); drawPinMark(ctx,x,y,28,pinLabel(pin),cOf(pin),pin.status==="done");
   ctx.strokeStyle="#9CA3AF"; ctx.lineWidth=2; ctx.strokeRect(1,1,ow-2,oh-2);
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.88));
   return await blob.arrayBuffer();
@@ -2033,11 +2049,10 @@ async function buildExport(drawing,pinList,progress,teamsTxt){
   const doc=await PDFDocument.load(file.data.slice(0),{ignoreEncryption:true});
   doc.registerFontkit(fontkit);
   const kor=await doc.embedFont(fontBytes,{subset:true});
-  const num=await doc.embedFont(StandardFonts.HelveticaBold);
   const RED=rgb(0.83,0.09,0.18), GREEN=rgb(0.08,0.5,0.24), WHITE=rgb(1,1,1), INK=rgb(0.12,0.16,0.22), SUB=rgb(0.42,0.45,0.5), LINE=rgb(0.55,0.57,0.6), HEAD=rgb(0.94,0.95,0.96);
-  const pins=[...pinList].sort((a,b)=>a.no-b.no);
+  const pins=[...pinList].sort(pinCmp);
   const cOf=colorsOf(pins), pc=p=>{const [r,g,b]=hexRgb(cOf(p));return rgb(r/255,g/255,b/255);};
-  for(const p of pins){ const all=[...p.photos,...(p.donePhotos||[])]; if(all.some(x=>!x.data)) progress&&progress(`${p.no}번 핀 사진 받는 중…`); for(const x of all) await ensurePhoto(p,x); }
+  for(const p of pins){ const all=[...p.photos,...(p.donePhotos||[])]; if(all.some(x=>!x.data)) progress&&progress(`${pinLabel(p)} 핀 사진 받는 중…`); for(const x of all) await ensurePhoto(p,x); }
 
   // 1) 도면 위에 번호 핀·구역 (원본 도면은 그대로, 선명함 유지)
   for(const p of pins){
@@ -2057,9 +2072,9 @@ async function buildExport(drawing,pinList,progress,teamsTxt){
     pg.drawCircle({x:p.px,y:p.py,size:r,color:col,opacity:dn?0.55:1,borderColor:WHITE,borderWidth:r*0.18});
     if(dn){ const a=rot*Math.PI/180, bx=r*0.8, by=r*0.8;   // 완료: 오른쪽 위 초록 점
       pg.drawCircle({x:p.px+bx*Math.cos(a)-by*Math.sin(a),y:p.py+bx*Math.sin(a)+by*Math.cos(a),size:r*0.42,color:GREEN,borderColor:WHITE,borderWidth:r*0.1}); }
-    const s=String(p.no), tw=num.widthOfTextAtSize(s,fs), a=rot*Math.PI/180;
-    const ox=-tw/2, oy=-fs*0.36;
-    pg.drawText(s,{x:p.px+ox*Math.cos(a)-oy*Math.sin(a),y:p.py+ox*Math.sin(a)+oy*Math.cos(a),size:fs,font:num,color:WHITE,rotate:degrees(rot)});
+    const s=pinLabel(p), fz=Math.min(fs,r*1.6/Math.max(0.01,kor.widthOfTextAtSize(s,1))), tw=kor.widthOfTextAtSize(s,fz), a=rot*Math.PI/180;
+    const ox=-tw/2, oy=-fz*0.36;
+    pg.drawText(s,{x:p.px+ox*Math.cos(a)-oy*Math.sin(a),y:p.py+ox*Math.sin(a)+oy*Math.cos(a),size:fz,font:kor,color:WHITE,rotate:degrees(rot)});
   }
 
   // 2) 사진대지 (A4 세로, 한 쪽에 핀 2개. 핀마다 대표 사진 하나씩: 조치 전 | 조치 후, 아래에 내용 | 위치도)
@@ -2091,7 +2106,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt){
     page.drawRectangle({x:xl,y:yy-HH,width:CW,height:HH,color:HEAD});
     page.drawLine({start:{x:xl,y:yy-HH},end:{x:xr,y:yy-HH},thickness:0.6,color:LINE});
     page.drawCircle({x:xl+16,y:yy-HH/2,size:9,color:pcol});
-    { const sn=String(p.no), fs=sn.length>2?7:9; page.drawText(sn,{x:xl+16-num.widthOfTextAtSize(sn,fs)/2,y:yy-HH/2-fs*0.36,size:fs,font:num,color:WHITE}); }
+    { const sn=pinLabel(p), fs=Math.min(9,15/Math.max(0.01,kor.widthOfTextAtSize(sn,1))); page.drawText(sn,{x:xl+16-kor.widthOfTextAtSize(sn,fs)/2,y:yy-HH/2-fs*0.36,size:fs,font:kor,color:WHITE}); }
     const st=(done?"조치완료":"미조치"), stw=kor.widthOfTextAtSize(st,10.5);
     page.drawText(st,{x:xl+32,y:yy-HH/2-3.8,size:10.5,font:kor,color:col});
     const meta=[p.team?teamName(p.team):"",p.shape?kindLabel(p):"",pgLabel(drawing,p.page)||""].filter(Boolean).join("  ·  ");
