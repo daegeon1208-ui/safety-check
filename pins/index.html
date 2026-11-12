@@ -171,7 +171,7 @@ textarea.inp{min-height:90px;resize:vertical}
 .viewer-img{position:fixed;inset:0;background:#000;z-index:20;display:flex;flex-direction:column}
 .viewer-img img{flex:1;min-height:0;object-fit:contain;width:100%}
 .viewer-img .bar{display:flex;gap:8px;padding:12px 12px calc(env(safe-area-inset-bottom) + 12px)}
-.viewer-img .bar button{flex:1;padding:12px;border-radius:12px;background:#374151;color:#fff;font-weight:600}
+.viewer-img .bar button{flex:1;padding:12px 4px;white-space:nowrap;font-size:14.5px;border-radius:12px;background:#374151;color:#fff;font-weight:600}
 .viewer-img .bar .del{color:#FCA5A5}
 header .cloud{display:flex;align-items:center;gap:6px}
 header .cloud i{width:8px;height:8px;border-radius:50%;background:#9CA3AF}
@@ -383,7 +383,8 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>· 찍힌 핀을 누르면 위에는 그 핀이 가운데 오게 도면이, 아래에는 핀 내용이 반씩 보입니다. 손잡이를 위로 올리면 내용이 크게, 내리면 다시 반반, 한 번 더 내리면 닫힙니다.</p>
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(한 쪽에 핀 2개: 조치 전·후 대표 사진, 내용, 위치도)를 PDF 한 파일로 보낼 수 있습니다. 내보낼 팀을 먼저 고릅니다.</p>
     <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀·전기팀·설비팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라·전기 노랑·설비 청록)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
-    <p>· <b>대표 사진</b>: 사진이 여러 장이면 사진을 눌러 크게 본 뒤 <b>☆ 대표 사진으로</b>를 누르세요. 사진대지에는 조치 전·조치 후 대표 사진이 한 장씩 들어갑니다(안 고르면 첫 사진).</p>
+    <p>· <b>사진 회전</b>: 사진을 눌러 크게 본 뒤 <b>↻ 회전</b>을 누를 때마다 시계 방향으로 90° 돌아가고 바로 저장됩니다.</p>
+    <p>· <b>대표 사진</b>: 사진이 여러 장이면 사진을 눌러 크게 본 뒤 <b>☆ 대표 사진</b>을 누르세요. 사진대지에는 조치 전·조치 후 대표 사진이 한 장씩 들어갑니다(안 고르면 첫 사진).</p>
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 팀별 핀 수, 참여자를 봅니다. 핀 색은 팀별이고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
     <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
     <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 손가락으로 끌어 그리고, 다각형은 꼭짓점을 차례로 누릅니다. 다 됐으면 핀 버튼으로 고정합니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
@@ -399,13 +400,13 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <div class="viewer-img" id="imgView" hidden>
   <img id="imgViewImg" alt="">
-  <div class="bar"><button class="del" id="imgDel">사진 삭제</button><button id="imgRep">☆ 대표 사진으로</button><button id="imgClose">닫기</button></div>
+  <div class="bar"><button class="del" id="imgDel">사진 삭제</button><button id="imgRot">↻ 회전</button><button id="imgRep">☆ 대표 사진</button><button id="imgClose">닫기</button></div>
 </div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
 "use strict";
-const APP_VER="3.9";
+const APP_VER="3.10";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1622,8 +1623,8 @@ function photoBoxClick(list,addId){ return e=>{
   const p=selPin(), i=+ph.dataset.i; if(!p[list][i].data) return;
   $("#imgViewImg").src=photoUrl(p[list][i]); $("#imgView").hidden=false; $("#imgView").dataset.i=i; $("#imgView").dataset.list=list;
   const can=list==="photos"?canEdit(p):canDonePhoto(p), isRep=(p[list].find(x=>x.rep)||p[list][0])===p[list][i];
-  $("#imgDel").hidden=!can; $("#imgRep").hidden=!can||p[list].length<2;
-  $("#imgRep").textContent=isRep?"★ 대표 사진":"☆ 대표 사진으로"; $("#imgRep").disabled=isRep;
+  $("#imgDel").hidden=$("#imgRot").hidden=!can; $("#imgRep").hidden=!can||p[list].length<2;
+  $("#imgRep").textContent=isRep?"★ 대표 사진":"☆ 대표 사진"; $("#imgRep").disabled=isRep;
 }; }
 $("#imgRep").addEventListener("click",async()=>{
   const p=selPin(), i=+$("#imgView").dataset.i, list=$("#imgView").dataset.list||"photos"; if(!p||!p[list][i]) return;
@@ -1633,6 +1634,23 @@ $("#imgRep").addEventListener("click",async()=>{
 $("#pPhotos").addEventListener("click",photoBoxClick("photos","addPhoto"));
 $("#pDonePhotos").addEventListener("click",photoBoxClick("donePhotos","addDonePhoto"));
 $("#imgClose").addEventListener("click",()=>$("#imgView").hidden=true);
+/* 사진 회전: 누를 때마다 시계 방향 90°. 회전한 사진을 새 사진으로 저장(구글 공유면 새 파일로 올라가고 예전 파일은 지워짐) */
+async function rotatePhoto(ph){
+  const im=await loadImage(new Blob([ph.data],{type:ph.type||"image/jpeg"}));
+  const w=im.naturalWidth, h=im.naturalHeight, c=document.createElement("canvas"); c.width=h; c.height=w;
+  const g=c.getContext("2d"); g.translate(h,0); g.rotate(Math.PI/2); g.drawImage(im,0,0);
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.9));
+  return {type:"image/jpeg",data:await blob.arrayBuffer(),w:c.width,h:c.height};
+}
+$("#imgRot").addEventListener("click",async()=>{
+  const p=selPin(), i=+$("#imgView").dataset.i, list=$("#imgView").dataset.list||"photos", old=p&&p[list][i];
+  if(!old||!old.data||!(list==="photos"?canEdit(p):canDonePhoto(p))) return;
+  const b=$("#imgRot"); b.disabled=true;
+  try{ const nw={k:uid(),...await rotatePhoto(old)}; if(old.rep) nw.rep=true;
+    p[list][i]=nw; await savePin(p); renderPhotos(p); $("#imgViewImg").src=photoUrl(nw);   // renderPhotos가 예전 주소를 지우므로 그 뒤에 새 주소
+  }catch(err){ toast("사진을 돌리지 못했습니다: "+err.message,3000); }
+  b.disabled=false;
+});
 $("#imgDel").addEventListener("click",async()=>{
   const p=selPin(), i=+$("#imgView").dataset.i, list=$("#imgView").dataset.list||"photos";
   if(!p||!(list==="photos"?canEdit(p):canDonePhoto(p))||!confirm("이 사진을 삭제할까요?")) return;
