@@ -35,6 +35,9 @@ header{position:relative}
 .dcard .nm{font-weight:600;word-break:break-all}
 .ftype{display:inline-block;vertical-align:2px;margin-right:6px;padding:2px 5px;border-radius:5px;font-size:10.5px;font-weight:800;letter-spacing:.3px;line-height:1.2;color:#fff;background:#DC2626}
 .ftype.dwg{background:#2563EB}
+.tchip .tcnt{font-weight:800;margin-left:2px}
+.lpages{font-size:13px;color:var(--sub);margin:-2px 0 10px;line-height:1.9}.lpages:empty{display:none}.lpages b{color:var(--ink);margin-right:4px}
+.lpages span{display:inline-block;margin-right:10px;white-space:nowrap}.lpages span.cur{color:var(--ink);font-weight:700}.lpages em{font-style:normal;font-weight:800;color:var(--ink)}.lpages small{margin-left:2px;color:var(--open)}
 .arow .ic .ftype{font-size:9.5px;padding:2px 3px}
 #vTitle .ftype{vertical-align:3px}
 .lk{margin-right:4px;font-size:.92em}
@@ -309,6 +312,7 @@ header .cloud[data-state="err"] i{background:#F87171}
   <div class="sh"><h2 id="lTitle">핀 목록</h2><button class="x" data-close>✕</button></div>
   <div class="sb">
     <div class="tchips" id="lTeams"></div>
+    <div class="lpages" id="lPages"></div>
     <div class="seg" id="lFilter"><button data-v="all" class="a on">전체</button><button data-v="open" class="o">미조치</button><button data-v="done" class="d">조치완료</button></div>
     <div id="lItems" style="margin-top:6px"></div>
   </div>
@@ -401,6 +405,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(한 쪽에 핀 2개: 조치 전·후 대표 사진, 내용, 위치도)를 PDF 한 파일로 보낼 수 있습니다. 내보낼 팀을 먼저 고릅니다.</p>
     <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀·전기팀·설비팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라·전기 노랑·설비 청록)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
     <p>· <b>도면 비밀번호</b>: 구글 공유한 도면은 목록의 ⋯ → <b>비밀번호 걸기</b>로 잠글 수 있습니다(도면을 올린 사람과 관리자만). 잠긴 도면(🔒)은 비밀번호를 넣어야 도면과 핀을 볼 수 있고, 올린 사람과 관리자는 비밀번호 없이 엽니다. 같은 메뉴에서 바꾸거나 풀 수 있습니다.</p>
+    <p>· <b>핀 개수</b>: <b>목록</b> 맨 위에 전체·미조치·완료 개수, 팀 버튼마다 팀별 개수, 쪽이 여러 개면 쪽별 개수가 나옵니다. 도면 정보에서도 팀별·쪽별 핀 수를 볼 수 있습니다.</p>
     <p>· <b>파일 종류 표시</b>: 도면 이름 앞의 PDF(빨강)·DWG(파랑)는 처음 불러온 파일 종류입니다. 예전에 올려 종류를 모르는 도면은 표시가 없고, 목록의 ⋯ → <b>파일 종류 바꾸기</b>로 올린 사람이나 관리자가 고칠 수 있습니다.</p>
     <p>· <b>사진 회전</b>: 사진을 눌러 크게 본 뒤 <b>↻ 회전</b>을 누를 때마다 시계 방향으로 90° 돌아가고 바로 저장됩니다.</p>
     <p>· <b>대표 사진</b>: 사진이 여러 장이면 사진을 눌러 크게 본 뒤 <b>☆ 대표 사진</b>을 누르세요. 사진대지에는 조치 전·조치 후 대표 사진이 한 장씩 들어갑니다(안 고르면 첫 사진).</p>
@@ -425,7 +430,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.13";
+const APP_VER="3.14";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -727,6 +732,7 @@ async function showInfo(d){
     <div class="lbl">팀별 핀 (핀 색)</div>
     ${TEAMS.map(([v,n,c])=>{const l=pins.filter(p=>p.team===v), lo=l.filter(p=>p.status!=="done").length; return `<div class="who"><i style="background:${c}"></i>${n}<small>핀 ${l.length}개 · 미조치 ${lo}</small></div>`;}).join("")}
     ${pins.some(p=>!p.team)?`<div class="who"><i style="background:${NO_TEAM}"></i>팀 없음<small>핀 ${pins.filter(p=>!p.team).length}개</small></div>`:""}
+    ${d.pages>1?`<div class="lbl">쪽별 핀</div>${pageCounts(d,pins).map(([n,nm,c,oc])=>`<div class="who"><i style="background:#9CA3AF;border-radius:3px"></i>${esc(nm)}<small>핀 ${c}개 · 미조치 ${oc}</small></div>`).join("")||`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}`:""}
     <div class="lbl">참여자</div>
     ${rows.length?rows.map(r=>`<div class="who"><i style="background:${r.col}"></i>${esc(r.n||"이름 없음")}<small>${r.made?`핀 ${r.made}개`:"수정만"}<br>${r.last?fmtDate(r.last):""}</small></div>`).join(""):`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}
     <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 팀별(공사 파랑 · 안전 주황 · 품질 보라 · 전기 노랑 · 설비 청록)입니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
@@ -1243,8 +1249,13 @@ const saveTeamFilter=()=>{ try{localStorage.setItem("teamFilter",JSON.stringify(
 const teamShown=p=>p.id==="temp"||teamFilter.has(p.team||"")||V.sel===p.id||(V.pending&&V.pending.pin===p);
 const visPins=()=>V.pins.filter(teamShown);
 /* 팀 고르기 칩: sel은 Set, 바뀌면 onChange */
-function teamChips(sel,withNone){ return TEAMS.map(([v,n,c])=>[v,n,c]).concat(withNone?[["","팀 없음",NO_TEAM]]:[])
-  .map(([v,n,c])=>`<button class="tchip${sel.has(v)?" on":""}" data-team="${v}" style="--tc:${c}"><i></i>${n}</button>`).join(""); }
+function teamChips(sel,withNone,cnt){ return TEAMS.map(([v,n,c])=>[v,n,c]).concat(withNone?[["","팀 없음",NO_TEAM]]:[])
+  .map(([v,n,c])=>`<button class="tchip${sel.has(v)?" on":""}" data-team="${v}" style="--tc:${c}"><i></i>${n}${cnt?` <b class="tcnt">${cnt(v)}</b>`:""}</button>`).join(""); }
+/* 핀 개수: 쪽별 [쪽 번호, 이름, 전체, 미조치] (핀이 있는 쪽만) */
+function pageCounts(d,pins){
+  const out=[]; for(let n=1;n<=(d.pages||1);n++){ const l=pins.filter(p=>p.page===n); if(l.length) out.push([n,pgLabel(d,n)||`${n}쪽`,l.length,l.filter(p=>p.status!=="done").length]); }
+  return out;
+}
 function toggleTeam(sel,v){ if(sel.has(v)){ if(sel.size>1) sel.delete(v); } else sel.add(v); }
 function renderTeamBar(){
   const none=V.pins.some(p=>p.id!=="temp"&&!p.team);
@@ -1816,9 +1827,11 @@ let lFilter="all";
 function renderList(){
   const all=[...V.pins].sort(pinCmp);
   const o=all.filter(p=>p.status!=="done").length;
-  $("#lTitle").textContent=`핀 목록 (미조치 ${o} · 완료 ${all.length-o})`;
+  $("#lTitle").textContent=`핀 목록 (전체 ${all.length} · 미조치 ${o} · 완료 ${all.length-o})`;
   document.querySelectorAll("#lFilter button").forEach(b=>b.classList.toggle("on",b.dataset.v===lFilter));
-  $("#lTeams").innerHTML=teamChips(teamFilter,all.some(p=>!p.team));
+  $("#lTeams").innerHTML=teamChips(teamFilter,all.some(p=>!p.team),v=>all.filter(p=>(p.team||"")===v).length);
+  const pc=pageCounts(V.drawing,all);
+  $("#lPages").innerHTML=V.drawing.pages>1&&pc.length?`<b>쪽별</b> `+pc.map(([n,nm,c,oc])=>`<span${n===V.pageNo?' class="cur"':""}>${esc(nm)} <em>${c}</em>${oc&&oc!==c?`<small>(미조치 ${oc})</small>`:""}</span>`).join(""):"";
   const list=all.filter(p=>teamFilter.has(p.team||"")).filter(p=>lFilter==="all"||(lFilter==="done")===(p.status==="done"));
   $("#lItems").innerHTML=list.length?list.map(p=>`<div class="li" data-id="${p.id}">
     <span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${pinLabel(p)}</span>
