@@ -150,6 +150,9 @@ header{position:relative}
 .sheet .sh h2{flex:1;margin:0;font-size:17px}
 .sheet .sb{overflow:auto;padding:12px 16px 16px}
 .x{font-size:22px;padding:2px 8px;color:var(--sub)}
+.pnav{font-size:24px;line-height:1;width:38px;height:34px;border-radius:9px;background:var(--chip);color:var(--ink);flex:none;padding:0 0 3px}
+.pnav:disabled{opacity:.3}
+#pinSheet .sh{gap:6px}#pinSheet .sh h2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:4px}
 .badge{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 6px;border-radius:14px;background:var(--open);color:#fff;font-weight:700;font-size:14px}
 .badge.done{background:var(--done)}
 .lbl{font-size:13px;color:var(--sub);margin:14px 0 6px}
@@ -177,7 +180,11 @@ textarea.inp{min-height:90px;resize:vertical}
 .li .t2{color:var(--ink);font-size:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .li .t3{color:var(--sub);font-size:12px;margin-top:3px}
 .viewer-img{position:fixed;inset:0;background:#000;z-index:20;display:flex;flex-direction:column}
-.viewer-img img{flex:1;min-height:0;object-fit:contain;width:100%}
+.viewer-img .imgbox{flex:1;min-height:0;position:relative;display:flex;touch-action:pan-y pinch-zoom}
+.viewer-img img{flex:1;min-height:0;min-width:0;object-fit:contain;width:100%;height:100%}
+.imgpos{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 10px);transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-size:13px;padding:5px 12px;border-radius:14px;white-space:nowrap;pointer-events:none}
+.imgnav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border-radius:12px;background:rgba(55,65,81,.7);color:#fff;font-size:32px;line-height:1;padding:0 0 4px}
+.imgnav.l{left:8px}.imgnav.r{right:8px}.imgnav[hidden]{display:none}
 .viewer-img .bar{display:flex;gap:8px;padding:12px 12px calc(env(safe-area-inset-bottom) + 12px)}
 .viewer-img .bar button{flex:1;padding:12px 4px;white-space:nowrap;font-size:14.5px;border-radius:12px;background:#374151;color:#fff;font-weight:600}
 .viewer-img .bar .del{color:#FCA5A5}
@@ -231,6 +238,8 @@ header .cloud[data-state="err"] i{background:#F87171}
 .exp button.tchip{display:inline-flex;width:auto;margin:0;padding:7px 12px;border-radius:16px;background:var(--chip);color:var(--sub);font-weight:600;font-size:14px;text-align:left}
 .exp button.tchip.on{background:#fff;color:var(--ink)}
 .exp button.arow:last-child{border-bottom:none}
+.exp .seg button{margin:0;padding:9px;border-radius:8px;background:none;color:var(--sub);font-weight:600;font-size:15px}
+.exp .seg button.on{background:var(--accent);color:#fff}
 .exp button.arow:active{background:rgba(0,0,0,.06)}
 .arow .ic{width:34px;height:34px;border-radius:9px;background:var(--card);color:var(--accent);display:grid;place-items:center;flex:none;font-size:14px;font-weight:700}
 .arow .ic svg{width:19px;height:19px}
@@ -285,7 +294,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <!-- 핀 메모 -->
 <div class="sheet" id="pinSheet" hidden>
-  <div class="sh"><span class="badge" id="pBadge"></span><h2 id="pTitle"></h2><button class="x" data-close>✕</button></div>
+  <div class="sh"><span class="badge" id="pBadge"></span><h2 id="pTitle"></h2><button class="pnav" id="pPrev" aria-label="이전 핀">‹</button><button class="pnav" id="pNext" aria-label="다음 핀">›</button><button class="x" data-close>✕</button></div>
   <div class="sb">
     <p id="pLock" hidden style="margin:2px 0 8px;font-size:13px;color:var(--sub)"></p>
     <div class="lbl" style="margin-top:4px">상태</div>
@@ -407,6 +416,8 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>· <b>도면 비밀번호</b>: 구글 공유한 도면은 목록의 ⋯ → <b>비밀번호 걸기</b>로 잠글 수 있습니다(도면을 올린 사람과 관리자만). 잠긴 도면(🔒)은 비밀번호를 넣어야 도면과 핀을 볼 수 있고, 올린 사람과 관리자는 비밀번호 없이 엽니다. 같은 메뉴에서 바꾸거나 풀 수 있습니다.</p>
     <p>· <b>핀 개수</b>: <b>목록</b> 맨 위에 전체·미조치·완료 개수, 팀 버튼마다 팀별 개수, 쪽이 여러 개면 쪽별 개수가 나옵니다. 도면 정보에서도 팀별·쪽별 핀 수를 볼 수 있습니다.</p>
     <p>· <b>파일 종류 표시</b>: 도면 이름 앞의 PDF(빨강)·DWG(파랑)는 처음 불러온 파일 종류입니다. 예전에 올려 종류를 모르는 도면은 표시가 없고, 목록의 ⋯ → <b>파일 종류 바꾸기</b>로 올린 사람이나 관리자가 고칠 수 있습니다.</p>
+    <p>· <b>넘겨 보기</b>: 핀 창 위쪽 ‹ › 로 목록 순서대로 이전·다음 핀을 엽니다(다른 쪽이면 그 쪽으로 넘어감). 사진을 크게 볼 때는 ‹ › 를 누르거나 옆으로 밀어 조치 전·조치 후 사진을 차례로 봅니다.</p>
+    <p>· <b>사진대지 사진</b>: 내보내기에서 <b>대표 사진만</b>(핀 하나에 한 칸) 또는 <b>사진 전부</b>(조치 전·후 사진을 한 칸에 한 장씩 짝지어 모두)를 고릅니다.</p>
     <p>· <b>사진 회전</b>: 사진을 눌러 크게 본 뒤 <b>↻ 회전</b>을 누를 때마다 시계 방향으로 90° 돌아가고 바로 저장됩니다.</p>
     <p>· <b>대표 사진</b>: 사진이 여러 장이면 사진을 눌러 크게 본 뒤 <b>☆ 대표 사진</b>을 누르세요. 사진대지에는 조치 전·조치 후 대표 사진이 한 장씩 들어갑니다(안 고르면 첫 사진).</p>
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 팀별 핀 수, 참여자를 봅니다. 핀 색은 팀별이고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
@@ -423,14 +434,16 @@ header .cloud[data-state="err"] i{background:#F87171}
 </div>
 
 <div class="viewer-img" id="imgView" hidden>
-  <img id="imgViewImg" alt="">
+  <div class="imgbox" id="imgBox"><img id="imgViewImg" alt="">
+    <div class="imgpos" id="imgPos"></div>
+    <button class="imgnav l" id="imgPrev" aria-label="이전 사진">‹</button><button class="imgnav r" id="imgNext" aria-label="다음 사진">›</button></div>
   <div class="bar"><button class="del" id="imgDel">사진 삭제</button><button id="imgRot">↻ 회전</button><button id="imgRep">☆ 대표 사진</button><button id="imgClose">닫기</button></div>
 </div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
 "use strict";
-const APP_VER="3.14";
+const APP_VER="3.16";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1703,6 +1716,8 @@ async function openPin(id){
   openSheet("#pinSheet"); $("#sheetBg").hidden=true;   // 도면을 가리지 않게 (위쪽 도면은 그대로 만질 수 있음)
   if(!was) sh.classList.remove("full");
   V.split=true; requestAnimationFrame(()=>centerOnPin(p));
+  const nl=navList(), ni=nl.findIndex(q=>q.id===id);
+  $("#pPrev").disabled=ni<=0; $("#pNext").disabled=ni<0||ni>=nl.length-1;
   onSheetClose=()=>{flushSave();V.sel=null;V.split=false;freeUrls();apply();schedulePush();};
 }
 function setTeamUI(p){
@@ -1759,11 +1774,33 @@ function photoBoxClick(list,addId){ return e=>{
   if(e.target.closest("#"+addId)){ photoTarget=list; $("#photoInput").click(); return; }
   const ph=e.target.closest(".ph"); if(!ph) return;
   const p=selPin(), i=+ph.dataset.i; if(!p[list][i].data) return;
-  $("#imgViewImg").src=photoUrl(p[list][i]); $("#imgView").hidden=false; $("#imgView").dataset.i=i; $("#imgView").dataset.list=list;
-  const can=list==="photos"?canEdit(p):canDonePhoto(p), isRep=(p[list].find(x=>x.rep)||p[list][0])===p[list][i];
+  showImg(list,i);
+}; }
+/* 사진 크게 보기: ‹ › 버튼이나 옆으로 밀어서 조치 전 → 조치 후 사진을 차례로 본다 */
+const imgSeq=p=>[...(p.photos||[]).map((x,i)=>["photos",i]),...(p.donePhotos||[]).map((x,i)=>["donePhotos",i])];
+async function showImg(list,i){
+  const p=selPin(), x=p&&p[list]&&p[list][i]; if(!x) return;
+  if(!x.data&&!(await ensurePhoto(p,x))){ toast("사진을 받지 못했습니다"); return; }
+  $("#imgViewImg").src=photoUrl(x); $("#imgView").hidden=false; $("#imgView").dataset.i=i; $("#imgView").dataset.list=list;
+  const can=list==="photos"?canEdit(p):canDonePhoto(p), isRep=(p[list].find(y=>y.rep)||p[list][0])===x;
   $("#imgDel").hidden=$("#imgRot").hidden=!can; $("#imgRep").hidden=!can||p[list].length<2;
   $("#imgRep").textContent=isRep?"★ 대표 사진":"☆ 대표 사진"; $("#imgRep").disabled=isRep;
-}; }
+  const seq=imgSeq(p), k=seq.findIndex(([l,j])=>l===list&&j===i);
+  $("#imgPos").textContent=`${list==="photos"?"조치 전":"조치 후"} ${i+1}/${p[list].length}`+(seq.length>p[list].length?`  ·  전체 ${k+1}/${seq.length}`:"");
+  $("#imgPrev").hidden=k<=0; $("#imgNext").hidden=k<0||k>=seq.length-1;
+}
+function stepImg(d){
+  const p=selPin(); if(!p||$("#imgView").hidden) return;
+  const seq=imgSeq(p), k=seq.findIndex(([l,j])=>l===$("#imgView").dataset.list&&j===+$("#imgView").dataset.i), n=seq[k+d];
+  if(n) showImg(n[0],n[1]);
+}
+$("#imgPrev").addEventListener("click",()=>stepImg(-1));
+$("#imgNext").addEventListener("click",()=>stepImg(1));
+{ let t0=null; const box=$("#imgBox");
+  box.addEventListener("touchstart",e=>{ t0=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null; },{passive:true});
+  box.addEventListener("touchend",e=>{ if(!t0||e.changedTouches.length!==1) return; const dx=e.changedTouches[0].clientX-t0.x, dy=e.changedTouches[0].clientY-t0.y; t0=null;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) stepImg(dx<0?1:-1); },{passive:true}); }
+document.addEventListener("keydown",e=>{ if($("#imgView").hidden) return; if(e.key==="ArrowRight") stepImg(1); else if(e.key==="ArrowLeft") stepImg(-1); else if(e.key==="Escape") $("#imgView").hidden=true; });
 $("#imgRep").addEventListener("click",async()=>{
   const p=selPin(), i=+$("#imgView").dataset.i, list=$("#imgView").dataset.list||"photos"; if(!p||!p[list][i]) return;
   p[list].forEach((x,j)=>{ if(j===i) x.rep=true; else delete x.rep; });
@@ -1853,6 +1890,18 @@ $("#lItems").addEventListener("click",async e=>{
   V.tx=cw/2-p.nx*V.pw*V.k; V.ty=ch*0.4-p.ny*V.ph*V.k; apply(); scheduleDetail();
   openPin(p.id);
 });
+
+/* 핀 창 ‹ › : 목록 순서(팀 → 번호, 보고 있는 팀만)대로 이전·다음 핀으로. 다른 쪽이면 그 쪽으로 넘어간다 */
+const navList=()=>visPins().filter(p=>p.id!=="temp"&&!p.deleted).sort(pinCmp);
+async function stepPin(d){
+  if(V.mode!=="view"||!V.sel) return;
+  const nl=navList(), i=nl.findIndex(q=>q.id===V.sel), p=nl[i+d]; if(i<0||!p) return;
+  flushSave();
+  if(p.page!==V.pageNo) await showPage(p.page);
+  openPin(p.id);
+}
+$("#pPrev").addEventListener("click",()=>stepPin(-1));
+$("#pNext").addEventListener("click",()=>stepPin(1));
 
 /* ---------- 부분 캡처: 두 모서리로 고른 사각형을 그림으로 ---------- */
 let capFile=null, capUrl=null, capPins=true;
@@ -1989,11 +2038,16 @@ async function showExport(drawing,allPins){
   if(!allPins.length){body.innerHTML=`<p>아직 찍은 핀이 없습니다.</p>`;return;}
   // 1) 어느 팀 것을 낼지 고르기 (처음엔 지금 보고 있는 팀)
   const sel=new Set([...teamFilter]), none=allPins.some(p=>!p.team);
+  let allPh=false; try{ allPh=localStorage.getItem("expAllPhotos")==="1"; }catch(e){}
   const pick=()=>new Promise(res=>{
-    const draw=()=>{ const n=allPins.filter(p=>sel.has(p.team||"")).length;
+    const draw=()=>{ const l=allPins.filter(p=>sel.has(p.team||"")), n=l.length, blocks=l.reduce((a,p)=>a+(allPh?photoRows(p):1),0);
       body.innerHTML=`<div class="lbl">넣을 팀 (여러 팀 고를 수 있음)</div><div class="tchips" id="expTeams">${teamChips(sel,none)}</div>
-        <p>핀 ${n}개 · 핀 표시 도면 + 사진대지 (A4 한 장에 핀 2개)</p><button id="expGo" ${n?"":"disabled"}>PDF 만들기</button>`;
+        <div class="lbl">사진대지에 넣을 사진</div>
+        <div class="seg" id="expPh"><button data-v="rep" class="${allPh?"":"on"}">대표 사진만</button><button data-v="all" class="${allPh?"on":""}">사진 전부</button></div>
+        <p style="font-size:13px;color:var(--sub);margin-top:6px">${allPh?"핀마다 조치 전·후 사진을 한 칸에 한 장씩 짝지어 모두 넣습니다(대표 사진이 먼저).":"핀마다 조치 전·후 대표 사진 한 장씩, 핀 하나에 한 칸입니다."}</p>
+        <p>핀 ${n}개 · 사진대지 ${blocks}칸 (${Math.ceil(blocks/2)}쪽) · 핀 표시 도면 + 사진대지 (A4 한 장에 2칸)</p><button id="expGo" ${n?"":"disabled"}>PDF 만들기</button>`;
       $("#expTeams").onclick=e=>{ const b=e.target.closest("[data-team]"); if(!b) return; toggleTeam(sel,b.dataset.team); draw(); };
+      $("#expPh").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; allPh=b.dataset.v==="all"; try{localStorage.setItem("expAllPhotos",allPh?"1":"0");}catch(_){} draw(); };
       $("#expGo").onclick=()=>res(true); };
     draw(); });
   await pick();
@@ -2003,7 +2057,7 @@ async function showExport(drawing,allPins){
   msg("핀이 표시된 도면과 사진대지를 PDF로 만드는 중…");
   try{
     const allSel=TEAMS.every(t=>sel.has(t[0]))&&(!none||sel.has(""));
-    const bytes=await buildExport(drawing,pinList,msg,allSel?"":teamsTxt);
+    const bytes=await buildExport(drawing,pinList,msg,allSel?"":teamsTxt,allPh);
     let name="";
     const makeFile=()=>{
       const base=($("#expName").value.trim()||`${drawing.name}_사진대지_${dayStr(Date.now())}`).replace(/\.pdf$/i,"");
@@ -2067,7 +2121,10 @@ async function locCrop(full,pin,pins,aspect){
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.88));
   return await blob.arrayBuffer();
 }
-async function buildExport(drawing,pinList,progress,teamsTxt){
+/* 사진대지: 사진 전부 넣기면 조치 전·후 사진을 대표 사진부터 한 칸에 한 장씩 짝짓는다 */
+const photoOrder=list=>{ const l=(list||[]).slice(), i=l.findIndex(x=>x.rep); if(i>0) l.unshift(l.splice(i,1)[0]); return l; };
+const photoRows=p=>Math.max(1,(p.photos||[]).length,(p.donePhotos||[]).length);
+async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos){
   if(!pdfLibReady) pdfLibReady=Promise.all([loadScript("../lib/pdf-lib.min.js"),loadScript("../lib/fontkit.umd.min.js")]);
   await pdfLibReady;
   if(!fontBytes) fontBytes=await fetch("../fonts/KoPubDotum-Medium.ttf").then(r=>{if(!r.ok)throw new Error("글꼴을 받지 못했습니다");return r.arrayBuffer();});
@@ -2112,10 +2169,18 @@ async function buildExport(drawing,pinList,progress,teamsTxt){
     for(const ch of par){ if(kor.widthOfTextAtSize(line+ch,size)>maxW&&line){out.push(line);line=ch.trimStart();} else line+=ch; }
     out.push(line);});return out;};
   const repOf=list=>{ const l=(list||[]).filter(x=>x.data); return l.find(x=>x.rep)||l[0]||null; };   // 대표 사진 (없으면 첫 사진)
-  const o=pins.filter(p=>p.status!=="done").length, total=Math.ceil(pins.length/PER);
+  const o=pins.filter(p=>p.status!=="done").length;
+  // 칸 목록: 대표 사진만이면 핀 하나에 한 칸, 사진 전부면 사진 짝마다 한 칸
+  const rows=[];
+  for(const p of pins){
+    if(!allPhotos){ rows.push({p,b:repOf(p.photos),a:repOf(p.donePhotos),i:0,n:1}); continue; }
+    const b=photoOrder(p.photos).filter(x=>x.data), a=photoOrder(p.donePhotos).filter(x=>x.data), n=Math.max(1,b.length,a.length);
+    for(let i=0;i<n;i++) rows.push({p,b:b[i]||null,a:a[i]||null,i,n});
+  }
+  const total=Math.ceil(rows.length/PER);
   let page=null, crops={};
-  for(let ci=0;ci<pins.length;ci++){
-    const slot=ci%PER, p=pins[ci];
+  for(let ci=0;ci<rows.length;ci++){
+    const slot=ci%PER, R=rows[ci], p=R.p;
     if(slot===0){
       progress&&progress(`사진대지 만드는 중… (${ci/PER+1}/${total}쪽)`);
       page=doc.addPage([W,H]);
@@ -2134,7 +2199,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt){
     page.drawLine({start:{x:xl,y:yy-HH},end:{x:xr,y:yy-HH},thickness:0.6,color:LINE});
     page.drawCircle({x:xl+16,y:yy-HH/2,size:9,color:pcol});
     { const sn=pinLabel(p), fs=Math.min(9,15/Math.max(0.01,kor.widthOfTextAtSize(sn,1))); page.drawText(sn,{x:xl+16-kor.widthOfTextAtSize(sn,fs)/2,y:yy-HH/2-fs*0.36,size:fs,font:kor,color:WHITE}); }
-    const st=(done?"조치완료":"미조치"), stw=kor.widthOfTextAtSize(st,10.5);
+    const st=(done?"조치완료":"미조치")+(R.n>1?`  (사진 ${R.i+1}/${R.n})`:""), stw=kor.widthOfTextAtSize(st,10.5);
     page.drawText(st,{x:xl+32,y:yy-HH/2-3.8,size:10.5,font:kor,color:col});
     const meta=[p.team?teamName(p.team):"",p.shape?kindLabel(p):"",pgLabel(drawing,p.page)||""].filter(Boolean).join("  ·  ");
     if(meta) page.drawText(meta,{x:xl+32+stw+10,y:yy-HH/2-3.5,size:9.5,font:kor,color:SUB});
@@ -2149,8 +2214,8 @@ async function buildExport(drawing,pinList,progress,teamsTxt){
         page.drawImage(img,{x:bx+pad+(bw-w)/2,y:yy-PH+pad+(bhh-h)/2,width:w,height:h}); }
       else page.drawText(empty,{x:bx+(hw-kor.widthOfTextAtSize(empty,10.5))/2,y:yy-PH/2-8,size:10.5,font:kor,color:SUB});
     };
-    await putPhoto(repOf(p.photos),xl,"조치 전",SUB,"사진 없음");
-    await putPhoto(repOf(p.donePhotos),xl+hw,"조치 후",GREEN,done?"사진 없음":"미조치");
+    await putPhoto(R.b,xl,"조치 전",SUB,"사진 없음");
+    await putPhoto(R.a,xl+hw,"조치 후",GREEN,done?"사진 없음":"미조치");
     page.drawLine({start:{x:xl+hw,y:yy},end:{x:xl+hw,y:yy-PH},thickness:0.6,color:LINE});
     page.drawLine({start:{x:xl,y:yy-PH},end:{x:xr,y:yy-PH},thickness:0.6,color:LINE});
     yy-=PH;
