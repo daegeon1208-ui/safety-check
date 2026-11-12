@@ -34,6 +34,7 @@ header .hbtn:active{background:rgba(255,255,255,.15)}
 .ftype{display:inline-block;vertical-align:2px;margin-right:6px;padding:2px 5px;border-radius:5px;font-size:10.5px;font-weight:800;letter-spacing:.3px;line-height:1.2;color:#fff;background:#DC2626}
 .ftype.dwg{background:#2563EB}
 #vTitle .ftype{vertical-align:3px}
+.lk{margin-right:4px;font-size:.92em}
 .dcard .sm{color:var(--sub);font-size:13px;margin-top:4px}
 .cnt{display:inline-block;padding:1px 7px;border-radius:10px;font-size:12px;font-weight:600;margin-right:4px}
 .cnt.o{background:#FDE8EB;color:var(--open)} .cnt.d{background:#E3F4E8;color:var(--done)}
@@ -362,6 +363,18 @@ header .cloud[data-state="err"] i{background:#F87171}
   </div>
 </div>
 
+<!-- 도면 비밀번호 -->
+<div class="sheet" id="lockSheet" hidden>
+  <div class="sh"><h2 id="lkTitle">도면 비밀번호</h2><button class="x" data-close>✕</button></div>
+  <div class="sb exp">
+    <p id="lkDesc" style="margin-top:0"></p>
+    <input class="inp" id="lkPw" type="password" autocomplete="off" placeholder="비밀번호">
+    <input class="inp" id="lkPw2" type="password" autocomplete="off" placeholder="한 번 더" style="margin-top:8px">
+    <p id="lkMsg" style="color:var(--open);min-height:1.4em;margin-top:10px"></p>
+    <button id="lkOk">확인</button>
+  </div>
+</div>
+
 <!-- 도면 메뉴 -->
 <div class="sheet" id="actSheet" hidden>
   <div class="sh"><h2 id="actTitle" style="word-break:break-all"></h2><button class="x" data-close>✕</button></div>
@@ -383,6 +396,7 @@ header .cloud[data-state="err"] i{background:#F87171}
     <p>· 찍힌 핀을 누르면 위에는 그 핀이 가운데 오게 도면이, 아래에는 핀 내용이 반씩 보입니다. 손잡이를 위로 올리면 내용이 크게, 내리면 다시 반반, 한 번 더 내리면 닫힙니다.</p>
     <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(한 쪽에 핀 2개: 조치 전·후 대표 사진, 내용, 위치도)를 PDF 한 파일로 보낼 수 있습니다. 내보낼 팀을 먼저 고릅니다.</p>
     <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀·전기팀·설비팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라·전기 노랑·설비 청록)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
+    <p>· <b>도면 비밀번호</b>: 구글 공유한 도면은 목록의 ⋯ → <b>비밀번호 걸기</b>로 잠글 수 있습니다(도면을 올린 사람과 관리자만). 잠긴 도면(🔒)은 비밀번호를 넣어야 도면과 핀을 볼 수 있고, 올린 사람과 관리자는 비밀번호 없이 엽니다. 같은 메뉴에서 바꾸거나 풀 수 있습니다.</p>
     <p>· <b>사진 회전</b>: 사진을 눌러 크게 본 뒤 <b>↻ 회전</b>을 누를 때마다 시계 방향으로 90° 돌아가고 바로 저장됩니다.</p>
     <p>· <b>대표 사진</b>: 사진이 여러 장이면 사진을 눌러 크게 본 뒤 <b>☆ 대표 사진</b>을 누르세요. 사진대지에는 조치 전·조치 후 대표 사진이 한 장씩 들어갑니다(안 고르면 첫 사진).</p>
     <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 팀별 핀 수, 참여자를 봅니다. 핀 색은 팀별이고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
@@ -406,7 +420,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.10";
+const APP_VER="3.11";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -467,12 +481,13 @@ const ICON={
   pdf:svgI('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>'),
   layers:svgI('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>'),
   doc:svgI('<rect x="5" y="3" width="14" height="18" rx="2"/>'),
+  lock:svgI('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
 };
 $("#addBtn").innerHTML=ICON.pin;
 $("#verTxt").textContent="앱 버전 "+APP_VER;
 
 /* ---------- 창 열고 닫기 ---------- */
-const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet"];
+const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet","#lockSheet"];
 let onSheetClose=null;
 function openSheet(id){sheets.forEach(s=>$(s).hidden=(s!==id));$("#sheetBg").hidden=false;}
 function closeSheets(){const cb=onSheetClose;onSheetClose=null;if(typeof V!=="undefined"&&V.split){V.split=false;if(V.page)requestAnimationFrame(apply);}sheets.forEach(s=>$(s).hidden=true);$("#sheetBg").hidden=true;if(cb)cb();}
@@ -559,10 +574,10 @@ async function renderHome(){
   if(!ds.length&&!rem.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF나 DWG를 고르세요.<br><button class="tourGo" data-tour>▶ 처음이세요? 연습 도면으로 따라하기</button></div>`;return;}
   box.innerHTML=ds.map(d=>{
     const mine=ps.filter(p=>p.drawingId===d.id&&!p.deleted), o=mine.filter(p=>p.status!=="done").length, dn=mine.length-o;
-    return `<div class="dcard" data-id="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${esc(d.name)}</div>
+    return `<div class="dcard" data-id="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${lockIcon(d)}${esc(d.name)}</div>
       <div class="sm"><span class="cnt o">미조치 ${o}</span><span class="cnt d">완료 ${dn}</span> ${d.pages}쪽 · ${d.sample?"연습용 · 공유 안 됨":fmtDate(d.created).slice(0,10)}${d.cloud&&cloudOn()?" · 공유":""}</div></div>
       <button class="more" data-more="${d.id}">⋯</button></div>`;}).join("")
-  +rem.map(d=>`<div class="dcard remote" data-remote="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${esc(d.name)}</div>
+  +rem.map(d=>`<div class="dcard remote" data-remote="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${lockIcon(d)}${esc(d.name)}</div>
       <div class="sm"><span class="cnt o">미조치 ${d.open||0}</span><span class="cnt d">완료 ${d.done||0}</span> ${d.pages}쪽${d.by?" · "+esc(d.by):""}</div>
       <div class="sm" style="color:var(--accent);font-weight:600">구글 공유 도면 · 눌러서 받기</div></div></div>`).join("");
 }
@@ -575,6 +590,8 @@ $("#dlist").addEventListener("click",async e=>{
   if(more){
     const d=await dbGet("drawings",more.dataset.more), shared=cloudOn()&&d.cloud;
     const mp=(await pinsOf(d.id)).filter(p=>!p.deleted), mo=mp.filter(p=>p.status!=="done").length;
+    if(!await ensureUnlocked(d)) return;
+    const canLock=shared&&lockMine(d);
     const act=await chooseAction(d.name,[
       ["share","공유하기","핀 표시 도면 + 사진대지 PDF","share"],
       ["info","도면 정보","올린 사람 · 참여자 · 최근 변경","info"],
@@ -582,15 +599,17 @@ $("#dlist").addEventListener("click",async e=>{
       ["rename","이름 바꾸기","","edit"],
       ["pages","쪽 편집","쪽 이름 · 다른 PDF 합치기 · 빼기","pages"],
       ["copy","도면 복사","핀·사진까지 또는 도면만","copy"],
+      ...(canLock?[["lock",d.locked?"비밀번호 바꾸기·풀기":"비밀번호 걸기",d.locked?"🔒 걸려 있음 · 올린 사람과 관리자는 그냥 열림":"알려 준 사람만 열 수 있게","lock"]]:[]),
       ["-"],
       ["delete","삭제",shared?"도면과 핀 모두 · 함께 쓰는 사람 모두에게서":"도면과 핀 모두 · 되돌릴 수 없음","trash"]],
-      {sub:`${d.pages}쪽 · 미조치 ${mo} · 완료 ${mp.length-mo}${shared?" · 구글 공유":""}`});
+      {sub:`${d.pages}쪽 · 미조치 ${mo} · 완료 ${mp.length-mo}${shared?" · 구글 공유":""}${d.locked?" · 🔒 비밀번호":""}`});
     try{
       if(act==="info"){ showInfo(d); }
       else if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted)); }
       else if(act==="rename"){ if(await renameDrawing(d)) renderHome(); }
       else if(act==="pages"){ editPages(d); }
       else if(act==="copy"){ await copyDrawing(d); }
+      else if(act==="lock"){ await lockMenu(d); }
       else if(act==="delete"){
         const ps=(await pinsOf(d.id)).filter(p=>!p.deleted);
         if(confirm(`「${d.name}」 도면과 핀 ${ps.length}개를 삭제할까요?${shared?"\n함께 쓰는 사람들 휴대폰에서도 사라집니다. (구글 드라이브의 PDF·사진 파일은 남겨 둡니다)":" 되돌릴 수 없습니다."}`)){
@@ -604,14 +623,15 @@ $("#dlist").addEventListener("click",async e=>{
   const rc=e.target.closest("[data-remote]");
   if(rc){
     const r=remoteOnly.find(x=>x.id===rc.dataset.remote); if(!r) return;
+    if(!await ensureUnlocked(r)) return;
     toast("구글에서 도면을 받는 중…",120000);
     try{
       const j=await api({action:"drawingFile",id:r.id});
       await dbPut("files",{id:r.id,data:b64ToBuf(j.data)});
-      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true,by:r.by||"",ver:r.ver||"",pageNames:r.pageNames||[],kind:r.kind||""});
+      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true,by:r.by||"",ver:r.ver||"",pageNames:r.pageNames||[],kind:r.kind||"",locked:!!r.locked});
       remoteOnly=remoteOnly.filter(x=>x.id!==r.id);
       $("#toast").hidden=true; openDrawing(r.id);
-    }catch(err){toast("도면을 받지 못했습니다: "+err.message,4000);}
+    }catch(err){ toast((err.locked?"도면 비밀번호: ":"도면을 받지 못했습니다: ")+err.message,4000); }
     return;
   }
   const card=e.target.closest(".dcard"); if(card) openDrawing(card.dataset.id);
@@ -687,6 +707,7 @@ async function showInfo(d){
     <div class="kv"><b>올린 시각</b><span>${fmtDate(d.created)}</span></div>
     <div class="kv"><b>쪽수</b><span>${d.pages}쪽<button class="ibtn" id="infoPages">쪽 이름·편집</button></span></div>
     <div class="kv"><b>공유</b><span>${shared?"구글 공유 중":"이 휴대폰에만 저장"}</span></div>
+    ${d.locked?`<div class="kv"><b>비밀번호</b><span>🔒 걸려 있음${lockMine(d)?`<button class="ibtn" id="infoLock">바꾸기·풀기</button>`:""}</span></div>`:shared&&lockMine(d)?`<div class="kv"><b>비밀번호</b><span>없음<button class="ibtn" id="infoLock">걸기</button></span></div>`:""}
     <div class="kv"><b>핀</b><span>전체 ${pins.length} · 미조치 ${o} · 완료 ${pins.length-o}${zones?` · 구역 ${zones}`:""}</span></div>
     <div class="kv"><b>최근 핀 변경</b><span>${last?`${fmtDate(last.updated)} · ${last.no}번${(last.editor||last.by)?" · "+esc(last.editor||last.by):""}`:"-"}</span></div>
     <div class="lbl">팀별 핀 (핀 색)</div>
@@ -696,7 +717,8 @@ async function showInfo(d){
     ${rows.length?rows.map(r=>`<div class="who"><i style="background:${r.col}"></i>${esc(r.n||"이름 없음")}<small>${r.made?`핀 ${r.made}개`:"수정만"}<br>${r.last?fmtDate(r.last):""}</small></div>`).join(""):`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}
     <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 팀별(공사 파랑 · 안전 주황 · 품질 보라 · 전기 노랑 · 설비 청록)입니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
   $("#infoPages").onclick=()=>editPages(d);
-  $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").innerHTML=ftIcon(d)+esc(d.name)+" ⓘ";} showInfo(d); renderHome(); } };
+  if($("#infoLock")) $("#infoLock").onclick=async()=>{ closeSheets(); await lockMenu(d); };
+  $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").innerHTML=ftIcon(d)+lockIcon(d)+esc(d.name)+" ⓘ";} showInfo(d); renderHome(); } };
   openSheet("#infoSheet");
 }
 
@@ -732,11 +754,84 @@ function saveCloud(){
 const cloudSet=()=>!!(cloud.url&&cloud.pin);           // 연결 설정은 있음
 const cloudOn=()=>cloudSet()&&!!(cloud.name&&cloud.pw);   // 로그인까지 됨
 async function api(body){
+  const did=body.drawingId||(body.item&&body.item.drawingId)||body.id;   // 잠긴 도면이면 넣어 둔 도면 비밀번호를 함께 보낸다
+  if(did&&lockPws[did]&&body.lockPw===undefined) body={...body,lockPw:lockPws[did]};
   const r=await fetch(cloud.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({pin:cloud.pin,user:cloud.name,pw:cloud.pw},body)),redirect:"follow"});
   let j; try{j=await r.json();}catch(e){throw new Error("서버 응답을 읽지 못했습니다");}
-  if(!j.ok){ if(/비밀번호가 맞지|등록되지 않은|로그인이 필요/.test(j.error||"")) needLogin(j.error); throw new Error(j.error||"서버 오류"); }
+  if(!j.ok){
+    if(/^LOCKED: /.test(j.error||"")){   // 도면 비밀번호가 없거나 틀림(바뀜)
+      if(did&&lockPws[did]&&!body.unlockTry){ delete lockPws[did]; saveLockPws(); }
+      const e=new Error(j.error.slice(8)); e.locked=true; throw e;
+    }
+    if(/비밀번호가 맞지|등록되지 않은|로그인이 필요/.test(j.error||"")) needLogin(j.error); throw new Error(j.error||"서버 오류"); }
   if(j.me&&j.me.admin!==cloud.admin){ cloud.admin=j.me.admin; saveCloud(); }
   return j;
+}
+/* ---------- 도면 비밀번호 ----------
+   도면을 올린 사람(또는 관리자)이 도면마다 비밀번호를 건다. 서버가 막으므로 비밀번호 없이는 도면 파일·핀을 받을 수 없다.
+   한 번 맞힌 비밀번호는 이 휴대폰에 넣어 두고(비밀번호 기억하기를 끄면 창을 닫을 때까지만), 바뀌면 다시 묻는다. */
+let lockPws={};
+try{ lockPws=JSON.parse(localStorage.getItem("pinsLockPw")||sessionStorage.getItem("pinsLockPw")||"{}")||{}; }catch(e){}
+function saveLockPws(){
+  const s=JSON.stringify(lockPws);
+  try{ if(cloud.remember){ localStorage.setItem("pinsLockPw",s); sessionStorage.removeItem("pinsLockPw"); } else { sessionStorage.setItem("pinsLockPw",s); localStorage.removeItem("pinsLockPw"); } }catch(e){}
+}
+const lockMine=d=>cloudOn()&&(cloud.admin||(!!d.by&&d.by===cloud.name));   // 올린 사람·관리자는 비밀번호 없이 연다
+const lockIcon=d=>d.locked?`<span class="lk">🔒</span>`:"";
+/* 비밀번호 창. twice면 두 번 넣어 맞춰 본다(새로 걸 때). 취소하면 null */
+function askLockPw(title,desc,twice,msg){
+  return new Promise(res=>{
+    $("#lkTitle").textContent=title; $("#lkDesc").innerHTML=desc; $("#lkMsg").textContent=msg||"";
+    $("#lkPw").value=""; $("#lkPw2").value=""; $("#lkPw2").hidden=!twice;
+    let done=false; const finish=v=>{ if(done) return; done=true; res(v); };
+    const ok=()=>{
+      const a=$("#lkPw").value;
+      if(a.length<4){ $("#lkMsg").textContent="비밀번호는 4자 이상입니다"; return; }
+      if(twice&&a!==$("#lkPw2").value){ $("#lkMsg").textContent="두 비밀번호가 다릅니다"; return; }
+      onSheetClose=null; closeSheets(); finish(a);
+    };
+    $("#lkOk").onclick=ok;
+    $("#lkPw").onkeydown=e=>{ if(e.key==="Enter"){ if(twice) $("#lkPw2").focus(); else ok(); } };
+    $("#lkPw2").onkeydown=e=>{ if(e.key==="Enter") ok(); };
+    openSheet("#lockSheet"); onSheetClose=()=>finish(null);
+    setTimeout(()=>$("#lkPw").focus(),50);
+  });
+}
+/* 잠긴 도면을 열기 전에: 열 수 있으면 true */
+async function ensureUnlocked(d){
+  if(!d||!d.locked||lockMine(d)) return true;
+  if(!cloudOn()){ toast("비밀번호가 걸린 도면입니다. 구글 공유에 로그인한 뒤 열 수 있습니다",4000); return false; }
+  let msg="";
+  if(lockPws[d.id]){   // 전에 맞힌 비밀번호: 아직 맞는지 서버에 확인(바뀌었으면 다시 묻는다). 인터넷이 안 되면 그대로 연다
+    try{ await api({action:"unlock",id:d.id}); return true; }
+    catch(err){ if(!err.locked) return true; msg="비밀번호가 바뀌었습니다. 새 비밀번호를 넣어 주세요"; }
+  }
+  for(;;){
+    const pw=await askLockPw("🔒 도면 비밀번호",`「${esc(d.name)}」은(는) 비밀번호가 걸린 도면입니다.${d.by?` 비밀번호는 올린 사람(${esc(d.by)})에게 물어보세요.`:""}`,false,msg);
+    if(!pw) return false;
+    try{ await api({action:"unlock",id:d.id,lockPw:pw,unlockTry:true}); lockPws[d.id]=pw; saveLockPws(); return true; }
+    catch(err){ if(err.locked){ msg=err.message; continue; } toast("비밀번호를 확인하지 못했습니다: "+err.message,4000); return false; }
+  }
+}
+/* ⋯ 메뉴: 비밀번호 걸기·바꾸기·풀기 (올린 사람·관리자) */
+async function lockMenu(d){
+  let act="set";
+  if(d.locked){
+    act=await chooseAction("🔒 "+d.name,[["set","비밀번호 바꾸기","새 비밀번호로 · 다른 사람은 새로 넣어야 열림","lock"],["clear","비밀번호 풀기","누구나 열 수 있게","🔓"]],{sub:"올린 사람과 관리자는 비밀번호 없이 엽니다"});
+    if(!act) return;
+  }
+  let pw="";
+  if(act==="set"){
+    pw=await askLockPw(d.locked?"비밀번호 바꾸기":"비밀번호 걸기",`「${esc(d.name)}」을(를) 열 때 넣을 비밀번호입니다. 알려 준 사람만 이 도면과 핀을 볼 수 있습니다. 올린 사람과 관리자는 비밀번호 없이 엽니다.`,true);
+    if(!pw) return;
+  }else if(!confirm(`「${d.name}」의 비밀번호를 풀까요? 함께 쓰는 사람 누구나 열 수 있게 됩니다.`)) return;
+  try{
+    const j=await api({action:"setLock",id:d.id,lockNew:pw});
+    d.locked=!!j.drawing.locked; await dbPut("drawings",d);
+    if(pw){ lockPws[d.id]=pw; } else delete lockPws[d.id]; saveLockPws();
+    if(V.drawing&&V.drawing.id===d.id){ V.drawing.locked=d.locked; $("#vTitle").innerHTML=ftIcon(d)+lockIcon(d)+esc(d.name)+" ⓘ"; }
+    toast(pw?"비밀번호를 걸었습니다":"비밀번호를 풀었습니다"); renderHome();
+  }catch(err){ toast("비밀번호를 바꾸지 못했습니다: "+err.message,4000); }
 }
 /* 비밀번호가 바뀌었거나 지워졌으면 로그인 창을 다시 연다 */
 function needLogin(msg){
@@ -780,6 +875,7 @@ async function syncDrawings(){
       const l=locals.find(d=>d.id===r.id); if(!l) continue;
       if(r.deleted){ await removeLocalDrawing(r.id); continue; }
       if(r.kind&&!l.kind){ l.kind=r.kind; await dbPut("drawings",l); }
+      if(!!r.locked!==!!l.locked){ l.locked=!!r.locked; await dbPut("drawings",l); if(V.drawing&&V.drawing.id===l.id) V.drawing.locked=l.locked; }
       if(l.name!==r.name||!l.cloud||(r.by&&l.by!==r.by)){ l.name=r.name; l.cloud=true; if(r.by) l.by=r.by; await dbPut("drawings",l); }
       if(r.pageNames&&JSON.stringify(r.pageNames)!==JSON.stringify(l.pageNames||[])){ l.pageNames=r.pageNames; await dbPut("drawings",l); if(V.drawing&&V.drawing.id===l.id){ V.drawing.pageNames=l.pageNames; updatePager(); } }
       if((r.ver||"")!==(l.ver||"")){ l.ver=r.ver||""; l.pages=r.pages; l.stale=true; await dbPut("drawings",l); }   // 다른 사람이 쪽을 바꿈 → 열 때 새 PDF를 받는다
@@ -787,7 +883,7 @@ async function syncDrawings(){
     remoteOnly=live.filter(r=>!locals.some(d=>d.id===r.id));
     await renderHome();
     for(const l of locals) if(!l.cloud&&!l.sample&&!j.drawings.some(r=>r.id===l.id)){ await uploadDrawing(l); }
-    for(const l of await dbAll("drawings")) if(l.cloud) await pushDirty(l.id);
+    for(const l of await dbAll("drawings")) if(l.cloud){ try{ await pushDirty(l.id); }catch(e){ if(!e.locked) throw e; } }   // 비밀번호를 모르는 잠긴 도면은 건너뜀
     await renderHome();
     setSync("on","공유 중");
   }catch(err){ setSync("err",navigator.onLine===false?"오프라인":"구글 연결 실패"); }
@@ -800,7 +896,7 @@ async function pushDirty_(drawingId){
     const dirty=(await pinsOf(drawingId)).filter(p=>p.dirty);
     if(dirty.length) setSync("wait",`보내는 중 ${dirty.length}`);
     for(const p0 of dirty){
-      if(p0.deleted){ await api({action:"deletePin",id:p0.id}); await dbDel("pins",p0.id); continue; }
+      if(p0.deleted){ await api({action:"deletePin",id:p0.id,drawingId:p0.drawingId}); await dbDel("pins",p0.id); continue; }
       const photos={}, out=l=>(l||[]).map(x=>{ if(!x.k)x.k=uid(); if(!x.id&&x.data) photos[x.k]=bufToB64(x.data); return {k:x.k,id:x.id||null,w:x.w,h:x.h,rep:x.rep?true:undefined}; });
       const pin={...p0,photos:out(p0.photos),donePhotos:out(p0.donePhotos)};
       delete pin.dirty; delete pin.serverUpdated;
@@ -847,7 +943,9 @@ async function syncPins(){
     const left=(await pinsOf(d.id)).filter(p=>p.dirty).length;
     setSync(left?"wait":"on", left?`보낼 것 ${left}`:"공유 중");
   }catch(err){
-    console.error(err); setSync("err",navigator.onLine===false?"오프라인 · 휴대폰에 보관":"구글 연결 실패");
+    console.error(err);
+    if(err.locked&&V.drawing===d){ toast("도면 비밀번호가 바뀌었습니다. 다시 열어 주세요",4000); syncing=false; $("#backBtn").click(); return; }
+    setSync("err",navigator.onLine===false?"오프라인 · 휴대폰에 보관":"구글 연결 실패");
   }finally{
     syncing=false; if(syncAgain){syncAgain=false;schedulePush();}
   }
@@ -916,7 +1014,7 @@ $("#cOn").addEventListener("click",async()=>{
 });
 $("#cOff").addEventListener("click",()=>{
   if(!confirm("로그아웃할까요? 이 휴대폰의 도면과 핀은 그대로 남고, 다시 로그인하면 이어서 공유합니다.")) return;
-  cloud.pw=""; cloud.admin=false; saveCloud();
+  cloud.pw=""; cloud.admin=false; saveCloud(); lockPws={}; saveLockPws();   // 넣어 둔 도면 비밀번호도 지운다
   remoteOnly=[]; setSync("",""); closeSheets(); renderHome();
 });
 
@@ -1029,6 +1127,7 @@ const dpr=()=>Math.min(window.devicePixelRatio||1,3);
 
 async function openDrawing(id,pageNo){
   let d=await dbGet("drawings",id), f=await dbGet("files",id);
+  if(!await ensureUnlocked(d)) return;
   if(d&&d.stale&&cloudOn()){
     toast("바뀐 도면을 구글에서 받는 중…",120000);
     try{ const j=await api({action:"drawingFile",id}); f={id,data:b64ToBuf(j.data)}; await dbPut("files",f); d.stale=false; await dbPut("drawings",d); $("#toast").hidden=true; }
@@ -1038,7 +1137,7 @@ async function openDrawing(id,pageNo){
   d.opened=Date.now(); dbPut("drawings",d);
   V.drawing=d; V.sel=null; setMode("view");
   $("#home").hidden=true; $("#viewer").hidden=false;
-  $("#vTitle").innerHTML=ftIcon(d)+esc(d.name)+" ⓘ";
+  $("#vTitle").innerHTML=ftIcon(d)+lockIcon(d)+esc(d.name)+" ⓘ";
   $("#vLoading").hidden=false; base.style.visibility="hidden"; pinLayer.innerHTML="";
   await loadPdfjs();
   if(V.pdf){V.pdf.destroy();V.pdf=null;}

@@ -17,12 +17,15 @@
  *     완료를 누른 사람 이름과 시각이 저장된다.
  *   - 도면마다 원래 파일 종류(PDF·DWG)가 저장되어 앱 목록에 표시된다.
  *   - 핀마다 팀(공사·안전·품질·전기·설비)이 저장되고, 앱에서 팀별 색으로 보인다. 사진마다 대표 사진(★) 표시가 저장된다.
+ *   - 도면 비밀번호: 도면을 올린 사람(또는 관리자)이 도면마다 비밀번호를 걸 수 있다(암호화해서 '도면' 시트에 저장).
+ *     잠긴 도면은 비밀번호를 넣어야 파일과 핀을 받는다. 도면을 올린 사람과 관리자는 비밀번호 없이 연다.
+ *     비밀번호를 잊으면 관리자가 앱에서 새로 걸거나 해제한다.
  */
 const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세요. 함께 쓸 사람에게만 알려 주세요.
 
 const SS_NAME = '도면 하자 핀';
 const ROOT_NAME = '도면 하자 핀';
-const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames', 'kind'];
+const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames', 'kind', 'lockSalt', 'lockHash'];
 const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
 const P_COLS = ['id', 'drawingId', 'no', 'page', 'status', 'trade', 'text', 'by', 'editor', 'created', 'updated', 'doneAt', 'deleted', 'data(JSON)'];
 
@@ -32,7 +35,7 @@ function doPost(e) {
   try {
     const req = JSON.parse(e.postData.contents || '{}');
     if (String(req.pin) !== String(PIN)) return out_({ ok: false, error: 'PIN이 맞지 않습니다' });
-    if (req.action === 'drawingFile') { auth_(req); return out_({ ok: true, data: drawingFile_(req.id) }); }   // 읽기만 하는 큰 요청은 잠금 없이
+    if (req.action === 'drawingFile') { const me = auth_(req); gate_(req.id, me, req); return out_({ ok: true, data: drawingFile_(req.id) }); }   // 읽기만 하는 큰 요청은 잠금 없이
     if (req.action === 'photo') { auth_(req); return out_({ ok: true, data: photo_(req.id) }); }
     const lock = LockService.getScriptLock(); lock.waitLock(25000);
     try {
@@ -42,13 +45,15 @@ function doPost(e) {
         case 'ping': ss_(); return out_({ ok: true, time: Date.now(), me: me });
         case 'drawings': return out_({ ok: true, drawings: drawings_(), me: me });
         case 'uploadDrawing': return out_({ ok: true, drawing: uploadDrawing_(req.drawing, req.data, me.name) });
-        case 'renameDrawing': return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
-        case 'deleteDrawing': return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
-        case 'replaceDrawingFile': return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names) });
-        case 'setPageNames': return out_({ ok: true, drawing: setPageNames_(req.id, req.names) });
-        case 'pins': return out_({ ok: true, pins: pins_(req.drawingId), ver: drawingVer_(req.drawingId), time: Date.now() });
-        case 'savePin': return out_({ ok: true, pin: savePin_(req.item, req.photos || {}, me) });
-        case 'deletePin': return out_({ ok: true, pin: deletePin_(req.id, me) });
+        case 'renameDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
+        case 'deleteDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
+        case 'replaceDrawingFile': gate_(req.id, me, req); return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names) });
+        case 'setPageNames': gate_(req.id, me, req); return out_({ ok: true, drawing: setPageNames_(req.id, req.names) });
+        case 'unlock': gate_(req.id, me, req); return out_({ ok: true });
+        case 'setLock': return out_({ ok: true, drawing: setLock_(req.id, req.lockNew, me) });
+        case 'pins': gate_(req.drawingId, me, req); return out_({ ok: true, pins: pins_(req.drawingId), ver: drawingVer_(req.drawingId), time: Date.now() });
+        case 'savePin': gate_(req.item && req.item.drawingId, me, req); return out_({ ok: true, pin: savePin_(req.item, req.photos || {}, me) });
+        case 'deletePin': gate_(pinDrawing_(req.id), me, req); return out_({ ok: true, pin: deletePin_(req.id, me) });
         default: return out_({ ok: false, error: '알 수 없는 요청' });
       }
     } finally { lock.releaseLock(); }
@@ -133,8 +138,28 @@ function login_(req) {
 
 /* ---------- 도면 ---------- */
 function drawingOut_(o) {
-  return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '', pageNames: names_(o.pageNames), kind: o.kind || '' };
+  return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '', pageNames: names_(o.pageNames), kind: o.kind || '', locked: !!o.lockHash };   // 비밀번호 자체는 내보내지 않는다
 }
+/* 도면 비밀번호: 잠긴 도면은 올린 사람·관리자가 아니면 req.lockPw 가 맞아야 통과 */
+function gate_(id, me, req) {
+  if (!id) return;
+  const o = rows_('도면').list.find(x => x.id === id);
+  if (!o || !o.lockHash || me.admin || (o.by && o.by === me.name)) return;
+  if (!req.lockPw) throw new Error('LOCKED: 도면 비밀번호를 넣어야 열립니다');
+  if (hash_(o.lockSalt, String(req.lockPw)) !== o.lockHash) throw new Error('LOCKED: 도면 비밀번호가 틀렸습니다');
+}
+function setLock_(id, pw, me) {
+  const { sh, list } = rows_('도면');
+  const o = list.find(x => x.id === id); if (!o) throw new Error('도면이 없습니다');
+  if (!me.admin && !(o.by && o.by === me.name)) throw new Error('도면을 올린 사람과 관리자만 도면 비밀번호를 바꿀 수 있습니다');
+  pw = String(pw || '');
+  if (pw && pw.length < 4) throw new Error('도면 비밀번호는 4자 이상으로 해 주세요');
+  if (pw) { o.lockSalt = Utilities.getUuid(); o.lockHash = hash_(o.lockSalt, pw); } else { o.lockSalt = ''; o.lockHash = ''; }
+  o.updated = Date.now();
+  writeRow_(sh, D_COLS, o._row, o);
+  return drawingOut_(o);
+}
+function pinDrawing_(pinId) { const o = rows_('핀').list.find(x => x.id === pinId); return o ? o.drawingId : ''; }
 function drawings_() {
   const pins = rows_('핀').list.filter(p => p.deleted !== 'true');
   return rows_('도면').list.map(o => {
