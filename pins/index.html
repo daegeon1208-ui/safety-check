@@ -668,6 +668,10 @@ header #backBtn{color:#fff!important;background:none!important}
     <div class="lbl">어플 사용법</div>
     <button class="tourGo" data-tour style="margin:0 0 4px">▶ 연습 도면으로 따라하기</button>
     <a class="guideGo" href="guide/" target="_blank" rel="noopener">사진으로 보는 사용 가이드 열기</a>
+    <div id="admBox" hidden>
+      <div class="lbl">관리자</div>
+      <button id="tourAllBtn" class="sec">모든 사용자에게 따라하기 알림 보내기</button>
+    </div>
   </div>
 </div>
 
@@ -695,7 +699,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.27";
+const APP_VER = "3.28";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -775,7 +779,15 @@ $("#helpBtn").addEventListener("click",()=>{
   $("#pwOff").textContent=!on?"로그인한 뒤에 바꿀 수 있어요.":"";
   ["#pwCur","#pwNew","#pwNew2"].forEach(x=>$(x).value=""); $("#pwMsg").textContent="";
   if(on&&cloud.admin&&asUser){ $("#pwOff").hidden=false; $("#pwOpen").hidden=true; $("#pwOff").textContent="테스트 계정에서는 바꿀 수 없어요. 관리자로 돌아간 뒤 바꿔 주세요."; }
+  $("#admBox").hidden=!(on&&cloud.admin&&!asUser);
   openSheet("#helpSheet");
+});
+$("#tourAllBtn").addEventListener("click",async()=>{
+  if(!confirm("가입한 모든 사람에게 '연습 도면 따라하기' 알림을 보낼까요?")) return;
+  const b=$("#tourAllBtn"); b.disabled=true;
+  try{ const j=await api({action:"tourAll"}); toast(`${j.sent}명에게 알림을 보냈어요`,3000); try{ const k=await api({action:"notes"}); setNotes(k.notes); }catch(e){} }
+  catch(e){ toast(/알 수 없는 요청/.test(e.message)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":"보내지 못했습니다: "+e.message,4000); }
+  finally{ b.disabled=false; }
 });
 /* 비밀번호 변경: 버튼을 눌러야 입력칸이 열린다. 지금 비밀번호로 본인 확인 → 새 비밀번호 두 번 */
 function pwDlg(open){

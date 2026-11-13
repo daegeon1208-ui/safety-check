@@ -56,6 +56,7 @@ function doPost(e) {
         case 'notes': return out_({ ok: true, notes: notes_(me) });
         case 'changePw': changePw_(me, req.newPw); return out_({ ok: true });
         case 'readNotes': readNotes_(me); return out_({ ok: true });
+        case 'tourAll': return out_({ ok: true, sent: tourAll_(me) });
         case 'delNotes': delNotes_(me, req.ids); return out_({ ok: true, notes: notes_(me) });
         case 'respond': return out_({ ok: true, note: respond_(req.noteId, !!req.accept, me) });
         case 'renameDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
@@ -397,6 +398,13 @@ function notes_(me) {
 function readNotes_(me) {
   const { sh, list } = rows_('알림');
   list.filter(n => n.to === me.name && n.read !== 'true').forEach(n => { n.read = 'true'; writeRow_(sh, N_COLS, n._row, n); });
+}
+/* 관리자: 가입한 모든 사람에게 '연습 도면 따라하기' 알림 */
+function tourAll_(me) {
+  if (!me.admin) throw new Error('관리자만 보낼 수 있습니다');
+  const names = rows_('사용자').list.map(u => String(u.name).trim()).filter(Boolean);
+  names.forEach(name => addNote_({ to: name, type: 'welcome', from: me.name, text: name + '님, 연습 도면으로 따라하기를 해 볼까요?' }));
+  return names.length;
 }
 /* 내 알림 지우기: ids = 지울 알림 id 목록, 또는 'all' */
 function delNotes_(me, ids) {
