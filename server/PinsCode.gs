@@ -56,6 +56,7 @@ function doPost(e) {
         case 'notes': return out_({ ok: true, notes: notes_(me) });
         case 'changePw': changePw_(me, req.newPw); return out_({ ok: true });
         case 'readNotes': readNotes_(me); return out_({ ok: true });
+        case 'delNotes': delNotes_(me, req.ids); return out_({ ok: true, notes: notes_(me) });
         case 'respond': return out_({ ok: true, note: respond_(req.noteId, !!req.accept, me) });
         case 'renameDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
         case 'deleteDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
@@ -396,6 +397,14 @@ function notes_(me) {
 function readNotes_(me) {
   const { sh, list } = rows_('알림');
   list.filter(n => n.to === me.name && n.read !== 'true').forEach(n => { n.read = 'true'; writeRow_(sh, N_COLS, n._row, n); });
+}
+/* 내 알림 지우기: ids = 지울 알림 id 목록, 또는 'all' */
+function delNotes_(me, ids) {
+  const { sh, list } = rows_('알림'), all = ids === 'all', want = Array.isArray(ids) ? ids.map(String) : [];
+  const rows = list.filter(n => n.to === me.name && (all || want.indexOf(String(n.id)) >= 0)).map(n => n._row).sort((a, b) => b - a);
+  if (!rows.length) return;
+  if (sh.getMaxRows() <= rows.length + 1) sh.insertRowsAfter(sh.getMaxRows(), rows.length);   // 머리줄만 남으면 행을 지울 수 없어 빈 행을 먼저 둔다
+  rows.forEach(r => sh.deleteRow(r));
 }
 function respond_(noteId, accept, me) {
   const { sh, list } = rows_('알림');
