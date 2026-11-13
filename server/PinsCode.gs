@@ -8,6 +8,8 @@
  *      → 위쪽 함수 선택에서 setup 실행(권한 승인)
  *      → 배포 > 새 배포 > 유형: 웹 앱, 실행: 나, 액세스 권한: 모든 사용자 → 배포 → 웹 앱 URL 복사
  *      → 앱의 '구글 공유'에 URL과 PIN 입력
+ * 자동 업데이트: 이 코드 대신 server/PinsLoader.gs 를 붙여넣어 두면, GitHub의 이 파일을 읽어 실행하므로
+ *   서버 코드가 바뀌어도 다시 붙여넣거나 재배포할 필요가 없다.
  *
  * 사람별 비밀번호: 앱에서 이름과 비밀번호를 처음 넣으면 시트 '사용자'에 등록된다(비밀번호는 암호화해서 저장).
  *   - 맨 처음 등록한 사람이 관리자가 된다. 관리자를 바꾸려면 '사용자' 시트의 admin 칸에 true / false 를 적는다.
@@ -18,6 +20,8 @@
  *   - 도면마다 원래 파일 종류(PDF·DWG)가 저장되어 앱 목록에 표시된다.
  *   - 핀 번호는 도면 안에서 팀마다 따로 매긴다(공1, 안1 …). 팀을 바꾼 핀은 그 팀의 번호로 바뀐다.
  *   - 핀마다 팀(공사·안전·품질·전기·설비)이 저장되고, 앱에서 팀별 색으로 보인다. 사진마다 대표 사진(★) 표시가 저장된다.
+ *   - 협업 요청: 도면을 올린 사람·관리자가 보내고, 받은 사람이 수락하면 잠긴 도면도 비밀번호 없이 연다.
+ *     요청과 '내 핀이 조치완료됨' 알림은 시트 '알림'에 쌓인다.
  *   - 도면 비밀번호: 도면을 올린 사람(또는 관리자)이 도면마다 비밀번호를 걸 수 있다(암호화해서 '도면' 시트에 저장).
  *     잠긴 도면은 비밀번호를 넣어야 파일과 핀을 받는다. 도면을 올린 사람과 관리자는 비밀번호 없이 연다.
  *     비밀번호를 잊으면 관리자가 앱에서 새로 걸거나 해제한다.
@@ -26,7 +30,8 @@ const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세
 
 const SS_NAME = '도면 하자 핀';
 const ROOT_NAME = '도면 하자 핀';
-const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames', 'kind', 'lockSalt', 'lockHash'];
+const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames', 'kind', 'lockSalt', 'lockHash', 'members'];
+const N_COLS = ['id', 'to', 'type', 'from', 'drawingId', 'pinId', 'text', 'created', 'read', 'state'];
 const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
 const P_COLS = ['id', 'drawingId', 'no', 'page', 'status', 'trade', 'text', 'by', 'editor', 'created', 'updated', 'doneAt', 'deleted', 'data(JSON)'];
 
@@ -44,8 +49,13 @@ function doPost(e) {
       const me = auth_(req);
       switch (req.action) {
         case 'ping': ss_(); return out_({ ok: true, time: Date.now(), me: me });
-        case 'drawings': return out_({ ok: true, drawings: drawings_(), me: me });
+        case 'drawings': return out_({ ok: true, drawings: drawings_(me), notes: notes_(me), me: me });
         case 'uploadDrawing': return out_({ ok: true, drawing: uploadDrawing_(req.drawing, req.data, me.name) });
+        case 'users': return out_({ ok: true, users: rows_('사용자').list.map(u => String(u.name).trim()).filter(Boolean) });
+        case 'invite': return out_({ ok: true, sent: invite_(req.id, req.to || [], me), drawing: drawingOut_(rows_('도면').list.find(x => x.id === req.id) || {}) });
+        case 'notes': return out_({ ok: true, notes: notes_(me) });
+        case 'readNotes': readNotes_(me); return out_({ ok: true });
+        case 'respond': return out_({ ok: true, note: respond_(req.noteId, !!req.accept, me) });
         case 'renameDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
         case 'deleteDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
         case 'replaceDrawingFile': gate_(req.id, me, req); return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names) });
@@ -79,6 +89,10 @@ function ss_() {
   }
   const dh = ss.getSheetByName('도면').getRange(1, 1, 1, D_COLS.length);   // 예전 시트에 새 칸(ver) 머리글 추가
   if (dh.getValues()[0][D_COLS.length - 1] !== D_COLS[D_COLS.length - 1]) dh.setValues([D_COLS]);
+  if (!ss.getSheetByName('알림')) {   // 협업 요청·완료 알림
+    const n = ss.insertSheet('알림');
+    n.getRange(1, 1, 1, N_COLS.length).setValues([N_COLS]); n.setFrozenRows(1);
+  }
   if (!ss.getSheetByName('사용자')) {   // 예전 버전에서 만든 시트에는 '사용자' 시트가 없다
     const u = ss.insertSheet('사용자');
     u.getRange(1, 1, 1, U_COLS.length).setValues([U_COLS]); u.setFrozenRows(1);
@@ -96,7 +110,7 @@ function folder_(parts) {
 function rows_(name) {   // [{row, obj}]
   const sh = ss_().getSheetByName(name), n = sh.getLastRow();
   if (n < 2) return { sh, list: [] };
-  const cols = name === '도면' ? D_COLS : name === '사용자' ? U_COLS : P_COLS;
+  const cols = name === '도면' ? D_COLS : name === '사용자' ? U_COLS : name === '알림' ? N_COLS : P_COLS;
   const v = sh.getRange(2, 1, n - 1, cols.length).getValues();
   return { sh, list: v.map((r, i) => { const o = {}; cols.forEach((c, j) => o[c] = r[j]); o._row = i + 2; return o; }) };
 }
@@ -118,7 +132,9 @@ function auth_(req) {
   const u = rows_('사용자').list.find(x => String(x.name).trim() === name);
   if (!u) throw new Error('등록되지 않은 이름입니다');
   if (hash_(u.salt, pw) !== u.hash) throw new Error('비밀번호가 맞지 않습니다');
-  return userOut_(u);
+  const me = userOut_(u);
+  if (me.admin && req.asUser) { me.admin = false; me.asUser = true; }   // 관리자가 '일반 사용자 모드'로 시험할 때
+  return me;
 }
 function login_(req) {
   const name = String(req.user || '').trim(), pw = String(req.pw || '');
@@ -140,13 +156,17 @@ function login_(req) {
 
 /* ---------- 도면 ---------- */
 function drawingOut_(o) {
-  return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '', pageNames: names_(o.pageNames), kind: o.kind || '', locked: !!o.lockHash };   // 비밀번호 자체는 내보내지 않는다
+  return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '', pageNames: names_(o.pageNames), kind: o.kind || '', locked: !!o.lockHash,
+    members: names_(o.members) };   // 비밀번호 자체는 내보내지 않는다
 }
+/* 협업 요청을 수락한 사람(members): 잠긴 도면도 비밀번호 없이 연다. 공유 도면은 누구에게나 보인다 */
+function isMember_(o, me) { return names_(o.members).indexOf(me.name) >= 0; }
 /* 도면 비밀번호: 잠긴 도면은 올린 사람·관리자가 아니면 req.lockPw 가 맞아야 통과 */
 function gate_(id, me, req) {
   if (!id) return;
   const o = rows_('도면').list.find(x => x.id === id);
-  if (!o || !o.lockHash || me.admin || (o.by && o.by === me.name)) return;
+  if (!o) return;
+  if (!o.lockHash || me.admin || (o.by && o.by === me.name) || isMember_(o, me)) return;   // 협업 요청을 수락한 사람은 비밀번호 없이
   if (!req.lockPw) throw new Error('LOCKED: 도면 비밀번호를 넣어야 열립니다');
   if (hash_(o.lockSalt, String(req.lockPw)) !== o.lockHash) throw new Error('LOCKED: 도면 비밀번호가 틀렸습니다');
 }
@@ -170,7 +190,7 @@ function setKind_(id, kind, me) {   // 원래 파일 종류(PDF·DWG) 고치기
   return drawingOut_(o);
 }
 function pinDrawing_(pinId) { const o = rows_('핀').list.find(x => x.id === pinId); return o ? o.drawingId : ''; }
-function drawings_() {
+function drawings_(me) {
   const pins = rows_('핀').list.filter(p => p.deleted !== 'true');
   return rows_('도면').list.map(o => {
     const d = drawingOut_(o), mine = pins.filter(p => p.drawingId === o.id);
@@ -185,7 +205,7 @@ function uploadDrawing_(d, data, by) {
   const blob = Utilities.newBlob(Utilities.base64Decode(data), 'application/pdf', String(d.name).replace(/[\\/]/g, '_') + '.pdf');
   const file = folder_(['도면']).createFile(blob);
   const now = Date.now();
-  const o = { id: d.id, name: d.name, pages: d.pages || 1, fileId: file.getId(), created: d.created || now, updated: now, deleted: 'false', by: by || '', kind: d.kind === 'dwg' ? 'dwg' : (d.kind === 'pdf' ? 'pdf' : '') };
+  const o = { id: d.id, name: d.name, pages: d.pages || 1, fileId: file.getId(), created: d.created || now, updated: now, deleted: 'false', by: by || '', kind: d.kind === 'dwg' ? 'dwg' : (d.kind === 'pdf' ? 'pdf' : ''), members: '[]' };
   writeRow_(sh, D_COLS, 0, o);
   return drawingOut_(o);
 }
@@ -268,10 +288,12 @@ function savePin_(p, photos, me) {
   if (ex && ex.deleted === 'true') return pinOut_(ex);   // 다른 사람이 지운 핀은 되살리지 않는다
   const now = Date.now(), old = ex ? pinOut_(ex) : null;
   // 상태: 조치완료로 바뀌면 누른 사람과 시각을 서버에서 적는다
+  let becameDone = false;
+  const tellOwner = q => { if (becameDone && old && old.by && old.by !== me.name) addNote_({ to: old.by, type: 'done', from: me.name, drawingId: q.drawingId, pinId: q.id, text: label_(q) }); };
   const setDone = (q, status) => {
     const was = old ? old.status : 'open';
     q.status = status === 'done' ? 'done' : 'open';
-    if (q.status === 'done' && was !== 'done') { q.doneAt = now; q.doneBy = me.name; }
+    if (q.status === 'done' && was !== 'done') { q.doneAt = now; q.doneBy = me.name; becameDone = true; }
     else if (q.status === 'done') { q.doneAt = old.doneAt; q.doneBy = old.doneBy || ''; }
     else { q.doneAt = ''; q.doneBy = ''; }
   };
@@ -285,6 +307,7 @@ function savePin_(p, photos, me) {
     q.donePhotos = dp;
     if (q.status !== old.status || dpChanged) { q.editor = me.name; q.updated = now; }
     writeRow_(sh, P_COLS, ex._row, pinRow_(q));
+    tellOwner(q);
     return pinOut_(pinRow_(q));
   }
   p.by = old ? (old.by || me.name) : me.name;   // 만든 사람은 바뀌지 않는다
@@ -302,6 +325,7 @@ function savePin_(p, photos, me) {
   p.donePhotos = syncPhotos_(p.donePhotos, old ? old.donePhotos : [], photos, ['사진', dname], label_(p) + ' 핀 조치완료');
   p.updated = now;
   writeRow_(sh, P_COLS, ex ? ex._row : 0, pinRow_(p));
+  tellOwner(p);
   return pinOut_(pinRow_(p));
 }
 function label_(p) { return String(p.team || '').charAt(0) + p.no; }   // 핀 이름: 팀 글자 + 번호 (공1)
@@ -314,6 +338,47 @@ function deletePin_(id, me) {
   p.deleted = true; p.editor = me.name; p.updated = Date.now(); p.photos = []; p.donePhotos = [];
   writeRow_(sh, P_COLS, o._row, pinRow_(p));
   return p;
+}
+/* ---------- 협업 요청·알림 ---------- */
+function addNote_(n) {
+  const { sh } = rows_('알림');
+  writeRow_(sh, N_COLS, 0, Object.assign({ id: Utilities.getUuid(), created: Date.now(), read: 'false', state: n.type === 'invite' ? 'pending' : '' }, n));
+}
+function invite_(id, to, me) {
+  const o = rows_('도면').list.find(x => x.id === id); if (!o || o.deleted === 'true') throw new Error('도면이 없습니다');
+  if (!me.admin && !(o.by && o.by === me.name)) throw new Error('도면을 올린 사람과 관리자만 협업 요청을 보낼 수 있습니다');
+  const users = rows_('사용자').list.map(u => String(u.name).trim()), N = rows_('알림').list;
+  let sent = 0;
+  (to || []).map(x => String(x || '').trim()).forEach(name => {
+    if (!name || users.indexOf(name) < 0 || name === o.by || isMember_(o, { name: name })) return;
+    if (N.some(n => n.type === 'invite' && n.to === name && n.drawingId === id && n.state === 'pending')) return;   // 이미 보낸 요청
+    addNote_({ to: name, type: 'invite', from: me.name, drawingId: id, text: o.name }); sent++;
+  });
+  return sent;
+}
+function notes_(me) {
+  const D = rows_('도면').list;
+  return rows_('알림').list.filter(n => n.to === me.name).sort((a, b) => +b.created - +a.created).slice(0, 60).map(n => {
+    const d = D.find(x => x.id === n.drawingId) || {};
+    return { id: n.id, type: n.type, from: n.from, drawingId: n.drawingId, pinId: n.pinId || '', text: n.text || '', drawingName: d.name || n.text || '',
+      created: +n.created || 0, read: n.read === 'true', state: n.state || '', gone: !d.id || d.deleted === 'true' };
+  });
+}
+function readNotes_(me) {
+  const { sh, list } = rows_('알림');
+  list.filter(n => n.to === me.name && n.read !== 'true').forEach(n => { n.read = 'true'; writeRow_(sh, N_COLS, n._row, n); });
+}
+function respond_(noteId, accept, me) {
+  const { sh, list } = rows_('알림');
+  const n = list.find(x => x.id === noteId && x.to === me.name && x.type === 'invite'); if (!n) throw new Error('요청을 찾을 수 없습니다');
+  if (n.state === 'pending') {
+    n.state = accept ? 'accepted' : 'declined'; n.read = 'true'; writeRow_(sh, N_COLS, n._row, n);
+    if (accept) {
+      const D = rows_('도면'), o = D.list.find(x => x.id === n.drawingId); if (!o || o.deleted === 'true') throw new Error('도면이 삭제되었습니다');
+      const m = names_(o.members); if (m.indexOf(me.name) < 0) { m.push(me.name); o.members = JSON.stringify(m); o.updated = Date.now(); writeRow_(D.sh, D_COLS, o._row, o); }
+    }
+  }
+  return { id: n.id, state: n.state };
 }
 function photo_(id) { return Utilities.base64Encode(DriveApp.getFileById(id).getBlob().getBytes()); }
 
