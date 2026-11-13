@@ -13,7 +13,7 @@
 :root{
   /* 도면 용지 느낌: 푸른 기가 도는 종이색 바탕 + 제도용 남색 잉크. 빨강·초록은 미조치·완료 상태에만 쓴다 */
   --bg:#ECEFF3; --card:#fff; --ink:#16213A; --sub:#5B6779; --line:#DAE0E8;
-  --open:#D3162F; --done:#15803D; --accent:#1B2B4B; --chip:#E7EBF1;
+  --open:#E31937; --done:#15803D; --accent:#1B2B4B; --chip:#E7EBF1;
   --grid:rgba(27,43,75,.045); --soft:#F6F8FB; --ring:rgba(27,43,75,.28);
   --sh1:0 1px 2px rgba(22,33,58,.06),0 2px 8px rgba(22,33,58,.05);
   --sh2:0 6px 20px rgba(22,33,58,.16);
@@ -37,7 +37,7 @@ header{position:relative}
 .dcard{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .dcard .meta{flex:1;min-width:0}
 .dcard .nm{font-weight:600;word-break:break-all}
-.ftype{display:inline-block;vertical-align:2px;margin-right:6px;padding:2px 5px;border-radius:5px;font-size:10.5px;font-weight:800;letter-spacing:.3px;line-height:1.2;color:#fff;background:#DC2626}
+.ftype{display:inline-block;vertical-align:2px;margin-right:6px;padding:2px 5px;border-radius:5px;font-size:10.5px;font-weight:800;letter-spacing:.3px;line-height:1.2;color:#fff;background:#E31937}
 .ftype.dwg{background:#2563EB}
 .ftype.prv{background:#6B7280}
 .hfilter{display:flex;gap:6px;margin:0 0 10px}
@@ -96,12 +96,12 @@ header{position:relative}
 .toolbar button{flex:1;padding:12px 4px;border-radius:14px;background:rgba(255,255,255,.96);font-weight:600;font-size:15px;box-shadow:0 2px 10px rgba(0,0,0,.25);pointer-events:auto}
 .toolbar button.on{background:var(--open);color:#fff}
 .toolbar{align-items:center}
-.toolbar button#addBtn{flex:none;width:64px;height:64px;padding:0;margin:0 6px;border-radius:50%;display:grid;place-items:center;background:var(--open);color:#fff;border:3px solid #fff;box-shadow:0 4px 12px rgba(211,22,47,.45)}
+.toolbar button#addBtn{flex:none;width:64px;height:64px;padding:0;margin:0 6px;border-radius:50%;display:grid;place-items:center;background:var(--open);color:#fff;border:3px solid #fff;box-shadow:0 4px 12px rgba(227,25,55,.45)}
 .toolbar button#addBtn svg{width:30px;height:30px;display:block}
 .toolbar button#addBtn{transition:transform .18s}
 .toolbar button#addBtn.arm{transform:scale(1.16)}   /* 찍는 중: 버튼만 키우고, 빛은 도면 위 #armGlow가 다른 버튼 뒤에서 퍼진다 */
 #armGlow{position:absolute;left:0;top:0;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(248,113,113,.7) 0,rgba(248,113,113,.42) 32%,rgba(248,113,113,.14) 55%,rgba(248,113,113,0) 70%)}
-@keyframes pinGlow{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55),0 4px 14px rgba(211,22,47,.5)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0),0 0 26px 8px rgba(248,113,113,.75)}}
+@keyframes pinGlow{0%,100%{box-shadow:0 0 0 0 rgba(227,25,55,.55),0 4px 14px rgba(227,25,55,.5)}50%{box-shadow:0 0 0 12px rgba(227,25,55,0),0 0 26px 8px rgba(248,113,113,.75)}}
 .modebar button.cancel{background:#374151;color:#fff}
 #shapeLayer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .modebar{position:absolute;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 92px);display:flex;gap:6px;justify-content:center;flex-wrap:wrap;pointer-events:none}
@@ -180,6 +180,18 @@ textarea.inp{min-height:90px;resize:vertical}
 .row2 button{flex:1;padding:12px;border-radius:12px;background:var(--chip);font-weight:600}
 .row2 .del{color:var(--open)}
 .row2 .ok{background:var(--accent);color:#fff}
+#pCmList .cm{padding:9px 12px;border-radius:12px;background:var(--soft,#F3F3F0);margin-bottom:6px}
+#pCmList .cm .ch{display:flex;align-items:center;gap:8px;font-size:13px}
+#pCmList .cm .ch b{color:var(--ink)}
+#pCmList .cm .ch small{color:var(--sub);font-variant-numeric:tabular-nums}
+#pCmList .cm .ch button{margin-left:auto;border:0;background:none;color:var(--sub);font-size:12.5px;padding:2px 4px}
+#pCmList .cm p{margin:3px 0 0;font-size:14.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+#pCmList .cmnone{font-size:13.5px;color:var(--sub);margin:2px 0 8px}
+.cmform{display:flex;gap:8px;align-items:flex-end}
+.cmform textarea{flex:1;min-height:42px;max-height:120px;resize:none;margin:0}
+.cmform button{flex:none;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;padding:11px 14px}
+.cmform button:disabled{opacity:.5}
+.li .cmc{color:var(--sub);font-weight:600}
 .dates{font-size:12px;color:var(--sub);margin-top:14px;line-height:1.6}
 .li{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
 .li:last-child{border-bottom:0}
@@ -195,14 +207,14 @@ textarea.inp{min-height:90px;resize:vertical}
 .imgnav.l{left:8px}.imgnav.r{right:8px}.imgnav[hidden]{display:none}
 .viewer-img .bar{display:flex;gap:8px;padding:12px 12px calc(env(safe-area-inset-bottom) + 12px)}
 .viewer-img .bar button{flex:1;padding:12px 4px;white-space:nowrap;font-size:14.5px;border-radius:12px;background:#374151;color:#fff;font-weight:600}
-.viewer-img .bar .del{color:#FCA5A5}
+.viewer-img .bar .del{color:#E31937}
 header .cloud{display:flex;align-items:center;gap:6px}
 header .cloud i{width:8px;height:8px;border-radius:50%;background:#9CA3AF}
 header .cloud[data-state="on"] i{background:#4ADE80}
 header .cloud[data-state="wait"] i{background:#FBBF24}
-header .cloud[data-state="err"] i{background:#F87171}
+header .cloud[data-state="err"] i{background:#E31937}
 .sync{font-size:12px;color:#D1D5DB;white-space:nowrap}
-.sync[data-state="on"]{color:#86EFAC} .sync[data-state="wait"]{color:#FDE68A} .sync[data-state="err"]{color:#FCA5A5}
+.sync[data-state="on"]{color:#86EFAC} .sync[data-state="wait"]{color:#FDE68A} .sync[data-state="err"]{color:#E31937}
 .photos .phw{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--sub)}
 .tourGo{display:block;width:100%;margin:16px 0 0;padding:12px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;font-size:15px}
 #tour{position:fixed;inset:0;z-index:40;pointer-events:none}
@@ -429,6 +441,10 @@ header #backBtn{color:#fff!important;background:none!important}
 #pwDlg .pwhd{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 #pwDlg .pwhd h2{flex:1;margin:0;font-size:18px;font-weight:800}
 #pwDlg .inp{margin-bottom:8px}
+#pwDlg .pwstep{font-size:14px;color:var(--sub);margin:0 0 8px;font-weight:600}
+#pwDlg .pwstep.ok{color:var(--done)}
+#pwDlg .pwbtn{display:block;width:100%;margin-top:4px;padding:13px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:15.5px;font-weight:700}
+#pwDlg .pwbtn:disabled{opacity:.55}
 #pvw{position:fixed;inset:0;z-index:22;background:#3A3A37;display:flex;flex-direction:column}
 #pvw[hidden]{display:none}
 #pvw .pvbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;background:#8E8E88;color:#fff;box-shadow:inset 0 -4px 0 #E31937}
@@ -569,6 +585,11 @@ header #backBtn{color:#fff!important;background:none!important}
     <div class="lbl">사진 (조치 전)</div>
     <div class="photos" id="pPhotos"></div>
     <input type="file" id="photoInput" accept="image/*" multiple hidden>
+    <div id="pCmBox" hidden>
+      <div class="lbl">댓글 <span id="pCmN"></span></div>
+      <div id="pCmList"></div>
+      <div class="cmform"><textarea class="inp" id="pCmIn" rows="1" maxlength="1000" placeholder="댓글을 남겨 주세요"></textarea><button id="pCmGo">등록</button></div>
+    </div>
     <div class="dates" id="pDates"></div>
     <div class="row2"><button id="moveBtn">위치 옮기기</button><button class="del" id="delPin">삭제</button></div>
     <div class="row2" style="margin-top:8px"><button class="ok" data-close>저장하고 닫기</button></div>
@@ -680,11 +701,18 @@ header #backBtn{color:#fff!important;background:none!important}
   <div class="pwbox" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
     <div class="pwhd"><h2 id="pwTitle">비밀번호 변경</h2><button class="x" id="pwX" aria-label="닫기">✕</button></div>
       <div id="pwForm">
-        <input class="inp" id="pwCur" type="password" autocomplete="current-password" placeholder="지금 비밀번호 (본인 확인)">
-        <input class="inp" id="pwNew" type="password" autocomplete="new-password" placeholder="새 비밀번호 (4자 이상)">
-        <input class="inp" id="pwNew2" type="password" autocomplete="new-password" placeholder="새 비밀번호 확인">
+        <div id="pwStep1">
+          <p class="pwstep">1. 지금 쓰는 비밀번호를 확인해요</p>
+          <input class="inp" id="pwCur" type="password" autocomplete="current-password" placeholder="지금 비밀번호">
+          <button class="pwbtn" id="pwCheck">현재 비밀번호 확인</button>
+        </div>
+        <div id="pwStep2" hidden>
+          <p class="pwstep ok">✓ 확인됐어요. 2. 새 비밀번호를 넣어 주세요</p>
+          <input class="inp" id="pwNew" type="password" autocomplete="new-password" placeholder="새 비밀번호 (4자 이상)">
+          <input class="inp" id="pwNew2" type="password" autocomplete="new-password" placeholder="새 비밀번호 확인">
+          <button class="pwbtn" id="pwGo">비밀번호 바꾸기</button>
+        </div>
         <p class="pwmsg" id="pwMsg"></p>
-        <button id="pwGo">비밀번호 바꾸기</button>
       </div>
   </div>
 </div>
@@ -699,7 +727,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.28";
+const APP_VER = "3.31";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -748,7 +776,7 @@ document.addEventListener("touchmove",e=>{ if(e.touches.length>1&&!e.target.clos
 /* ---------- 아이콘 ---------- */
 const svgI=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const ICON={
-  pin:`<svg viewBox="0 0 24 24"><path d="M12 2.5a7 7 0 0 0-7 7c0 5.1 6.1 11.4 6.4 11.7a.85.85 0 0 0 1.2 0C12.9 20.9 19 14.6 19 9.5a7 7 0 0 0-7-7z" fill="currentColor"/><circle cx="12" cy="9.5" r="2.7" fill="#D3162F"/></svg>`,
+  pin:`<svg viewBox="0 0 24 24"><path d="M12 2.5a7 7 0 0 0-7 7c0 5.1 6.1 11.4 6.4 11.7a.85.85 0 0 0 1.2 0C12.9 20.9 19 14.6 19 9.5a7 7 0 0 0-7-7z" fill="currentColor"/><circle cx="12" cy="9.5" r="2.7" fill="#E31937"/></svg>`,
   close:svgI('<path d="M6 6l12 12M18 6L6 18" stroke-width="2.6"/>'),
   info:svgI('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'),
   share:svgI('<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>'),
@@ -790,25 +818,38 @@ $("#tourAllBtn").addEventListener("click",async()=>{
   finally{ b.disabled=false; }
 });
 /* 비밀번호 변경: 버튼을 눌러야 입력칸이 열린다. 지금 비밀번호로 본인 확인 → 새 비밀번호 두 번 */
+let pwOk="";   // 확인을 마친 지금 비밀번호
 function pwDlg(open){
   $("#pwDlg").hidden=!open; ["#pwCur","#pwNew","#pwNew2"].forEach(x=>$(x).value=""); $("#pwMsg").textContent="";
+  pwOk=""; $("#pwStep1").hidden=false; $("#pwStep2").hidden=true;
   if(open) setTimeout(()=>$("#pwCur").focus(),50);
 }
 $("#pwOpen").addEventListener("click",()=>pwDlg(true));
 $("#pwX").addEventListener("click",()=>pwDlg(false));
 $("#pwDlg").addEventListener("click",e=>{ if(e.target.id==="pwDlg") pwDlg(false); });
-$("#pwGo").addEventListener("click",async()=>{
-  const cur=$("#pwCur").value, a=$("#pwNew").value, b=$("#pwNew2").value, m=t=>$("#pwMsg").textContent=t;
+const pwPost=body=>fetch(cloud.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({pin:cloud.pin,user:cloud.name},body)),redirect:"follow"}).then(r=>r.json());
+$("#pwCheck").addEventListener("click",async()=>{
+  const cur=$("#pwCur").value, m=t=>$("#pwMsg").textContent=t;
   if(!cur){ m("지금 비밀번호를 넣어 주세요."); return; }
+  m("확인하는 중…"); $("#pwCheck").disabled=true;
+  try{
+    const j=await pwPost({pw:cur,action:"ping"}); if(!j.ok) throw new Error(j.error||"실패");
+    pwOk=cur; m(""); $("#pwStep1").hidden=true; $("#pwStep2").hidden=false; setTimeout(()=>$("#pwNew").focus(),50);
+  }catch(e){ m(/비밀번호가 맞지/.test(e.message)?"지금 비밀번호가 맞지 않습니다.":"확인하지 못했습니다: "+e.message); $("#pwCur").value=""; $("#pwCur").focus(); }
+  finally{ $("#pwCheck").disabled=false; }
+});
+$("#pwCur").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#pwCheck").click(); });
+$("#pwGo").addEventListener("click",async()=>{
+  const cur=pwOk, a=$("#pwNew").value, b=$("#pwNew2").value, m=t=>$("#pwMsg").textContent=t;
+  if(!cur){ pwDlg(true); return; }
   if(a.length<4){ m("새 비밀번호는 4자 이상으로 해 주세요."); return; }
-  if(a!==b){ m("새 비밀번호와 확인이 서로 다릅니다. 다시 넣어 주세요."); $("#pwNew2").value=""; return; }
+  if(a!==b){ m("새 비밀번호와 확인이 서로 다릅니다. 다시 넣어 주세요."); $("#pwNew2").value=""; $("#pwNew2").focus(); return; }
   if(a===cur){ m("지금 비밀번호와 다른 비밀번호를 넣어 주세요."); return; }
   m("바꾸는 중…"); $("#pwGo").disabled=true;
   try{
-    const r=await fetch(cloud.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({pin:cloud.pin,user:cloud.name,pw:cur,action:"changePw",newPw:a}),redirect:"follow"});
-    const j=await r.json(); if(!j.ok) throw new Error(j.error||"실패");
-    cloud.pw=a; saveCloud(); ["#pwCur","#pwNew","#pwNew2"].forEach(x=>$(x).value=""); pwDlg(false); toast("비밀번호를 바꿨어요",2500);
-  }catch(e){ m(/비밀번호가 맞지/.test(e.message)?"지금 비밀번호가 맞지 않습니다.":/알 수 없는 요청/.test(e.message)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":"바꾸지 못했습니다: "+e.message); }
+    const j=await pwPost({pw:cur,action:"changePw",newPw:a}); if(!j.ok) throw new Error(j.error||"실패");
+    cloud.pw=a; saveCloud(); pwDlg(false); toast("비밀번호를 바꿨어요",2500);
+  }catch(e){ m(/비밀번호가 맞지/.test(e.message)?"지금 비밀번호가 맞지 않습니다. 처음부터 다시 해 주세요.":/알 수 없는 요청/.test(e.message)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":"바꾸지 못했습니다: "+e.message); }
   finally{ $("#pwGo").disabled=false; }
 });
 /* 창을 아래로 끌어내리면 닫힌다 (위 손잡이·제목 줄, 또는 내용이 맨 위일 때) */
@@ -984,7 +1025,16 @@ $("#dlist").addEventListener("click",async e=>{
 });
 /* 고른 파일 → PDF 내용. DWG면 휴대폰 안에서 PDF로 바꾼다 (pins/dwg2pdf.js) */
 let dwgMod=null;
+/* 파일 종류: 앞부분 글자로 본다(이름만 .pdf로 바뀐 파일도 걸러냄). PDF·DWG가 아니면 null */
+async function fileKind(f){
+  const h=new Uint8Array(await f.slice(0,1024).arrayBuffer()), t=String.fromCharCode(...h);
+  if(t.includes("%PDF-")) return "pdf";
+  if(/^AC10\d\d/.test(t)||/\.dwg$/i.test(f.name)) return "dwg";
+  return null;
+}
+const notPdfMsg=f=>`「${f.name}」은(는) PDF 파일이 아닙니다. PDF나 DWG 도면 파일을 골라 주세요.`;
 async function fileToPdf(f,progress){
+  if(!await fileKind(f)) throw new Error(notPdfMsg(f));
   const buf=await f.arrayBuffer(), h=new Uint8Array(buf.slice(0,4));
   const dwg=/\.dwg$/i.test(f.name)||String.fromCharCode(...h)==="AC10";
   if(!dwg) return {data:buf,name:f.name.replace(/\.pdf$/i,""),dwg:false};
@@ -997,6 +1047,7 @@ async function fileToPdf(f,progress){
 $("#importBtn").addEventListener("click",()=>$("#pdfInput").click());
 $("#pdfInput").addEventListener("change",async e=>{
   const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  if(!await fileKind(f)){ toast(notPdfMsg(f),5000); return; }
   let priv=false;
   if(cloudSet()){
     const how=await chooseAction("이 도면은 어떻게 쓸까요?",[["team","협업 도면","구글에 올려 함께 쓰는 사람과 핀 공유","people"],["private","개인 도면","내 휴대폰에만 · 다른 사람에게 안 보임","lock"]],{sub:f.name});
@@ -1334,6 +1385,7 @@ async function syncPins(){
       d.ver=j.ver; d.stale=true; await dbPut("drawings",d); toast("다른 사람이 도면 쪽을 바꿔 다시 엽니다",3000);
       syncing=false; openDrawing(d.id,V.pageNo); return;
     }
+    if(Array.isArray(j.comments)){ V.cm=j.comments; renderCm(); }
     const all=await pinsOf(d.id); let changed=false;
     for(const sp of j.pins){
       const l=all.find(p=>p.id===sp.id);
@@ -1482,6 +1534,7 @@ $("#pgAdd").addEventListener("click",()=>$("#pgAddInput").click());
 $("#pgAddInput").addEventListener("change",async e=>{
   const files=[...e.target.files]; e.target.value=""; if(!PE||!files.length) return;
   for(const f of files){
+    if(!await fileKind(f)){ toast(notPdfMsg(f),5000); continue; }
     try{ const src=await fileToPdf(f,t=>toast(`${f.name}: ${t}`,120000)), data=src.data, pdf=await pdfjsLib.getDocument({data:data.slice(0)}).promise;
       if(src.dwg) $("#toast").hidden=true;
       PE.srcs.push({name:src.name,data,pdf});
@@ -1537,6 +1590,7 @@ const dpr=()=>Math.min(window.devicePixelRatio||1,3);
 async function openDrawing(id,pageNo){
   let d=await dbGet("drawings",id), f=await dbGet("files",id);
   if(!await ensureUnlocked(d)) return;
+  V.cm=[];   // 댓글은 도면을 열 때마다 서버에서 다시 받는다
   if(d&&d.stale&&cloudOn()){
     toast("바뀐 도면을 구글에서 받는 중…",120000);
     try{ const j=await api({action:"drawingFile",id}); f={id,data:b64ToBuf(j.data)}; await dbPut("files",f); d.stale=false; await dbPut("drawings",d); $("#toast").hidden=true; }
@@ -1616,7 +1670,7 @@ function apply(){
   drawPins();
 }
 /* 사람별 핀 색: 도면에서 처음 핀을 찍은 순서대로 색을 정한다 */
-const PALETTE=["#D3162F","#2563EB","#9333EA","#EA580C","#0891B2","#DB2777","#4D7C0F","#92400E","#0F766E","#4338CA"];
+const PALETTE=["#E31937","#2563EB","#9333EA","#EA580C","#0891B2","#DB2777","#4D7C0F","#92400E","#0F766E","#4338CA"];
 /* 팀: 핀 색은 팀별로. 팀 없는 예전 핀은 회색 */
 const TEAMS=[["공사","공사팀","#2563EB"],["안전","안전팀","#EA580C"],["품질","품질팀","#9333EA"],["전기","전기팀","#CA8A04"],["설비","설비팀","#0D9488"]], NO_TEAM="#6B7280";
 const teamColor=t=>(TEAMS.find(x=>x[0]===t)||[0,0,NO_TEAM])[2];
@@ -1675,10 +1729,10 @@ function drawShapes(){
   const d=V.draft;
   if(d&&d.kind==="sketch"){
     const all=[...strokesOf(d),...(G&&G.type==="draw"&&G.pts.length>1?[G.pts]:[])];
-    all.forEach(st=>{ h+=`<polyline points="${st.map(q=>scr(q).join(",")).join(" ")}" fill="none" stroke="#D3162F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`; });
+    all.forEach(st=>{ h+=`<polyline points="${st.map(q=>scr(q).join(",")).join(" ")}" fill="none" stroke="#E31937" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`; });
   }
   else if(d&&d.pts.length){
-    const col=d.kind==="capture"?"#2563EB":"#D3162F";
+    const col=d.kind==="capture"?"#2563EB":"#E31937";
     let pts=d.pts;
     if((d.kind==="rect"||d.kind==="capture")&&pts.length===2) pts=shapePts({type:"rect",pts});
     const sp=pts.map(q=>scr(q).join(",")).join(" ");
@@ -1727,7 +1781,7 @@ function drawPins(){
   const list=visPins().filter(p=>p.page===V.pageNo).sort(pinCmp);
   pinLayer.innerHTML=list.map(p=>{
     const x=V.tx+p.nx*V.pw*V.k, y=V.ty+p.ny*V.ph*V.k;
-    return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p)?" drag":""}" style="left:${x}px;top:${y}px;--pc:${p.id==="temp"?"#D3162F":colorOf(p)}"><span class="${pinCls(p)}">${pinLabel(p)}</span>${p.status==="done"?'<i class="ck">✓</i>':""}</div>`;
+    return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p)?" drag":""}" style="left:${x}px;top:${y}px;--pc:${p.id==="temp"?"#E31937":colorOf(p)}"><span class="${pinCls(p)}">${pinLabel(p)}</span>${p.status==="done"?'<i class="ck">✓</i>':""}</div>`;
   }).join("");
 }
 /* 확대했을 때 보이는 부분만 선명하게 다시 그린다 */
@@ -2086,7 +2140,7 @@ async function openPin(id){
   setStatusUI(p); setTeamUI(p);
   const trades=[...new Set((await dbAll("pins")).map(q=>(q.trade||"").trim()).filter(Boolean))];
   $("#tradeList").innerHTML=trades.map(t=>`<option value="${esc(t)}">`).join("");
-  renderPhotos(p);
+  renderPhotos(p); $("#pCmIn").value=""; renderCm();
   const sh=$("#pinSheet"), was=!sh.hidden;
   openSheet("#pinSheet"); $("#sheetBg").hidden=true;   // 도면을 가리지 않게 (위쪽 도면은 그대로 만질 수 있음)
   if(!was) sh.classList.remove("full");
@@ -2131,6 +2185,30 @@ function renderPhotos(p){
   $("#pDoneBox").hidden=!(p.status==="done"||p.donePhotos.length);
 }
 const selPin=()=>V.pins.find(q=>q.id===V.sel);
+/* ---------- 핀 댓글 (협업 도면) ---------- */
+const cmOf=id=>(V.cm||[]).filter(c=>c.pinId===id);
+const cmOn=()=>cloudOn()&&V.drawing&&!V.drawing.sample&&!V.drawing.private;
+function renderCm(){
+  const p=selPin(), on=!!p&&cmOn(); $("#pCmBox").hidden=!on; if(!on) return;
+  const l=cmOf(p.id); $("#pCmN").textContent=l.length?`(${l.length})`:"";
+  $("#pCmList").innerHTML=l.length?l.map(c=>`<div class="cm"><div class="ch"><b>${esc(c.by)}</b><small>${fmtDate(c.created)}</small>${c.by===myName()||isAdmin()?`<button data-cdel="${c.id}">삭제</button>`:""}</div><p>${esc(c.text)}</p></div>`).join("")
+    :`<p class="cmnone">아직 댓글이 없어요. 질문이나 전달사항을 남겨 보세요.</p>`;
+}
+$("#pCmIn").addEventListener("input",e=>{ const t=e.target; t.style.height="auto"; t.style.height=Math.min(120,t.scrollHeight+2)+"px"; });
+$("#pCmGo").addEventListener("click",async()=>{
+  const p=selPin(), t=$("#pCmIn").value.trim(); if(!p||!t) return;
+  const b=$("#pCmGo"); b.disabled=true;
+  try{
+    const j=await api({action:"addComment",drawingId:V.drawing.id,pinId:p.id,text:t});
+    V.cm=(V.cm||[]).filter(c=>c.pinId!==p.id).concat(j.comments); $("#pCmIn").value=""; $("#pCmIn").style.height=""; renderCm();
+  }catch(e){ toast(/알 수 없는 요청/.test(e.message)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":"댓글을 올리지 못했습니다: "+e.message,4000); }
+  finally{ b.disabled=false; }
+});
+$("#pCmList").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-cdel]"); if(!b||!confirm("이 댓글을 지울까요?")) return;
+  try{ const j=await api({action:"delComment",id:b.dataset.cdel,drawingId:V.drawing.id}); V.cm=j.comments; renderCm(); }
+  catch(err){ toast("지우지 못했습니다: "+err.message,4000); }
+});
 let saveT=null;
 let saveP=null;
 function saveSoon(){saveP=selPin();clearTimeout(saveT);saveT=setTimeout(flushSave,400);}
@@ -2279,7 +2357,7 @@ function renderList(){
   $("#lItems").innerHTML=list.length?list.map(p=>`<div class="li" data-id="${p.id}">
     <span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${pinLabel(p)}</span>
     <div class="t"><div class="t1">${esc(p.trade||"업체 미입력")}</div><div class="t2">${esc(p.text||"(내용 없음)")}</div>
-    <div class="t3"><b style="color:${teamColor(p.team)}">${teamName(p.team)}</b> · ${pgLabel(V.drawing,p.page)?esc(pgLabel(V.drawing,p.page))+" · ":""}${p.shape?kindLabel(p)+" · ":""}${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}${p.photos.length?" · 사진 "+p.photos.length:""}</div></div></div>`).join("")
+    <div class="t3"><b style="color:${teamColor(p.team)}">${teamName(p.team)}</b> · ${pgLabel(V.drawing,p.page)?esc(pgLabel(V.drawing,p.page))+" · ":""}${p.shape?kindLabel(p)+" · ":""}${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}${p.photos.length?" · 사진 "+p.photos.length:""}${cmOf(p.id).length?` · <span class="cmc">💬 ${cmOf(p.id).length}</span>`:""}</div></div></div>`).join("")
     :`<div class="empty" style="padding:30px">핀이 없습니다</div>`;
 }
 $("#listBtn").addEventListener("click",()=>{renderList();openSheet("#listSheet");});
@@ -2313,7 +2391,7 @@ $("#pNext").addEventListener("click",()=>stepPin(1));
 let capFile=null, capUrl=null, capPins=true;
 try{ capPins=localStorage.getItem("capPins")!=="0"; }catch(e){}
 // 캡처 위 펜 그림: 선은 그림 크기에 대한 비율(0~1)로 보관해서, 핀 표시를 껐다 켜도 그대로 남는다
-let CAP={pts:null,base:null,strokes:[],color:"#D3162F",pen:false,name:""};
+let CAP={pts:null,base:null,strokes:[],color:"#E31937",pen:false,name:""};
 async function openCapture(pts,keep){
   const body=$("#capBody");
   if(!keep) CAP={...CAP,pts,strokes:[],pen:false};
@@ -2344,7 +2422,7 @@ async function openCapture(pts,keep){
     const now=new Date(); CAP.name=`${V.drawing.name}_캡처_${dayStr(now)}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`.replace(/[\\/:*?"<>|]/g,"_");
     const canShare=navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]});
     const canCopy=!!(navigator.clipboard&&window.ClipboardItem);
-    const cols=[["#D3162F","빨강"],["#2563EB","파랑"],["#111827","검정"],["#FACC15","노랑"]];
+    const cols=[["#E31937","빨강"],["#2563EB","파랑"],["#111827","검정"],["#FACC15","노랑"]];
     body.innerHTML=`<label class="sw"><input type="checkbox" id="capPinsSw" ${withPins?"checked":""}><span></span>핀·구역·스케치 표시</label>
       <div class="captools"><button id="capPen" class="${CAP.pen?"on":""}">✎ 펜으로 그리기</button>
         ${cols.map(([c,t])=>`<button class="dot${CAP.color===c?" on":""}" data-col="${c}" style="background:${c}" aria-label="${t}"></button>`).join("")}
@@ -2580,7 +2658,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
   const doc=await PDFDocument.load(file.data.slice(0),{ignoreEncryption:true});
   doc.registerFontkit(fontkit);
   const kor=await doc.embedFont(fontBytes,{subset:true});
-  const RED=rgb(0.83,0.09,0.18), GREEN=rgb(0.08,0.5,0.24), WHITE=rgb(1,1,1), INK=rgb(0.12,0.16,0.22), SUB=rgb(0.42,0.45,0.5), LINE=rgb(0.55,0.57,0.6), HEAD=rgb(0.94,0.95,0.96);
+  const RED=rgb(0.89,0.098,0.216), GREEN=rgb(0.08,0.5,0.24), WHITE=rgb(1,1,1), INK=rgb(0.12,0.16,0.22), SUB=rgb(0.42,0.45,0.5), LINE=rgb(0.55,0.57,0.6), HEAD=rgb(0.94,0.95,0.96);
   const tradeOf=p=>(p.trade||"").trim()||"업체 미지정";
   const pins=[...pinList].sort(VEN?(a,b)=>tradeOf(a).localeCompare(tradeOf(b),"ko")||pinCmp(a,b):pinCmp);
   const cOf=colorsOf(pins), pc=p=>{const [r,g,b]=hexRgb(cOf(p));return rgb(r/255,g/255,b/255);};
@@ -2932,6 +3010,8 @@ function noteHtml(n){ {
       ${dn2?'<span class="nst">설정 › 어플 사용법에서 언제든 다시 볼 수 있어요</span>':`<div class="nbt"><button class="yes" data-wel="1" data-id="${n.id}">따라하기 시작</button><button data-wel="0" data-id="${n.id}">나중에</button></div>`}</div></div>`; }
     if(n.type==="invite") return `<div class="nt${n.read?"":" unread"}"><div class="ni invite">${ICON.people}</div><div class="nx"><b>${esc(n.from)}</b>님이 ${dn} 도면에 협업 요청을 보냈어요. 수락하면 비밀번호 없이 열 수 있어요.${t}
       ${n.gone?'<span class="nst">삭제된 도면</span>':n.state==="pending"?`<div class="nbt"><button class="yes" data-ans="1" data-id="${n.id}">수락</button><button data-ans="0" data-id="${n.id}">거절</button></div>`:`<span class="nst">${n.state==="accepted"?"✓ 수락함":"거절함"}</span>`}</div></div>`;
+    if(n.type==="comment"){ const [lb,...rest]=String(n.text||"").split("\n");
+      return `<div class="nt${n.read?"":" unread"}"${n.gone?"":` data-go="${n.drawingId}" data-pin="${esc(n.pinId)}"`}><div class="ni invite">💬</div><div class="nx"><b>${esc(n.from)}</b>님이 ${dn} <b>${esc(lb)}</b> 핀에 댓글을 남겼어요.<br><span style="color:var(--sub)">“${esc(rest.join(" "))}”</span>${t}</div></div>`; }
     return `<div class="nt${n.read?"":" unread"}"${n.gone?"":` data-go="${n.drawingId}" data-pin="${esc(n.pinId)}"`}><div class="ni done">✓</div><div class="nx"><b>${esc(n.from)}</b>님이 ${dn} <b>${esc(n.text)}</b> 핀을 조치완료로 바꿨어요.${t}</div></div>`;
   }
 }
