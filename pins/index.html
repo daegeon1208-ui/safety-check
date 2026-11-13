@@ -35,6 +35,10 @@ header{position:relative}
 .dcard .nm{font-weight:600;word-break:break-all}
 .ftype{display:inline-block;vertical-align:2px;margin-right:6px;padding:2px 5px;border-radius:5px;font-size:10.5px;font-weight:800;letter-spacing:.3px;line-height:1.2;color:#fff;background:#DC2626}
 .ftype.dwg{background:#2563EB}
+.ftype.prv{background:#6B7280}
+.hfilter{display:flex;gap:6px;margin:0 0 10px}
+.hfilter button{flex:1;padding:8px 6px;border-radius:10px;border:0;background:var(--chip);color:var(--sub);font-size:14px;font-weight:600}
+.hfilter button.on{background:var(--accent);color:#fff}
 .tchip .tcnt{font-weight:800;margin-left:2px}
 .lpages{font-size:13px;color:var(--sub);margin:-2px 0 10px;line-height:1.9}.lpages:empty{display:none}.lpages b{color:var(--ink);margin-right:4px}
 .lpages span{display:inline-block;margin-right:10px;white-space:nowrap}.lpages span.cur{color:var(--ink);font-weight:700}.lpages em{font-style:normal;font-weight:800;color:var(--ink)}.lpages small{margin-left:2px;color:var(--open)}
@@ -443,7 +447,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.16";
+const APP_VER="3.17";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -505,6 +509,7 @@ const ICON={
   layers:svgI('<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>'),
   doc:svgI('<rect x="5" y="3" width="14" height="18" rx="2"/>'),
   ftpdf:`<span class="ftype" style="margin:0">PDF</span>`, ftdwg:`<span class="ftype dwg" style="margin:0">DWG</span>`,
+  people:svgI('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/>'),
   lock:svgI('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
 };
 $("#addBtn").innerHTML=ICON.pin;
@@ -596,20 +601,28 @@ async function renderHome(){
   const box=$("#dlist");
   const rem=remoteOnly.filter(r=>!ds.some(d=>d.id===r.id));
   if(!ds.length&&!rem.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF나 DWG를 고르세요.<br><button class="tourGo" data-tour>▶ 처음이세요? 연습 도면으로 따라하기</button></div>`;return;}
-  box.innerHTML=ds.map(d=>{
+  const nPrv=ds.filter(d=>d.private).length, nTeam=ds.length-nPrv+rem.length;
+  let flt=homeFilter(); if(!nPrv&&flt!=="all") flt="all";
+  const show=ds.filter(d=>flt==="all"||(flt==="private")===!!d.private), showRem=flt==="private"?[]:rem;
+  box.innerHTML=(nPrv?`<div class="hfilter">${[["all","전체",ds.length+rem.length],["team","협업",nTeam],["private","개인",nPrv]].map(([v,t,n])=>`<button data-hf="${v}"${flt===v?' class="on"':""}>${t} ${n}</button>`).join("")}</div>`:"")
+  +(!show.length&&!showRem.length?`<div class="empty">${flt==="private"?"개인 도면이 없습니다.":"협업 도면이 없습니다."}</div>`:"")
+  +show.map(d=>{
     const mine=ps.filter(p=>p.drawingId===d.id&&!p.deleted), o=mine.filter(p=>p.status!=="done").length, dn=mine.length-o;
-    return `<div class="dcard" data-id="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${lockIcon(d)}${esc(d.name)}</div>
-      <div class="sm"><span class="cnt o">미조치 ${o}</span><span class="cnt d">완료 ${dn}</span> ${d.pages}쪽 · ${d.sample?"연습용 · 공유 안 됨":fmtDate(d.created).slice(0,10)}${d.cloud&&cloudOn()?" · 공유":""}</div></div>
+    return `<div class="dcard" data-id="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${lockIcon(d)}${d.private?'<span class="ftype prv">개인</span>':""}${esc(d.name)}</div>
+      <div class="sm"><span class="cnt o">미조치 ${o}</span><span class="cnt d">완료 ${dn}</span> ${d.pages}쪽 · ${d.sample?"연습용 · 공유 안 됨":fmtDate(d.created).slice(0,10)}${d.private?" · 나만 보기":d.cloud&&cloudOn()?" · 공유":""}</div></div>
       <button class="more" data-more="${d.id}">⋯</button></div>`;}).join("")
-  +rem.map(d=>`<div class="dcard remote" data-remote="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${lockIcon(d)}${esc(d.name)}</div>
+  +showRem.map(d=>`<div class="dcard remote" data-remote="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${lockIcon(d)}${esc(d.name)}</div>
       <div class="sm"><span class="cnt o">미조치 ${d.open||0}</span><span class="cnt d">완료 ${d.done||0}</span> ${d.pages}쪽${d.by?" · "+esc(d.by):""}</div>
       <div class="sm" style="color:var(--accent);font-weight:600">구글 공유 도면 · 눌러서 받기</div></div></div>`).join("");
 }
+function homeFilter(){ try{ return localStorage.getItem("homeFilter")||"all"; }catch(e){ return "all"; } }
 async function removeLocalDrawing(id){
   for(const p of await pinsOf(id)) await dbDel("pins",p.id);
   await dbDel("files",id); await dbDel("drawings",id);
 }
 $("#dlist").addEventListener("click",async e=>{
+  const hf=e.target.closest("[data-hf]");
+  if(hf){ try{ localStorage.setItem("homeFilter",hf.dataset.hf); }catch(err){} renderHome(); return; }
   const more=e.target.closest("[data-more]");
   if(more){
     const d=await dbGet("drawings",more.dataset.more), shared=cloudOn()&&d.cloud;
@@ -623,6 +636,8 @@ $("#dlist").addEventListener("click",async e=>{
       ["rename","이름 바꾸기","","edit"],
       ["pages","쪽 편집","쪽 이름 · 다른 PDF 합치기 · 빼기","pages"],
       ["copy","도면 복사","핀·사진까지 또는 도면만","copy"],
+      ...(d.sample?[]:d.private?[["toTeam","협업 도면으로 바꾸기","구글에 올려 함께 쓰는 사람과 핀 공유","people"]]
+        :[["toPrivate","개인 도면으로 바꾸기",shared?(lockMine(d)?"공유에서 내리거나 · 개인 사본 만들기":"내 휴대폰에만 개인 사본 만들기"):"구글에 올리지 않고 나만 쓰기","lock"]]),
       ...(!shared||lockMine(d)?[["kind","파일 종류 바꾸기",d.kind==="dwg"?"지금: DWG":d.kind==="pdf"?"지금: PDF":"지금: 모름","doc"]]:[]),
       ...(canLock?[["lock",d.locked?"비밀번호 바꾸기·풀기":"비밀번호 걸기",d.locked?"🔒 걸려 있음 · 올린 사람과 관리자는 그냥 열림":"알려 준 사람만 열 수 있게","lock"]]:[]),
       ["-"],
@@ -635,6 +650,14 @@ $("#dlist").addEventListener("click",async e=>{
       else if(act==="pages"){ editPages(d); }
       else if(act==="copy"){ await copyDrawing(d); }
       else if(act==="lock"){ await lockMenu(d); }
+      else if(act==="toTeam"){
+        if(!cloudSet()){ toast("먼저 위의 '구글 공유'에서 연결해 주세요",3500); return; }
+        if(!confirm(`「${d.name}」을(를) 협업 도면으로 바꿀까요?\n구글에 올라가서 함께 쓰는 사람들이 도면과 핀을 보고 같이 씁니다.`)) return;
+        d.private=false; await dbPut("drawings",d); await renderHome();
+        if(cloudOn()){ toast("구글에 올리는 중…",60000); await syncDrawings(); $("#toast").hidden=true; }
+        toast(cloudOn()?"협업 도면으로 바꿨습니다":"협업 도면으로 바꿨습니다. 구글에 연결하면 올라갑니다",3000);
+      }
+      else if(act==="toPrivate") await makePrivate(d,shared);
       else if(act==="kind"){
         const k=await chooseAction("원래 파일 종류",[["pdf","PDF","도면 이름 앞에 빨간 PDF","ftpdf"],["dwg","DWG","도면 이름 앞에 파란 DWG","ftdwg"]],{cur:d.kind});
         if(k&&k!==d.kind){
@@ -683,6 +706,11 @@ async function fileToPdf(f,progress){
 $("#importBtn").addEventListener("click",()=>$("#pdfInput").click());
 $("#pdfInput").addEventListener("change",async e=>{
   const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  let priv=false;
+  if(cloudSet()){
+    const how=await chooseAction("이 도면은 어떻게 쓸까요?",[["team","협업 도면","구글에 올려 함께 쓰는 사람과 핀 공유","people"],["private","개인 도면","내 휴대폰에만 · 다른 사람에게 안 보임","lock"]],{sub:f.name});
+    if(!how) return; priv=how==="private";
+  }
   toast("도면을 불러오는 중…",120000);
   let src=null;
   try{
@@ -692,7 +720,7 @@ $("#pdfInput").addEventListener("change",async e=>{
     const pdf=await pdfjsLib.getDocument({data:buf.slice(0)}).promise;
     const id=uid(), now=Date.now();
     await dbPut("files",{id,data:buf});
-    await dbPut("drawings",{id,name:src.name,pages:pdf.numPages,created:now,opened:now,by:cloud.name||"",kind:src.dwg?"dwg":"pdf"});
+    await dbPut("drawings",{id,name:src.name,pages:pdf.numPages,created:now,opened:now,by:cloud.name||"",kind:src.dwg?"dwg":"pdf",private:priv||undefined});
     pdf.destroy();
     $("#toast").hidden=true;
     openDrawing(id);
@@ -709,18 +737,49 @@ async function copyDrawing(d){
   try{
     const id=uid(), now=Date.now();
     await dbPut("files",{id,data:f.data.slice(0)});
-    await dbPut("drawings",{id,name:nm.trim(),pages:d.pages,pageNames:(d.pageNames||[]).slice(),created:now,opened:now,by:cloud.name||"",kind:d.kind||""});
-    if(how==="pins"){
-      for(const p of (await pinsOf(d.id)).filter(q=>!q.deleted)){
-        const cp=async l=>{ const out=[]; for(const x of l||[]){ await ensurePhoto(p,x); if(x.data) out.push({k:uid(),type:x.type||"image/jpeg",data:x.data.slice(0),w:x.w,h:x.h,rep:x.rep||undefined}); } return out; };
-        const np={...JSON.parse(JSON.stringify({...p,photos:[],donePhotos:[]})),id:uid(),drawingId:id,photos:await cp(p.photos),donePhotos:await cp(p.donePhotos),
-          dirty:false,serverUpdated:null,by:p.by,created:p.created,updated:now};
-        await dbPut("pins",np);
-      }
-    }
+    await dbPut("drawings",{id,name:nm.trim(),pages:d.pages,pageNames:(d.pageNames||[]).slice(),created:now,opened:now,by:cloud.name||"",kind:d.kind||"",private:d.private||undefined});
+    if(how==="pins") await copyPins(d.id,id);
     $("#toast").hidden=true; toast(`「${nm.trim()}」(으)로 복사했습니다`); await renderHome();
     if(cloudOn()) syncDrawings();   // 공유 중이면 새 도면도 구글에 올린다
   }catch(err){ console.error(err); toast("복사하지 못했습니다: "+err.message,4000); }
+}
+
+/* 핀·사진을 다른 도면으로 복사 (사진은 구글에서 받아 휴대폰에 넣는다). 빠진 사진 수를 돌려준다 */
+async function copyPins(fromId,toId){
+  let miss=0; const now=Date.now();
+  for(const p of (await pinsOf(fromId)).filter(q=>!q.deleted)){
+    const cp=async l=>{ const out=[]; for(const x of l||[]){ await ensurePhoto(p,x); if(x.data) out.push({k:uid(),type:x.type||"image/jpeg",data:x.data.slice(0),w:x.w,h:x.h,rep:x.rep||undefined}); else miss++; } return out; };
+    const np={...JSON.parse(JSON.stringify({...p,photos:[],donePhotos:[]})),id:uid(),drawingId:toId,photos:await cp(p.photos),donePhotos:await cp(p.donePhotos),
+      dirty:false,serverUpdated:null,by:p.by,created:p.created,updated:now};
+    await dbPut("pins",np);
+  }
+  return miss;
+}
+/* 개인 도면으로: 아직 안 올린 도면은 표시만 바꾸고, 공유 도면은 핀·사진까지 개인 사본을 만든다(올린 사람·관리자는 공유에서 내릴 수도 있음) */
+async function makePrivate(d,shared){
+  if(!shared){
+    if(d.cloud&&!cloudOn()){ toast("구글 공유 도면입니다. 먼저 구글에 연결해 주세요",3500); return; }
+    d.private=true; await dbPut("drawings",d); await renderHome(); toast("개인 도면으로 바꿨습니다. 구글에 올리지 않습니다",3000); return;
+  }
+  if(d.stale){ toast("먼저 도면을 열어 바뀐 도면을 받아 주세요",3000); return; }
+  const items=[["copy","개인 사본 만들기","공유 도면은 그대로 · 지금 핀·사진을 복사해 나만 씀","copy"]];
+  if(lockMine(d)) items.push(["move","공유에서 내리고 개인용으로","다른 사람 휴대폰에서 사라지고 내 휴대폰에만 남음","lock"]);
+  const how=await chooseAction(`「${d.name}」 개인 도면으로`,items); if(!how) return;
+  if(how==="move"&&!confirm(`「${d.name}」을(를) 공유에서 내릴까요?\n함께 쓰는 사람들 휴대폰에서는 사라지고, 지금 핀·사진은 이 휴대폰에만 개인 도면으로 남습니다.`)) return;
+  const f=await dbGet("files",d.id); if(!f){ toast("도면 파일이 없습니다"); return; }
+  toast("핀과 사진을 받는 중…",120000);
+  try{
+    await pushDirty(d.id);
+    const id=uid(), now=Date.now();
+    await dbPut("files",{id,data:f.data.slice(0)});
+    const nd={id,name:how==="copy"?d.name+" (개인)":d.name,pages:d.pages,pageNames:(d.pageNames||[]).slice(),created:how==="copy"?now:d.created,opened:now,by:cloud.name||"",kind:d.kind||"",private:true};
+    await dbPut("drawings",nd);
+    const miss=await copyPins(d.id,id);
+    if(miss&&!confirm(`사진 ${miss}장을 구글에서 받지 못했습니다. 그래도 계속할까요?`)){ await removeLocalDrawing(id); $("#toast").hidden=true; return; }
+    if(how==="move"){ await api({action:"deleteDrawing",id:d.id}); await removeLocalDrawing(d.id); }
+    $("#toast").hidden=true; await renderHome();
+    toast(how==="move"?"공유에서 내리고 개인 도면으로 바꿨습니다":`「${nd.name}」 개인 사본을 만들었습니다`,3500);
+  }catch(err){ console.error(err); $("#toast").hidden=true; toast("바꾸지 못했습니다: "+err.message,4000); }
 }
 
 /* 도면 정보: 올린 사람·시각, 최근 핀 변경, 참여자(사람별 핀 색) */
@@ -916,7 +975,7 @@ async function syncDrawings(){
     }
     remoteOnly=live.filter(r=>!locals.some(d=>d.id===r.id));
     await renderHome();
-    for(const l of locals) if(!l.cloud&&!l.sample&&!j.drawings.some(r=>r.id===l.id)){ await uploadDrawing(l); }
+    for(const l of locals) if(!l.cloud&&!l.sample&&!l.private&&!j.drawings.some(r=>r.id===l.id)){ await uploadDrawing(l); }
     for(const l of await dbAll("drawings")) if(l.cloud){ try{ await pushDirty(l.id); }catch(e){ if(!e.locked) throw e; } }   // 비밀번호를 모르는 잠긴 도면은 건너뜀
     await renderHome();
     setSync("on","공유 중");
@@ -947,7 +1006,7 @@ async function pushDirty_(drawingId){
 }
 let syncing=false, syncAgain=false;
 async function syncPins(){
-  if(!cloudOn()||!V.drawing||V.drawing.sample||$("#viewer").hidden) return;
+  if(!cloudOn()||!V.drawing||V.drawing.sample||V.drawing.private||$("#viewer").hidden) return;
   if(syncing){syncAgain=true;return;} syncing=true;
   const d=V.drawing;
   try{
