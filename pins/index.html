@@ -324,19 +324,104 @@ header #backBtn{background:none;padding-left:4px}
 .li .t1{font-weight:700}
 .badge{box-shadow:0 0 0 2px #fff}
 #tour .card{border-radius:18px}
+/* 머리줄 아이콘 버튼·알림 숫자 */
+header .hbtn.ico{width:34px;height:34px;padding:0;display:grid;place-items:center;position:relative;font-weight:800;flex:none}
+header .hbtn.ico svg{width:19px;height:19px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nbadge{position:absolute;right:-3px;top:-3px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--open);color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--accent);font-variant-numeric:tabular-nums}
+header .hbtn.mode{font-size:13px;padding:6px 10px;background:#F59E0B;color:#1B2B4B;font-weight:800}
+header .hbtn.mode.admin{background:rgba(255,255,255,.08);color:#fff;font-weight:600}
+header .cloud span{max-width:84px;overflow:hidden;text-overflow:ellipsis}
+.asuser{flex:none;background:#FEF3C7;color:#78350F;font-size:13px;line-height:1.5;padding:8px max(16px,env(safe-area-inset-right)) 8px max(16px,env(safe-area-inset-left));border-bottom:1px solid #FCD34D}
+.asuser button{font-weight:800;text-decoration:underline;padding:0 0 0 4px;color:#78350F}
+/* 시작 화면 */
+#gate{z-index:25;background:var(--bg);overflow:auto;display:block}
+#gate .gtop{background:var(--accent);color:#fff;text-align:center;padding:calc(env(safe-area-inset-top) + 44px) 24px 64px;background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:24px 24px}
+#gate .gmark{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:#fff;color:var(--open);display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+#gate .gmark svg{width:38px;height:38px}
+#gate h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.03em}
+#gate .gtop p{margin:6px 0 0;color:rgba(255,255,255,.72);font-size:14.5px}
+#gate .gcard{position:relative;margin:-36px max(16px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 24px) max(16px,env(safe-area-inset-left));max-width:440px;background:var(--card);border-radius:20px;padding:20px 18px 18px;box-shadow:var(--sh2)}
+@media (min-width:480px){ #gate .gcard{margin-left:auto;margin-right:auto} }
+#gate .gstep{font-size:13px;color:var(--sub);font-weight:600;margin-bottom:4px}
+#gate .gstep b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;margin-right:4px}
+#gate .gstep span{color:#A0AABA;margin:0 6px}
+#gate .lbl{display:block}
+#gate .gmsg{color:var(--open);font-size:14px;min-height:1.4em;margin:12px 0 4px;line-height:1.5}
+#gate .gbtn{display:block;width:100%;padding:15px;border-radius:14px;background:var(--accent);color:#fff;font-weight:700;font-size:16px}
+#gate .gbtn:disabled{opacity:.6}
+#gate .glink{display:block;margin:14px auto 0;color:var(--sub);font-size:14px;text-decoration:underline}
+#gate .gtip{font-size:13px;color:var(--sub);line-height:1.6;margin:12px 0 0}
+/* 알림 */
+.nt{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--line)}
+.nt:last-child{border-bottom:0}
+.nt .ni{width:36px;height:36px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:16px;font-weight:800}
+.nt .ni.done{background:#E3F4E8;color:var(--done)}
+.nt .ni.invite{background:var(--chip);color:var(--accent)}
+.nt .ni svg{width:19px;height:19px}
+.nt .nx{flex:1;min-width:0;font-size:14.5px;line-height:1.5;word-break:keep-all}
+.nt .nx small{display:block;color:var(--sub);font-size:12px;margin-top:2px;font-variant-numeric:tabular-nums}
+.nt.unread .nx{font-weight:600}
+.nt .nbt{display:flex;gap:8px;margin-top:8px}
+.nt .nbt button{padding:8px 16px;border-radius:10px;font-weight:700;font-size:14px;background:var(--chip)}
+.nt .nbt button.yes{background:var(--accent);color:#fff}
+.nt .nst{display:inline-block;margin-top:6px;font-size:12.5px;font-weight:700;color:var(--sub)}
+.nt[data-go]{cursor:pointer}
+.guideGo{display:block;text-align:center;padding:13px;border-radius:14px;background:var(--chip);color:var(--ink);font-weight:700;text-decoration:none}
+/* 협업 요청 고르기 */
+.ulist{display:flex;flex-direction:column;gap:6px;margin:6px 0 4px}
+.exp button.urow{display:flex;align-items:center;gap:12px;margin:0;padding:12px 14px;border-radius:12px;background:var(--soft);border:1px solid var(--line);color:var(--ink);text-align:left;font-weight:600}
+.exp button.urow i{width:22px;height:22px;border-radius:6px;border:2px solid #B8C2D0;flex:none;display:grid;place-items:center;font-style:normal;font-size:14px;color:#fff}
+.exp button.urow.on{border-color:var(--accent);background:var(--card)}
+.exp button.urow.on i{background:var(--accent);border-color:var(--accent)}
+.exp button.urow:disabled{opacity:.55}
+.exp button.urow small{margin-left:auto;font-size:12.5px;color:var(--sub);font-weight:500}
+/* 사진 확대 */
+.viewer-img .imgbox{overflow:hidden;touch-action:none}
+.viewer-img img{transform-origin:0 0;will-change:transform}
 </style>
 </head>
 <body>
 
 <!-- 도면 목록 -->
 <section id="home" class="screen">
-  <header><span class="appver" id="appVer"></span><h1>도면 하자 핀</h1><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">구글 공유</span></button><button class="hbtn" id="helpBtn">사용법</button></header>
+  <header><span class="appver" id="appVer"></span><h1>도면 하자 핀</h1><button class="hbtn mode" id="modeBtn" hidden></button><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">구글 공유</span></button><button class="hbtn ico" id="noteBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><b class="nbadge" id="noteCnt" hidden></b></button><button class="hbtn ico" id="helpBtn" aria-label="사용법">?</button></header>
+  <div class="asuser" id="asUserBar" hidden>일반 사용자 모드로 보는 중입니다. 관리자 권한이 꺼져 있어요. <button id="asUserOff">관리자로 돌아가기</button></div>
   <main id="dlist"></main>
   <button class="fab" id="importBtn">＋ 도면 불러오기 (PDF·DWG)</button>
   <input type="file" id="pdfInput" hidden>
 </section>
 
 <!-- 도면 보기 -->
+<!-- 시작: 연결 → 로그인 -->
+<section id="gate" class="screen" hidden>
+  <div class="gtop"><div class="gmark"><svg viewBox="0 0 24 24"><path d="M12 2.5a7 7 0 0 0-7 7c0 5.1 6.1 11.4 6.4 11.7a.85.85 0 0 0 1.2 0C12.9 20.9 19 14.6 19 9.5a7 7 0 0 0-7-7z" fill="currentColor"/><circle cx="12" cy="9.5" r="2.7" fill="#1B2B4B"/></svg></div>
+    <h1>도면 하자 핀</h1><p>도면에 하자를 찍고 함께 조치해요</p></div>
+  <div class="gcard">
+    <div id="gStep1">
+      <div class="gstep"><b>1</b> 서버 연결 <span>2 로그인</span></div>
+      <label class="lbl" for="gUrl">웹 앱 URL</label>
+      <input class="inp" id="gUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label class="lbl" for="gPin">팀 PIN</label>
+      <input class="inp" id="gPin" inputmode="numeric" autocomplete="off" placeholder="관리자에게 받은 번호">
+      <p class="gmsg" id="gMsg1"></p>
+      <button class="gbtn" id="gNext">다음</button>
+      <p class="gtip">관리자가 보낸 자동 연결 링크를 열면 URL과 PIN이 저절로 들어가요.</p>
+    </div>
+    <div id="gStep2" hidden>
+      <div class="gstep"><span>1 서버 연결</span> <b>2</b> 로그인</div>
+      <label class="lbl" for="gName">이름</label>
+      <input class="inp" id="gName" autocomplete="username" placeholder="예: 김대건">
+      <label class="lbl" for="gPw">비밀번호</label>
+      <input class="inp" id="gPw" type="password" autocomplete="current-password" placeholder="4자 이상 · 처음이면 이 비밀번호로 등록">
+      <label class="sw" style="margin-top:12px"><input type="checkbox" id="gRemember" checked><span></span>비밀번호 기억하기</label>
+      <p class="gtip" id="gTip2" hidden style="margin:10px 0 0">자동 연결 링크로 서버가 연결됐어요. 이름과 비밀번호를 넣어 주세요.</p>
+      <p class="gmsg" id="gMsg2"></p>
+      <button class="gbtn" id="gLogin">로그인</button>
+      <button class="glink" id="gBack">서버 연결 정보 바꾸기</button>
+    </div>
+  </div>
+</section>
+
 <section id="viewer" class="screen" hidden>
   <header>
     <button class="hbtn" id="backBtn">‹ 목록</button>
@@ -470,37 +555,18 @@ header #backBtn{background:none;padding-left:4px}
   <div class="sb exp" id="actBody"></div>
 </div>
 
+<!-- 알림 -->
+<div class="sheet" id="noteSheet" hidden>
+  <div class="sh"><h2>알림</h2><button class="x" data-close>✕</button></div>
+  <div class="sb" id="noteBody"></div>
+</div>
+
 <!-- 사용법 -->
 <div class="sheet" id="helpSheet" hidden>
   <div class="sh"><h2>사용법</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp">
     <button class="tourGo" data-tour style="margin:0 0 12px">▶ 연습 도면으로 따라하기 (버튼을 직접 눌러 보며 배우기)</button>
-    <p style="margin-top:0">· 사진으로 보는 처음 사용 가이드: <a href="guide/" target="_blank" rel="noopener">가이드 열기</a></p>
-    <p>1. <b>도면 불러오기</b>로 도면을 고릅니다. (카톡·파일 앱에 받은 PDF 또는 캐드 DWG)</p>
-    <p>· <b>DWG</b>를 고르면 휴대폰 안에서 PDF로 바꿔 넣습니다(모형 공간만, 처음 한 번 읽는 프로그램 약 6MB를 받음). 빗금 같은 무늬 해치는 빠지고, 글자는 앱 글꼴로 바뀌어 보일 수 있습니다. 구글 공유에는 바뀐 PDF가 올라갑니다.</p>
-    <p>2. 두 손가락으로 벌려 확대하고, 한 손가락으로 끌어 옮깁니다.</p>
-    <p>3. <b>＋ 핀 찍기</b>를 누른 뒤 도면에서 위치를 누르면 번호 핀이 생깁니다.</p>
-    <p>4. 핀 창에서 상태(미조치/조치완료), 업체, 내용, 사진을 넣습니다. 적는 즉시 저장됩니다.</p>
-    <p>· 핀 찍기 중에 화면을 꾹 누르면 핀이 손가락 위에 뜨고 끌어서 위치를 맞출 수 있습니다. 이미 찍은 핀은 핀 창의 위치 옮기기로 옮깁니다. 핀 이름은 팀 글자 + 팀 안 번호(공1, 안1, 품1 …)이고, 번호는 팀마다 지워진 앞 번호부터 다시 씁니다. 핀의 팀을 바꾸면 그 팀의 번호로 바뀝니다. 위치를 맞춘 뒤 가운데 <b>핀 버튼</b>을 눌러야 고정되고, <b>취소</b>를 누르면 원래 자리로 돌아갑니다. 사각형은 끌어 그린 뒤 모서리 손잡이로, 다각형은 점을 차례로 누른 뒤 점을 꾹 누르거나 바깥 손잡이를 끌어 다듬고 핀 버튼으로 고정합니다.</p>
-    <p>· 찍힌 핀을 누르면 위에는 그 핀이 가운데 오게 도면이, 아래에는 핀 내용이 반씩 보입니다. 손잡이를 위로 올리면 내용이 크게, 내리면 다시 반반, 한 번 더 내리면 닫힙니다.</p>
-    <p>· 목록의 ⋯ → <b>공유하기</b>(또는 도면 화면의 내보내기)로 핀이 표시된 도면과 사진대지(한 쪽에 핀 2개: 조치 전·후 대표 사진, 내용, 위치도)를 PDF 한 파일로 보낼 수 있습니다. 내보낼 팀을 먼저 고릅니다.</p>
-    <p>· <b>팀</b>: 핀 창에서 공사팀·안전팀·품질팀·전기팀·설비팀 중 하나를 고르면 핀 색이 팀 색(공사 파랑·안전 주황·품질 보라·전기 노랑·설비 청록)이 됩니다. 도면 위쪽 팀 버튼으로 보고 싶은 팀만 골라 볼 수 있고(여러 팀 가능), 목록·내보내기에서도 팀을 고를 수 있습니다.</p>
-    <p>· <b>도면 비밀번호</b>: 구글 공유한 도면은 목록의 ⋯ → <b>비밀번호 걸기</b>로 잠글 수 있습니다(도면을 올린 사람과 관리자만). 잠긴 도면(🔒)은 비밀번호를 넣어야 도면과 핀을 볼 수 있고, 올린 사람과 관리자는 비밀번호 없이 엽니다. 같은 메뉴에서 바꾸거나 풀 수 있습니다.</p>
-    <p>· <b>핀 개수</b>: <b>목록</b> 맨 위에 전체·미조치·완료 개수, 팀 버튼마다 팀별 개수, 쪽이 여러 개면 쪽별 개수가 나옵니다. 도면 정보에서도 팀별·쪽별 핀 수를 볼 수 있습니다.</p>
-    <p>· <b>파일 종류 표시</b>: 도면 이름 앞의 PDF(빨강)·DWG(파랑)는 처음 불러온 파일 종류입니다. 예전에 올려 종류를 모르는 도면은 표시가 없고, 목록의 ⋯ → <b>파일 종류 바꾸기</b>로 올린 사람이나 관리자가 고칠 수 있습니다.</p>
-    <p>· <b>넘겨 보기</b>: 핀 창 위쪽 ‹ › 로 목록 순서대로 이전·다음 핀을 엽니다(다른 쪽이면 그 쪽으로 넘어감). 사진을 크게 볼 때는 ‹ › 를 누르거나 옆으로 밀어 조치 전·조치 후 사진을 차례로 봅니다.</p>
-    <p>· <b>사진대지 사진</b>: 내보내기에서 <b>대표 사진만</b>(핀 하나에 한 칸) 또는 <b>사진 전부</b>(조치 전·후 사진을 한 칸에 한 장씩 짝지어 모두)를 고릅니다.</p>
-    <p>· <b>사진 회전</b>: 사진을 눌러 크게 본 뒤 <b>↻ 회전</b>을 누를 때마다 시계 방향으로 90° 돌아가고 바로 저장됩니다.</p>
-    <p>· <b>대표 사진</b>: 사진이 여러 장이면 사진을 눌러 크게 본 뒤 <b>☆ 대표 사진</b>을 누르세요. 사진대지에는 조치 전·조치 후 대표 사진이 한 장씩 들어갑니다(안 고르면 첫 사진).</p>
-    <p>· 도면 화면 위쪽 제목(ⓘ)이나 목록의 ⋯ → 도면 정보에서 올린 사람·시각, 최근 핀 변경, 팀별 핀 수, 참여자를 봅니다. 핀 색은 팀별이고, 조치완료 핀은 흐리게 ✓로 표시됩니다.</p>
-    <p>· 도면 이름은 도면 정보나 목록의 ⋯ 에서 바꿉니다. 내보내기 창에서 PDF 파일 이름도 바꿀 수 있습니다.</p>
-    <p>· <b>구역 핀</b>: 핀 찍기를 누르면 아래에 점/사각형/다각형이 나옵니다. 사각형은 손가락으로 끌어 그리고, 다각형은 꼭짓점을 차례로 누릅니다. 다 됐으면 핀 버튼으로 고정합니다. 구역 안쪽을 누르면 그 핀이 열립니다.</p>
-    <p>· <b>캡처</b>: 내보내기 → 부분 캡처를 누르고 한 손가락으로 영역을 끌어 그리면 그 부분이 그림으로 만들어집니다. 핀 표시 스위치로 핀을 넣거나 뺄 수 있고, 보내기·복사·저장할 수 있습니다.</p>
-    <p>· <b>스케치</b>: 핀 찍기 → ✎ 스케치에서 한 손가락으로 그립니다(두 손가락은 확대·이동). 완료를 누르면 번호와 메모가 붙는 스케치 핀이 됩니다.</p>
-    <p>5. 이미 찍은 핀을 누르면 다시 열립니다. <b>목록</b>에서 핀을 고르면 그 위치로 이동합니다.</p>
-    <p>6. <b>내보내기</b>를 누르면 핀이 표시된 도면과 하자 목록(사진 포함)을 PDF 한 파일로 만들어 카톡 등으로 보낼 수 있습니다.</p>
-    <p>7. 위쪽 <b>구글 공유</b>에 웹 앱 URL·PIN·이름을 넣으면 같은 설정을 한 사람들과 도면과 핀을 함께 씁니다.</p>
-    <p style="margin-top:12px">구글 공유를 켜지 않으면 기록은 이 휴대폰 브라우저 안에만 저장됩니다. 사파리 방문 기록을 지우면 함께 지워질 수 있으니, 공유 → <b>홈 화면에 추가</b>로 앱처럼 쓰시고 중요한 기록은 PDF로 내보내 두세요.</p>
+    <a class="guideGo" href="guide/" target="_blank" rel="noopener">사진으로 보는 사용 가이드 열기</a>
     <p id="verTxt" style="margin-top:14px;font-size:12px;color:var(--sub)"></p>
   </div>
 </div>
@@ -515,7 +581,7 @@ header #backBtn{background:none;padding-left:4px}
 
 <script>
 "use strict";
-const APP_VER="3.18";
+const APP_VER="3.19";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -584,7 +650,7 @@ $("#addBtn").innerHTML=ICON.pin;
 $("#verTxt").textContent="앱 버전 "+APP_VER; $("#appVer").textContent="v"+APP_VER;
 
 /* ---------- 창 열고 닫기 ---------- */
-const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet","#lockSheet"];
+const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet","#lockSheet","#noteSheet"];
 let onSheetClose=null;
 function openSheet(id){sheets.forEach(s=>$(s).hidden=(s!==id));$("#sheetBg").hidden=false;}
 function closeSheets(){const cb=onSheetClose;onSheetClose=null;if(typeof V!=="undefined"&&V.split){V.split=false;if(V.page)requestAnimationFrame(apply);}sheets.forEach(s=>$(s).hidden=true);$("#sheetBg").hidden=true;if(cb)cb();}
@@ -661,7 +727,7 @@ function centerOnPin(p){
 }
 
 /* ---------- 도면 목록 ---------- */
-const ftIcon=d=>d.kind==="dwg"?`<span class="ftype dwg">DWG</span>`:d.kind==="pdf"?`<span class="ftype">PDF</span>`:"";   // 이름 앞 파일 종류 표시 (모르면 비움)
+const ftIcon=()=>"";   // PDF·DWG 구분 표시는 쓰지 않는다(3.19, 사용자 요청)
 let remoteOnly=[];   // 구글에는 있지만 이 휴대폰에는 아직 없는 도면
 async function renderHome(){
   const [ds,ps]=await Promise.all([dbAll("drawings"),dbAll("pins")]);
@@ -706,7 +772,7 @@ $("#dlist").addEventListener("click",async e=>{
       ["copy","도면 복사","핀·사진까지 또는 도면만","copy"],
       ...(d.sample?[]:d.private?[["toTeam","협업 도면으로 바꾸기","구글에 올려 함께 쓰는 사람과 핀 공유","people"]]
         :[["toPrivate","개인 도면으로 바꾸기",shared?(lockMine(d)?"공유에서 내리거나 · 개인 사본 만들기":"내 휴대폰에만 개인 사본 만들기"):"구글에 올리지 않고 나만 쓰기","lock"]]),
-      ...(!shared||lockMine(d)?[["kind","파일 종류 바꾸기",d.kind==="dwg"?"지금: DWG":d.kind==="pdf"?"지금: PDF":"지금: 모름","doc"]]:[]),
+      ...(shared&&lockMine(d)?[["invite","협업 요청 보내기","받은 사람은 비밀번호 없이 열 수 있음","people"]]:[]),
       ...(canLock?[["lock",d.locked?"비밀번호 바꾸기·풀기":"비밀번호 걸기",d.locked?"🔒 걸려 있음 · 올린 사람과 관리자는 그냥 열림":"알려 준 사람만 열 수 있게","lock"]]:[]),
       ["-"],
       ["delete","삭제",shared?"도면과 핀 모두 · 함께 쓰는 사람 모두에게서":"도면과 핀 모두 · 되돌릴 수 없음","trash"]],
@@ -726,13 +792,7 @@ $("#dlist").addEventListener("click",async e=>{
         toast(cloudOn()?"협업 도면으로 바꿨습니다":"협업 도면으로 바꿨습니다. 구글에 연결하면 올라갑니다",3000);
       }
       else if(act==="toPrivate") await makePrivate(d,shared);
-      else if(act==="kind"){
-        const k=await chooseAction("원래 파일 종류",[["pdf","PDF","도면 이름 앞에 빨간 PDF","ftpdf"],["dwg","DWG","도면 이름 앞에 파란 DWG","ftdwg"]],{cur:d.kind});
-        if(k&&k!==d.kind){
-          if(shared) await api({action:"setKind",id:d.id,kind:k});
-          d.kind=k; await dbPut("drawings",d); renderHome(); toast(`파일 종류를 ${k.toUpperCase()}(으)로 바꿨습니다`);
-        }
-      }
+      else if(act==="invite"){ await inviteMenu(d); }
       else if(act==="delete"){
         const ps=(await pinsOf(d.id)).filter(p=>!p.deleted);
         if(confirm(`「${d.name}」 도면과 핀 ${ps.length}개를 삭제할까요?${shared?"\n함께 쓰는 사람들 휴대폰에서도 사라집니다. (구글 드라이브의 PDF·사진 파일은 남겨 둡니다)":" 되돌릴 수 없습니다."}`)){
@@ -751,7 +811,7 @@ $("#dlist").addEventListener("click",async e=>{
     try{
       const j=await api({action:"drawingFile",id:r.id});
       await dbPut("files",{id:r.id,data:b64ToBuf(j.data)});
-      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true,by:r.by||"",ver:r.ver||"",pageNames:r.pageNames||[],kind:r.kind||"",locked:!!r.locked});
+      await dbPut("drawings",{id:r.id,name:r.name,pages:r.pages,created:r.created,opened:Date.now(),cloud:true,by:r.by||"",ver:r.ver||"",pageNames:r.pageNames||[],kind:r.kind||"",locked:!!r.locked,members:r.members||[]});
       remoteOnly=remoteOnly.filter(x=>x.id!==r.id);
       $("#toast").hidden=true; openDrawing(r.id);
     }catch(err){ toast((err.locked?"도면 비밀번호: ":"도면을 받지 못했습니다: ")+err.message,4000); }
@@ -913,10 +973,18 @@ function saveCloud(){
 }
 const cloudSet=()=>!!(cloud.url&&cloud.pin);           // 연결 설정은 있음
 const cloudOn=()=>cloudSet()&&!!(cloud.name&&cloud.pw);   // 로그인까지 됨
+/* 관리자가 '일반 사용자 모드'를 켜면 앱과 서버 모두 관리자가 아닌 사람처럼 다룬다 */
+let asUser=false; try{ asUser=localStorage.getItem("pinsAsUser")==="1"; }catch(e){}
+const isAdmin=()=>!!cloud.admin&&!asUser;
+function setAsUser(on){ asUser=!!on; try{ localStorage.setItem("pinsAsUser",asUser?"1":"0"); }catch(e){} renderMode(); renderHome(); }
+function renderMode(){
+  const b=$("#modeBtn"); b.hidden=!(cloudOn()&&cloud.admin); b.textContent=asUser?"사용자 모드":"관리자"; b.classList.toggle("admin",!asUser);
+  $("#asUserBar").hidden=!(cloudOn()&&cloud.admin&&asUser);
+}
 async function api(body){
   const did=body.drawingId||(body.item&&body.item.drawingId)||body.id;   // 잠긴 도면이면 넣어 둔 도면 비밀번호를 함께 보낸다
   if(did&&lockPws[did]&&body.lockPw===undefined) body={...body,lockPw:lockPws[did]};
-  const r=await fetch(cloud.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({pin:cloud.pin,user:cloud.name,pw:cloud.pw},body)),redirect:"follow"});
+  const r=await fetch(cloud.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({pin:cloud.pin,user:cloud.name,pw:cloud.pw},asUser?{asUser:true}:{},body)),redirect:"follow"});
   let j; try{j=await r.json();}catch(e){throw new Error("서버 응답을 읽지 못했습니다");}
   if(!j.ok){
     if(/^LOCKED: /.test(j.error||"")){   // 도면 비밀번호가 없거나 틀림(바뀜)
@@ -924,7 +992,7 @@ async function api(body){
       const e=new Error(j.error.slice(8)); e.locked=true; throw e;
     }
     if(/비밀번호가 맞지|등록되지 않은|로그인이 필요/.test(j.error||"")) needLogin(j.error); throw new Error(j.error||"서버 오류"); }
-  if(j.me&&j.me.admin!==cloud.admin){ cloud.admin=j.me.admin; saveCloud(); }
+  if(j.me&&!j.me.asUser&&j.me.admin!==cloud.admin){ cloud.admin=j.me.admin; saveCloud(); renderMode(); }
   return j;
 }
 /* ---------- 도면 비밀번호 ----------
@@ -936,7 +1004,8 @@ function saveLockPws(){
   const s=JSON.stringify(lockPws);
   try{ if(cloud.remember){ localStorage.setItem("pinsLockPw",s); sessionStorage.removeItem("pinsLockPw"); } else { sessionStorage.setItem("pinsLockPw",s); localStorage.removeItem("pinsLockPw"); } }catch(e){}
 }
-const lockMine=d=>cloudOn()&&(cloud.admin||(!!d.by&&d.by===cloud.name));   // 올린 사람·관리자는 비밀번호 없이 연다
+const lockMine=d=>cloudOn()&&(isAdmin()||(!!d.by&&d.by===cloud.name));   // 올린 사람·관리자는 비밀번호 없이 연다
+const lockFree=d=>lockMine(d)||(cloudOn()&&(d.members||[]).includes(cloud.name));   // 협업 요청을 수락한 사람도
 const lockIcon=d=>d.locked?`<span class="lk">🔒</span>`:"";
 /* 비밀번호 창. twice면 두 번 넣어 맞춰 본다(새로 걸 때). 취소하면 null */
 function askLockPw(title,desc,twice,msg){
@@ -959,7 +1028,7 @@ function askLockPw(title,desc,twice,msg){
 }
 /* 잠긴 도면을 열기 전에: 열 수 있으면 true */
 async function ensureUnlocked(d){
-  if(!d||!d.locked||lockMine(d)) return true;
+  if(!d||!d.locked||lockFree(d)) return true;
   if(!cloudOn()){ toast("비밀번호가 걸린 도면입니다. 구글 공유에 로그인한 뒤 열 수 있습니다",4000); return false; }
   let msg="";
   if(lockPws[d.id]){   // 전에 맞힌 비밀번호: 아직 맞는지 서버에 확인(바뀌었으면 다시 묻는다). 인터넷이 안 되면 그대로 연다
@@ -995,13 +1064,14 @@ async function lockMenu(d){
 }
 /* 비밀번호가 바뀌었거나 지워졌으면 로그인 창을 다시 연다 */
 function needLogin(msg){
-  if(!cloud.pw) return; cloud.pw=""; saveCloud(); setSync("","");
-  openCloudSheet(); $("#cMsg").textContent=(msg||"")+" 다시 로그인해 주세요.";
+  if(!cloud.pw) return; cloud.pw=""; saveCloud(); setSync(""," "); closeSheets();
+  if(!$("#viewer").hidden) $("#viewer").hidden=true;
+  showGate(2,(msg||"")+" 다시 로그인해 주세요.");
 }
 /* 다른 사람의 핀은 관리자만 고칠 수 있다(공유 중인 도면에서만). 남의 핀은 조치완료만 바꿀 수 있다 */
 function canEdit(p){
   if(!p||p.id==="temp"||!cloudOn()||!V.drawing||!V.drawing.cloud) return true;
-  return cloud.admin||!p.by||p.by===cloud.name;
+  return isAdmin()||!p.by||p.by===cloud.name;
 }
 function bufToB64(buf){const a=new Uint8Array(buf);let s="";for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode.apply(null,a.subarray(i,i+32768));return btoa(s);}
 function b64ToBuf(b){const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a.buffer;}
@@ -1030,12 +1100,12 @@ async function syncDrawings(){
   try{
     setSync("wait","구글 확인 중…");
     const j=await api({action:"drawings"}), locals=await dbAll("drawings");
+    setNotes(j.notes);
     const live=j.drawings.filter(d=>!d.deleted);
     for(const r of j.drawings){
       const l=locals.find(d=>d.id===r.id); if(!l) continue;
       if(r.deleted){ await removeLocalDrawing(r.id); continue; }
-      if(r.kind&&r.kind!==l.kind){ l.kind=r.kind; await dbPut("drawings",l); }
-      else if(!r.kind&&l.kind&&lockMine(l)){ try{ await api({action:"setKind",id:l.id,kind:l.kind}); }catch(e){} }   // 휴대폰에만 있던 파일 종류를 서버에도 적는다
+      if(JSON.stringify(r.members||[])!==JSON.stringify(l.members||[])){ l.members=r.members||[]; await dbPut("drawings",l); }
       if(!!r.locked!==!!l.locked){ l.locked=!!r.locked; await dbPut("drawings",l); if(V.drawing&&V.drawing.id===l.id) V.drawing.locked=l.locked; }
       if(l.name!==r.name||!l.cloud||(r.by&&l.by!==r.by)){ l.name=r.name; l.cloud=true; if(r.by) l.by=r.by; await dbPut("drawings",l); }
       if(r.pageNames&&JSON.stringify(r.pageNames)!==JSON.stringify(l.pageNames||[])){ l.pageNames=r.pageNames; await dbPut("drawings",l); if(V.drawing&&V.drawing.id===l.id){ V.drawing.pageNames=l.pageNames; updatePager(); } }
@@ -1124,7 +1194,7 @@ async function ensurePhoto(p,x){
 /* 연결 설정 창 */
 function openCloudSheet(){
   $("#cUrl").value=cloud.url; $("#cPin").value=cloud.pin; $("#cName").value=cloud.name; $("#cPw").value=cloud.pw; $("#cRemember").checked=!!cloud.remember;
-  $("#cMsg").textContent=cloudOn()?`${cloud.name}${cloud.admin?" (관리자)":""}(으)로 연결되어 있습니다.`:cloudSet()?"이름과 비밀번호를 넣고 '연결'을 눌러 주세요.":"";
+  $("#cMsg").textContent=cloudOn()?`${cloud.name}${cloud.admin?(asUser?" (관리자 · 일반 사용자 모드)":" (관리자)"):""}(으)로 연결되어 있습니다.`:cloudSet()?"이름과 비밀번호를 넣고 '연결'을 눌러 주세요.":"";
   $("#cOff").hidden=$("#cLink").hidden=$("#cLinkTip").hidden=!cloudOn();
   openSheet("#cloudSheet");
 }
@@ -1142,41 +1212,45 @@ function readInvite(){
   let o; try{ o=JSON.parse(atob(decodeURIComponent(m[1]))); }catch(e){ toast("자동 연결 링크가 올바르지 않습니다",3000); return false; }
   if(!o||!/^https:\/\/script\.google\.com\//.test(o.u||"")||!o.p) return false;
   if(cloudOn()&&cloud.url===o.u&&cloud.pin===o.p) return false;   // 이미 같은 곳에 연결됨
-  openCloudSheet(); $("#cUrl").value=o.u; $("#cPin").value=o.p;
-  $("#cOff").hidden=$("#cLink").hidden=$("#cLinkTip").hidden=true;
-  if(cloud.name&&cloud.pw) $("#cOn").click(); else $("#cMsg").textContent="자동 연결 링크로 URL과 PIN이 들어왔습니다. 이름과 내 비밀번호를 넣고 '연결'을 눌러 주세요.";
+  if(cloud.url!==o.u||cloud.pin!==o.p){ cloud.url=o.u; cloud.pin=o.p; cloud.pw=""; cloud.admin=false; saveCloud(); }
+  closeSheets(); showGate(2,"");
+  $("#gTip2").hidden=false;
   return true;
 }
-$("#cOn").addEventListener("click",async()=>{
+/* 로그인: 성공하면 true. msg로 진행·오류 문구를 보여 준다 */
+async function loginAs(nw,msg){
   const old={...cloud};
-  const nw={url:$("#cUrl").value.trim(),pin:$("#cPin").value.trim(),name:$("#cName").value.trim(),pw:$("#cPw").value,remember:$("#cRemember").checked,admin:false};
-  const msg=t=>$("#cMsg").textContent=t;
-  if(!/^https:\/\/script\.google\.com\//.test(nw.url)) return msg("웹 앱 URL은 https://script.google.com/ 으로 시작해야 합니다.");
-  if(!nw.pin||!nw.name) return msg("PIN과 이름을 넣어 주세요.");
-  if(nw.pw.length<4) return msg("비밀번호를 4자 이상으로 넣어 주세요.");
-  msg("연결하는 중…"); cloud=nw;
+  if(!/^https:\/\/script\.google\.com\//.test(nw.url)){ msg("웹 앱 URL은 https://script.google.com/ 으로 시작해야 합니다."); return false; }
+  if(!nw.pin||!nw.name){ msg("PIN과 이름을 넣어 주세요."); return false; }
+  if(nw.pw.length<4){ msg("비밀번호를 4자 이상으로 넣어 주세요."); return false; }
+  msg("로그인하는 중…"); cloud={...nw,admin:false};
   let j;
   try{
     j=await api({action:"login"});
     if(j.newUser){
-      if(!confirm(`'${nw.name}' 이름은 처음입니다. 지금 넣은 비밀번호로 새로 등록할까요?\n(이미 쓰던 이름이면 '취소'를 누르고 이름을 확인해 주세요)`)){ cloud=old; return msg("등록하지 않았습니다. 이름을 확인해 주세요."); }
+      if(!confirm(`'${nw.name}' 이름은 처음입니다. 지금 넣은 비밀번호로 새로 등록할까요?\n(이미 쓰던 이름이면 '취소'를 누르고 이름을 확인해 주세요)`)){ cloud=old; msg("등록하지 않았습니다. 이름을 확인해 주세요."); return false; }
       j=await api({action:"login",register:true});
     }
   }catch(err){
     cloud=old;
-    return msg(/PIN이/.test(err.message)?"팀 PIN이 맞지 않습니다. 스크립트 맨 위에 적은 PIN을 넣어 주세요."
+    msg(/PIN이/.test(err.message)?"팀 PIN이 맞지 않습니다. 관리자에게 받은 PIN을 넣어 주세요."
       :/비밀번호|이름|4자/.test(err.message)?err.message
-      :/알 수 없는 요청/.test(err.message)?"구글 스크립트가 예전 코드입니다. 새 PinsCode.gs로 바꾸고 새 버전으로 배포해 주세요."
-      :"연결하지 못했습니다. URL과, 배포할 때 '액세스 권한: 모든 사용자'로 했는지 확인해 주세요.");
+      :/알 수 없는 요청/.test(err.message)?"구글 스크립트가 예전 코드입니다. 자동 업데이트 코드(PinsLoader)로 바꾸고 새 버전으로 배포해 주세요."
+      :"연결하지 못했습니다. 인터넷과 웹 앱 URL을 확인해 주세요.");
+    return false;
   }
-  cloud.admin=!!(j.me&&j.me.admin); saveCloud();
-  msg((j.created?"새로 등록하고 연결했습니다.":"연결됐습니다.")+(cloud.admin?" 관리자입니다.":"")+" 이 휴대폰의 도면과 핀도 구글로 올립니다.");
-  setTimeout(()=>{closeSheets();syncDrawings();},1200);
+  cloud.admin=!!(j.me&&j.me.admin); saveCloud(); renderMode();
+  msg((j.created?"새로 등록했습니다.":"로그인했습니다.")+(cloud.admin?" 관리자입니다.":""));
+  return true;
+}
+$("#cOn").addEventListener("click",async()=>{
+  const nw={url:$("#cUrl").value.trim(),pin:$("#cPin").value.trim(),name:$("#cName").value.trim(),pw:$("#cPw").value,remember:$("#cRemember").checked};
+  if(await loginAs(nw,t=>$("#cMsg").textContent=t)) setTimeout(()=>{closeSheets();syncDrawings();},900);
 });
 $("#cOff").addEventListener("click",()=>{
   if(!confirm("로그아웃할까요? 이 휴대폰의 도면과 핀은 그대로 남고, 다시 로그인하면 이어서 공유합니다.")) return;
   cloud.pw=""; cloud.admin=false; saveCloud(); lockPws={}; saveLockPws();   // 넣어 둔 도면 비밀번호도 지운다
-  remoteOnly=[]; setSync("",""); closeSheets(); renderHome();
+  remoteOnly=[]; notes=[]; setSync("",""); closeSheets(); renderHome(); renderMode(); showGate(2);
 });
 
 /* ---------- 쪽 더하기·빼기 ---------- */
@@ -1908,7 +1982,7 @@ const imgSeq=p=>[...(p.photos||[]).map((x,i)=>["photos",i]),...(p.donePhotos||[]
 async function showImg(list,i){
   const p=selPin(), x=p&&p[list]&&p[list][i]; if(!x) return;
   if(!x.data&&!(await ensurePhoto(p,x))){ toast("사진을 받지 못했습니다"); return; }
-  $("#imgViewImg").src=photoUrl(x); $("#imgView").hidden=false; $("#imgView").dataset.i=i; $("#imgView").dataset.list=list;
+  resetImgZoom(); $("#imgViewImg").src=photoUrl(x); $("#imgView").hidden=false; $("#imgView").dataset.i=i; $("#imgView").dataset.list=list;
   const can=list==="photos"?canEdit(p):canDonePhoto(p), isRep=(p[list].find(y=>y.rep)||p[list][0])===x;
   $("#imgDel").hidden=$("#imgRot").hidden=!can; $("#imgRep").hidden=!can||p[list].length<2;
   $("#imgRep").textContent=isRep?"★ 대표 사진":"☆ 대표 사진"; $("#imgRep").disabled=isRep;
@@ -1923,10 +1997,41 @@ function stepImg(d){
 }
 $("#imgPrev").addEventListener("click",()=>stepImg(-1));
 $("#imgNext").addEventListener("click",()=>stepImg(1));
-{ let t0=null; const box=$("#imgBox");
-  box.addEventListener("touchstart",e=>{ t0=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null; },{passive:true});
-  box.addEventListener("touchend",e=>{ if(!t0||e.changedTouches.length!==1) return; const dx=e.changedTouches[0].clientX-t0.x, dy=e.changedTouches[0].clientY-t0.y; t0=null;
-    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) stepImg(dx<0?1:-1); },{passive:true}); }
+/* 사진 확대: 두 손가락으로 벌리기, 두 번 누르기, (컴퓨터) 마우스 휠. 확대 중에는 한 손가락으로 옮기고, 원래 크기일 때만 옆으로 밀어 넘긴다 */
+let resetImgZoom=()=>{};
+{ const box=$("#imgBox"), img=$("#imgViewImg"), P=new Map(); let Z={s:1,x:0,y:0}, g=null, lastTap=0;
+  const show=()=>{ img.style.transform=Z.s===1?"":`translate(${Z.x}px,${Z.y}px) scale(${Z.s})`; };
+  const clamp=()=>{ const w=box.clientWidth,h=box.clientHeight; if(Z.s<=1.01){ Z={s:1,x:0,y:0}; return; } Z.x=Math.min(0,Math.max(w-w*Z.s,Z.x)); Z.y=Math.min(0,Math.max(h-h*Z.s,Z.y)); };
+  const at=e=>{ const r=box.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+  const zoomAt=(c,ns)=>{ ns=Math.max(1,Math.min(6,ns)); Z.x=c.x-(c.x-Z.x)*ns/Z.s; Z.y=c.y-(c.y-Z.y)*ns/Z.s; Z.s=ns; clamp(); show(); };
+  const two=()=>{ const [a,b]=[...P.values()]; return {c:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},d:Math.hypot(a.x-b.x,a.y-b.y)||1}; };
+  resetImgZoom=()=>{ Z={s:1,x:0,y:0}; P.clear(); g=null; show(); };
+  box.addEventListener("pointerdown",e=>{
+    if(e.target.closest("button")) return;
+    try{ box.setPointerCapture(e.pointerId); }catch(err){}
+    P.set(e.pointerId,at(e));
+    if(P.size===2){ const t=two(); g={k:"pinch",c0:t.c,d0:t.d,s0:Z.s,ix:(t.c.x-Z.x)/Z.s,iy:(t.c.y-Z.y)/Z.s}; }
+    else if(P.size===1){ const q=at(e); g={k:"one",x0:q.x,y0:q.y,zx:Z.x,zy:Z.y,t:Date.now(),moved:false}; }
+  });
+  box.addEventListener("pointermove",e=>{
+    if(!P.has(e.pointerId)||!g) return; P.set(e.pointerId,at(e));
+    if(g.k==="pinch"&&P.size>=2){ const t=two(), ns=Math.max(1,Math.min(6,g.s0*t.d/g.d0)); Z.s=ns; Z.x=t.c.x-g.ix*ns; Z.y=t.c.y-g.iy*ns; clamp(); show(); }
+    else if(g.k==="one"){ const q=at(e), dx=q.x-g.x0, dy=q.y-g.y0; if(Math.abs(dx)+Math.abs(dy)>8) g.moved=true;
+      if(Z.s>1){ Z.x=g.zx+dx; Z.y=g.zy+dy; clamp(); show(); } }
+  });
+  const up=e=>{
+    if(!P.has(e.pointerId)) return; const q=at(e); P.delete(e.pointerId);
+    if(g&&g.k==="one"&&e.type==="pointerup"){
+      const dx=q.x-g.x0, dy=q.y-g.y0;
+      if(Z.s===1&&Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) stepImg(dx<0?1:-1);
+      else if(!g.moved&&Date.now()-g.t<300){ const now=Date.now(); if(now-lastTap<320){ zoomAt(q,Z.s>1?1:2.5); lastTap=0; } else lastTap=now; }
+    }
+    if(P.size===1&&g&&g.k==="pinch"){ const r=[...P.values()][0]; g={k:"one",x0:r.x,y0:r.y,zx:Z.x,zy:Z.y,t:0,moved:true}; }
+    else if(!P.size) g=null;
+  };
+  box.addEventListener("pointerup",up); box.addEventListener("pointercancel",up);
+  box.addEventListener("wheel",e=>{ e.preventDefault(); zoomAt(at(e),Z.s*(e.deltaY<0?1.2:1/1.2)); },{passive:false});
+}
 document.addEventListener("keydown",e=>{ if($("#imgView").hidden) return; if(e.key==="ArrowRight") stepImg(1); else if(e.key==="ArrowLeft") stepImg(-1); else if(e.key==="Escape") $("#imgView").hidden=true; });
 $("#imgRep").addEventListener("click",async()=>{
   const p=selPin(), i=+$("#imgView").dataset.i, list=$("#imgView").dataset.list||"photos"; if(!p||!p[list][i]) return;
@@ -2456,10 +2561,115 @@ function tourTick(){
 }
 document.addEventListener("click",e=>{ if(e.target.closest("[data-tour]")) startTour(); });
 
+/* ---------- 시작 화면: ① 서버 연결(URL·PIN) → ② 로그인(이름·비밀번호) → 도면 목록 ---------- */
+let tourAfterLogin=false;
+function showGate(step,msg){
+  $("#gate").hidden=false; $("#gStep1").hidden=step!==1; $("#gStep2").hidden=step!==2;
+  $("#gUrl").value=cloud.url||""; $("#gPin").value=cloud.pin||""; $("#gName").value=cloud.name||""; $("#gPw").value="";
+  $("#gRemember").checked=true; $("#gMsg1").textContent=step===1?(msg||""):""; $("#gMsg2").textContent=step===2?(msg||""):"";
+  if(step!==2) $("#gTip2").hidden=true;
+}
+function enterApp(){
+  $("#gate").hidden=true; renderMode(); renderHome(); renderNoteBadge(); syncDrawings();
+  if(tourAfterLogin){ tourAfterLogin=false; setTimeout(startTour,300); }
+}
+$("#gNext").addEventListener("click",async()=>{
+  const url=$("#gUrl").value.trim(), pin=$("#gPin").value.trim(), msg=t=>$("#gMsg1").textContent=t;
+  if(!/^https:\/\/script\.google\.com\//.test(url)) return msg("웹 앱 URL은 https://script.google.com/ 으로 시작해야 합니다.");
+  if(!pin) return msg("팀 PIN을 넣어 주세요.");
+  const b=$("#gNext"); b.disabled=true; msg("서버를 확인하는 중…");
+  try{
+    const r=await fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({pin,action:"login",user:"",pw:""}),redirect:"follow"});
+    const j=await r.json();
+    if(!j.ok&&/PIN이/.test(j.error||"")){ msg("팀 PIN이 맞지 않습니다. 관리자에게 받은 PIN을 넣어 주세요."); return; }
+    if(cloud.url!==url||cloud.pin!==pin){ cloud.url=url; cloud.pin=pin; cloud.pw=""; cloud.admin=false; saveCloud(); }
+    showGate(2); setTimeout(()=>$("#gName").focus(),50);
+  }catch(err){ msg("서버에 연결하지 못했습니다. 인터넷과 웹 앱 URL을 확인해 주세요."); }
+  finally{ b.disabled=false; }
+});
+$("#gLogin").addEventListener("click",async()=>{
+  const b=$("#gLogin"); b.disabled=true;
+  const nw={url:cloud.url,pin:cloud.pin,name:$("#gName").value.trim(),pw:$("#gPw").value,remember:$("#gRemember").checked};
+  try{ if(await loginAs(nw,t=>$("#gMsg2").textContent=t)) enterApp(); } finally{ b.disabled=false; }
+});
+$("#gPw").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#gLogin").click(); });
+$("#gPin").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#gNext").click(); });
+$("#gBack").addEventListener("click",()=>showGate(1));
+$("#modeBtn").addEventListener("click",()=>{ setAsUser(!asUser); toast(asUser?"일반 사용자 모드: 관리자가 아닌 사람처럼 써 볼 수 있어요":"관리자 모드로 돌아왔어요",3000); syncDrawings(); });
+$("#asUserOff").addEventListener("click",()=>{ setAsUser(false); toast("관리자 모드로 돌아왔어요"); syncDrawings(); });
+
+/* ---------- 알림: 내 핀이 조치완료됨, 협업 요청 ---------- */
+let notes=[];
+function setNotes(list){ if(!Array.isArray(list)) return; notes=list; renderNoteBadge(); if(!$("#noteSheet").hidden) renderNotes(); }
+const noteCount=()=>notes.filter(n=>!n.read||(n.type==="invite"&&n.state==="pending"&&!n.gone)).length;
+function renderNoteBadge(){ const n=noteCount(); $("#noteCnt").hidden=!n; $("#noteCnt").textContent=n>99?"99+":String(n); $("#noteBtn").hidden=!cloudOn(); }
+function renderNotes(){
+  const box=$("#noteBody");
+  if(!notes.length){ box.innerHTML=`<div class="empty" style="padding:40px 10px">아직 알림이 없어요.<br>내가 만든 핀을 다른 사람이 조치완료로 바꾸거나<br>협업 요청을 받으면 여기에 나와요.</div>`; return; }
+  box.innerHTML=notes.map(n=>{
+    const t=`<small>${fmtDate(n.created)}</small>`, dn=`「${esc(n.drawingName)}」`;
+    if(n.type==="invite") return `<div class="nt${n.read?"":" unread"}"><div class="ni invite">${ICON.people}</div><div class="nx"><b>${esc(n.from)}</b>님이 ${dn} 도면에 협업 요청을 보냈어요. 수락하면 비밀번호 없이 열 수 있어요.${t}
+      ${n.gone?'<span class="nst">삭제된 도면</span>':n.state==="pending"?`<div class="nbt"><button class="yes" data-ans="1" data-id="${n.id}">수락</button><button data-ans="0" data-id="${n.id}">거절</button></div>`:`<span class="nst">${n.state==="accepted"?"✓ 수락함":"거절함"}</span>`}</div></div>`;
+    return `<div class="nt${n.read?"":" unread"}"${n.gone?"":` data-go="${n.drawingId}" data-pin="${esc(n.pinId)}"`}><div class="ni done">✓</div><div class="nx"><b>${esc(n.from)}</b>님이 ${dn} <b>${esc(n.text)}</b> 핀을 조치완료로 바꿨어요.${t}</div></div>`;
+  }).join("");
+}
+$("#noteBtn").addEventListener("click",async()=>{
+  if(!cloudOn()) return;
+  renderNotes(); openSheet("#noteSheet");
+  try{ const j=await api({action:"notes"}); setNotes(j.notes); }catch(e){}
+  if(notes.some(n=>!n.read)){ try{ await api({action:"readNotes"}); notes.forEach(n=>n.read=true); renderNoteBadge(); }catch(e){} }
+});
+$("#noteBody").addEventListener("click",async e=>{
+  const a=e.target.closest("[data-ans]");
+  if(a){
+    a.parentNode.querySelectorAll("button").forEach(x=>x.disabled=true);
+    try{
+      const j=await api({action:"respond",noteId:a.dataset.id,accept:a.dataset.ans==="1"});
+      const n=notes.find(x=>x.id===a.dataset.id); if(n){ n.state=j.note.state; n.read=true; }
+      renderNotes(); renderNoteBadge();
+      if(j.note.state==="accepted"){ toast("수락했어요. 이제 이 도면을 비밀번호 없이 열 수 있어요",3500); syncDrawings(); }
+    }catch(err){ toast("처리하지 못했습니다: "+err.message,4000); renderNotes(); }
+    return;
+  }
+  const g=e.target.closest("[data-go]"); if(!g) return;
+  const id=g.dataset.go, pinId=g.dataset.pin;
+  closeSheets();
+  if(!await dbGet("drawings",id)){ const c=document.querySelector(`[data-remote="${CSS.escape(id)}"]`); if(c){ c.click(); } else toast("목록에서 그 도면을 찾지 못했습니다"); return; }
+  await openDrawing(id);
+  for(let k=0;k<20&&!V.page;k++) await new Promise(r=>setTimeout(r,100));
+  await syncPins();
+  const p=V.pins.find(q=>q.id===pinId); if(!p){ toast("그 핀은 지워졌습니다"); return; }
+  if(p.page!==V.pageNo) await showPage(p.page);
+  openPin(p.id);
+});
+
+/* ---------- 협업 요청 보내기 (올린 사람·관리자) ---------- */
+async function inviteMenu(d){
+  let users=[];
+  try{ users=(await api({action:"users"})).users||[]; }catch(err){ toast("사용자 목록을 받지 못했습니다: "+err.message,4000); return; }
+  const others=users.filter(u=>u!==cloud.name&&u!==d.by), mem=d.members||[], sel=new Set();
+  if(!others.length){ toast("요청을 보낼 다른 사용자가 없어요. 함께 쓸 사람이 먼저 앱에 로그인해 등록해야 해요",4500); return; }
+  $("#actTitle").textContent="협업 요청 보내기";
+  $("#actBody").innerHTML=`<div class="actsub">「${esc(d.name)}」을(를) 함께 쓸 사람을 고르세요. 상대가 알림에서 수락하면${d.locked?" 비밀번호 없이":""} 이 도면을 열 수 있어요.</div>
+    <div class="ulist">${others.map(u=>{ const m=mem.includes(u); return `<button class="urow${m?" on":""}" data-u="${esc(u)}"${m?" disabled":""}><i>${m?"✓":""}</i>${esc(u)}${m?"<small>참여 중</small>":""}</button>`; }).join("")}</div>
+    <button id="invSend" disabled>요청 보내기</button>`;
+  $("#actBody").onclick=async e=>{
+    const r=e.target.closest(".urow");
+    if(r&&!r.disabled){ const u=r.dataset.u; if(sel.has(u)) sel.delete(u); else sel.add(u); r.classList.toggle("on",sel.has(u)); r.querySelector("i").textContent=sel.has(u)?"✓":""; $("#invSend").disabled=!sel.size; $("#invSend").textContent=sel.size?`${sel.size}명에게 요청 보내기`:"요청 보내기"; return; }
+    if(e.target.id==="invSend"&&sel.size){
+      e.target.disabled=true;
+      try{ const j=await api({action:"invite",id:d.id,to:[...sel]}); closeSheets(); toast(j.sent?`${j.sent}명에게 협업 요청을 보냈어요`:"이미 요청을 보냈거나 참여 중인 사람이에요",3500); }
+      catch(err){ e.target.disabled=false; toast("요청을 보내지 못했습니다: "+err.message,4000); }
+    }
+  };
+  onSheetClose=null; openSheet("#actSheet");
+}
+
 /* ---------- 시작 ---------- */
-renderHome(); setSync("",""); if(!readInvite()){ if(cloudSet()&&!cloudOn()) openCloudSheet(); else syncDrawings(); }
+renderHome(); setSync("",""); renderMode(); renderNoteBadge();
+if(!readInvite()){ if(!cloudOn()) showGate(cloudSet()?2:1); else syncDrawings(); }
 window.addEventListener("hashchange",readInvite);
-if(/[?&]tour=1/.test(location.search)){ try{history.replaceState(null,"",location.pathname+location.hash);}catch(e){} setTimeout(startTour,300); }   // 가이드의 "따라하기" 링크
+if(/[?&]tour=1/.test(location.search)){ try{history.replaceState(null,"",location.pathname+location.hash);}catch(e){} if($("#gate").hidden) setTimeout(startTour,300); else tourAfterLogin=true; }   // 가이드의 "따라하기" 링크
 try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}   // 연결 정보·도면이 저절로 지워지지 않게 요청
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
