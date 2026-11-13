@@ -648,10 +648,11 @@ header #backBtn{color:#fff!important;background:none!important}
   <div class="sh"><h2>설정</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp">
     <div class="setrow"><span>앱 버전</span><b id="verTxt"></b></div>
-    <div class="lbl">비밀번호 변경</div>
+    <div class="lbl">계정</div>
     <div id="pwBox">
       <p class="pwoff" id="pwOff" hidden>로그인한 뒤에 바꿀 수 있어요.</p>
-      <div id="pwForm">
+      <button id="pwOpen" class="sec" style="width:100%">비밀번호 변경</button>
+      <div id="pwForm" hidden style="margin-top:8px">
         <input class="inp" id="pwCur" type="password" autocomplete="current-password" placeholder="지금 비밀번호 (본인 확인)">
         <input class="inp" id="pwNew" type="password" autocomplete="new-password" placeholder="새 비밀번호 (4자 이상)">
         <input class="inp" id="pwNew2" type="password" autocomplete="new-password" placeholder="새 비밀번호 확인">
@@ -675,7 +676,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.25";
+const APP_VER = "3.26";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -751,13 +752,18 @@ function closeSheets(){const pv=document.getElementById("pvw");if(pv&&!pv.hidden
 $("#sheetBg").addEventListener("click",closeSheets);
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeSheets));
 $("#helpBtn").addEventListener("click",()=>{
-  const on=cloudOn(); $("#pwOff").hidden=on; $("#pwForm").hidden=!on;
+  const on=cloudOn(); $("#pwOff").hidden=on; $("#pwForm").hidden=true; $("#pwOpen").hidden=!on; $("#pwOpen").textContent="비밀번호 변경";
   $("#pwOff").textContent=!on?"로그인한 뒤에 바꿀 수 있어요.":"";
   ["#pwCur","#pwNew","#pwNew2"].forEach(x=>$(x).value=""); $("#pwMsg").textContent="";
-  if(on&&cloud.admin&&asUser){ $("#pwOff").hidden=false; $("#pwForm").hidden=true; $("#pwOff").textContent="테스트 계정에서는 바꿀 수 없어요. 관리자로 돌아간 뒤 바꿔 주세요."; }
+  if(on&&cloud.admin&&asUser){ $("#pwOff").hidden=false; $("#pwForm").hidden=true; $("#pwOpen").hidden=true; $("#pwOff").textContent="테스트 계정에서는 바꿀 수 없어요. 관리자로 돌아간 뒤 바꿔 주세요."; }
   openSheet("#helpSheet");
 });
-/* 비밀번호 변경: 지금 비밀번호로 본인 확인 → 새 비밀번호 두 번 */
+/* 비밀번호 변경: 버튼을 눌러야 입력칸이 열린다. 지금 비밀번호로 본인 확인 → 새 비밀번호 두 번 */
+$("#pwOpen").addEventListener("click",()=>{
+  const open=$("#pwForm").hidden; $("#pwForm").hidden=!open; $("#pwOpen").textContent=open?"비밀번호 변경 닫기":"비밀번호 변경";
+  ["#pwCur","#pwNew","#pwNew2"].forEach(x=>$(x).value=""); $("#pwMsg").textContent="";
+  if(open) setTimeout(()=>$("#pwCur").focus(),50);
+});
 $("#pwGo").addEventListener("click",async()=>{
   const cur=$("#pwCur").value, a=$("#pwNew").value, b=$("#pwNew2").value, m=t=>$("#pwMsg").textContent=t;
   if(!cur){ m("지금 비밀번호를 넣어 주세요."); return; }
@@ -768,7 +774,7 @@ $("#pwGo").addEventListener("click",async()=>{
   try{
     const r=await fetch(cloud.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({pin:cloud.pin,user:cloud.name,pw:cur,action:"changePw",newPw:a}),redirect:"follow"});
     const j=await r.json(); if(!j.ok) throw new Error(j.error||"실패");
-    cloud.pw=a; saveCloud(); ["#pwCur","#pwNew","#pwNew2"].forEach(x=>$(x).value=""); m(""); toast("비밀번호를 바꿨어요",2500);
+    cloud.pw=a; saveCloud(); ["#pwCur","#pwNew","#pwNew2"].forEach(x=>$(x).value=""); m(""); $("#pwForm").hidden=true; $("#pwOpen").textContent="비밀번호 변경"; toast("비밀번호를 바꿨어요",2500);
   }catch(e){ m(/비밀번호가 맞지/.test(e.message)?"지금 비밀번호가 맞지 않습니다.":/알 수 없는 요청/.test(e.message)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":"바꾸지 못했습니다: "+e.message); }
   finally{ $("#pwGo").disabled=false; }
 });
