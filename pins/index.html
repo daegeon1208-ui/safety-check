@@ -2520,7 +2520,7 @@ async function ensureSample(){
   await dbPut("drawings",{id:TOUR_ID,name:"견본 도면 (연습용)",pages:1,created:now,opened:now+1e9,by:"",kind:"pdf",sample:true});   // 맨 위에 오게
 }
 const T={i:-1,flag:false,timer:null};
-const vis=sel=>{const e=typeof sel==="function"?sel():$(sel); return e&&!e.hidden&&e.offsetParent!==null?e:null;};
+const vis=sel=>{const e=typeof sel==="function"?sel():$(sel); return e&&!e.hidden&&e.getClientRects().length?e:null;};   // fixed(아래 창)도 보이면 잡는다
 const sheetOpen=id=>!$(id).hidden;
 const TOUR=[
   {t:()=>$('.dcard[data-id="sample"]'),x:"<b>견본 도면</b>을 눌러 열어 보세요.",go:()=>!$("#viewer").hidden&&V.drawing&&V.drawing.id===TOUR_ID&&V.page},
@@ -2538,7 +2538,7 @@ const TOUR=[
   {t:"#listBtn",x:"<b>목록</b>을 누르세요.",go:()=>sheetOpen("#listSheet")},
   {t:"#listSheet",x:"찍은 핀이 모두 나와요. <b>미조치·조치완료</b>, 팀으로 거를 수 있고, 핀을 누르면 그 위치로 이동해요.",next:1,post:()=>closeSheets()},
   {t:"#expBtn",x:"<b>내보내기</b>를 누르세요.",go:()=>sheetOpen("#actSheet")||sheetOpen("#expSheet")},
-  {t:"#actSheet",x:"<b>부분 캡처</b>는 도면 일부를 그림으로, <b>PDF 만들기</b>는 핀 표시 도면과 사진대지를 한 파일로 만들어요. <b>PDF 만들기</b>를 눌러 보세요.",go:()=>sheetOpen("#expSheet")},
+  {t:()=>$('#actSheet [data-v="pdf"]'),x:"<b>부분 캡처</b>는 도면 일부를 그림으로, <b>PDF 만들기</b>는 핀 표시 도면과 사진대지를 한 파일로 만들어요. <b>PDF 만들기</b>를 눌러 보세요.",go:()=>sheetOpen("#expSheet")},
   {t:"#expSheet",x:"보낼 <b>팀</b>을 고르고 만들면, 핀 표시 도면 + <b>사진대지</b>(한 쪽에 핀 2개: 조치 전·후 사진, 내용, 위치도) PDF를 카톡 등으로 바로 보낼 수 있어요.",next:1,post:()=>closeSheets()},
   {t:"#backBtn",x:"<b>‹ 목록</b>을 눌러 도면 목록으로 돌아가세요.",go:()=>!$("#home").hidden},
   {t:"#cloudBtn",x:"여러 사람이 함께 쓰려면 <b>구글 공유</b>에 웹 앱 주소·PIN·이름을 넣어요. 주소와 PIN은 관리자에게 받으세요.",next:1},
