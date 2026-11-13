@@ -16,7 +16,11 @@
  */
 const PIN = '0000';   // ← 지금 앱에서 쓰는 PIN과 똑같이 적는다.
 
-const SRC_URL = 'https://raw.githubusercontent.com/daegeon1208-ui/safety-check/main/server/PinsCode.gs';
+// 서버 코드를 받을 주소. 앞 주소가 안 되면(구글 서버가 GitHub에 막히는 경우 등) 다음 주소로 받는다
+const SRC_URLS = [
+  'https://raw.githubusercontent.com/daegeon1208-ui/safety-check/main/server/PinsCode.gs',
+  'https://cdn.jsdelivr.net/gh/daegeon1208-ui/safety-check@main/server/PinsCode.gs'
+];
 const SRC_KEEP = 300;   // 초. 이 시간 동안은 다시 받지 않는다.
 
 function doGet(e) { return server_().doGet(e); }
@@ -37,14 +41,17 @@ function source_() {
   const cache = CacheService.getScriptCache();
   const hit = cache.get('src');
   if (hit) return hit;
-  let code = null;
-  try {
-    const res = UrlFetchApp.fetch(SRC_URL + '?t=' + Date.now(), { muteHttpExceptions: true });
-    if (res.getResponseCode() === 200) code = res.getContentText();
-    if (code && !/function doPost\(/.test(code)) code = null;   // 이상한 내용이면 쓰지 않는다
-  } catch (e) { code = null; }
+  let code = null; const why = [];
+  for (let i = 0; i < SRC_URLS.length && !code; i++) {
+    try {
+      const res = UrlFetchApp.fetch(SRC_URLS[i] + '?t=' + Date.now(), { muteHttpExceptions: true, followRedirects: true });
+      const st = res.getResponseCode(), txt = res.getContentText('UTF-8');
+      if (st === 200 && /function doPost\(/.test(txt)) code = txt;   // 이상한 내용이면 쓰지 않는다
+      else why.push((i + 1) + '번 주소: 응답 ' + st);
+    } catch (e) { why.push((i + 1) + '번 주소: ' + (e && e.message || e)); }
+  }
   if (code) { saveBackup_(code); }
-  else { code = loadBackup_(); if (!code) throw new Error('서버 코드를 GitHub에서 받지 못했습니다'); }
+  else { code = loadBackup_(); if (!code) throw new Error('서버 코드를 GitHub에서 받지 못했습니다 (' + why.join(' / ') + ')'); }
   try { cache.put('src', code, SRC_KEEP); } catch (e) {}
   return code;
 }
