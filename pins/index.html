@@ -430,10 +430,10 @@ header #backBtn{color:#fff!important;background:none!important}
 /* 가로 화면 시작화면: 왼쪽 로고, 오른쪽 입력 카드 — 스크롤 없이 한 화면에 */
 @media (orientation:landscape) and (max-height:540px){
   #gate:not([hidden]){display:flex;flex-direction:row;align-items:stretch;overflow:hidden;height:100%;height:100dvh}
-  #gate .gtop{flex:0 0 36%;display:flex;flex-direction:column;justify-content:center;padding:12px 16px 12px max(16px,env(safe-area-inset-left))}
+  #gate .gtop{flex:0 0 50%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:12px 16px 12px max(16px,env(safe-area-inset-left))}
   #gate .gmark{width:46px;height:46px;border-radius:14px;margin-bottom:8px}#gate .gmark svg{width:28px;height:28px}
   #gate h1{font-size:21px}#gate .gtop p{font-size:13px}
-  #gate .gcard{flex:1;margin:auto max(14px,env(safe-area-inset-right)) auto 14px;max-width:460px;padding:10px 16px 10px;max-height:calc(100dvh - 16px);overflow:hidden}
+  #gate .gcard{flex:0 1 calc(50% - 32px);margin:auto;width:calc(50% - 32px);max-width:420px;padding:10px 16px 10px;max-height:calc(100dvh - 16px);overflow:hidden}
   #gate .lbl{margin:6px 0 3px;font-size:12px}
   #gate .inp{padding:7px 11px;font-size:16px}
   #gate .gstep{margin-bottom:0}
@@ -675,7 +675,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER="3.24";
+const APP_VER = "3.25";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1132,7 +1132,8 @@ const lockMine=d=>cloudOn()&&(isAdmin()||(!!d.by&&d.by===myName()));   // 올린
 const lockFree=d=>lockMine(d)||(cloudOn()&&(d.members||[]).includes(myName()));   // 협업 요청을 수락한 사람도
 const lockIcon=d=>d.locked?`<span class="lk">🔒</span>`:"";
 /* 비밀번호 창. twice면 두 번 넣어 맞춰 본다(새로 걸 때). 취소하면 null */
-function askLockPw(title,desc,twice,msg){
+/* check가 있으면 창을 연 채로 확인한다: check(pw)가 글자를 돌려주면 그 안내를 띄우고 다시 입력받는다 */
+function askLockPw(title,desc,twice,msg,check){
   return new Promise(res=>{
     $("#lkTitle").textContent=title; $("#lkDesc").innerHTML=desc; $("#lkMsg").textContent=msg||"";
     $("#lkPw").value=""; $("#lkPw2").value=""; $("#lkPw2").hidden=!twice;
@@ -1141,9 +1142,19 @@ function askLockPw(title,desc,twice,msg){
       const a=$("#lkPw").value;
       if(a.length<4){ $("#lkMsg").textContent="비밀번호는 4자 이상입니다"; return; }
       if(twice&&a!==$("#lkPw2").value){ $("#lkMsg").textContent="두 비밀번호가 다릅니다"; return; }
+      if(check){
+        const b=$("#lkOk"); if(b.disabled) return;
+        b.disabled=true; $("#lkMsg").textContent="확인 중…";
+        Promise.resolve(check(a)).then(r=>{
+          b.disabled=false; if(done) return;
+          if(typeof r==="string"){ $("#lkMsg").textContent=r; $("#lkPw").value=""; $("#lkPw").focus(); return; }
+          onSheetClose=null; closeSheets(); finish(r);
+        });
+        return;
+      }
       onSheetClose=null; closeSheets(); finish(a);
     };
-    $("#lkOk").onclick=ok;
+    $("#lkOk").disabled=false; $("#lkOk").onclick=ok;
     $("#lkPw").onkeydown=e=>{ if(e.key==="Enter"){ if(twice) $("#lkPw2").focus(); else ok(); } };
     $("#lkPw2").onkeydown=e=>{ if(e.key==="Enter") ok(); };
     openSheet("#lockSheet"); onSheetClose=()=>finish(null);
@@ -1159,12 +1170,12 @@ async function ensureUnlocked(d){
     try{ await api({action:"unlock",id:d.id}); return true; }
     catch(err){ if(!err.locked) return true; msg="비밀번호가 바뀌었습니다. 새 비밀번호를 넣어 주세요"; }
   }
-  for(;;){
-    const pw=await askLockPw("🔒 도면 비밀번호",`「${esc(d.name)}」은(는) 비밀번호가 걸린 도면입니다.${d.by?` 비밀번호는 올린 사람(${esc(d.by)})에게 물어보세요.`:""}`,false,msg);
-    if(!pw) return false;
+  // 틀리면 창을 닫지 않고 그 자리에서 안내한다
+  const r=await askLockPw("🔒 도면 비밀번호",`「${esc(d.name)}」은(는) 비밀번호가 걸린 도면입니다.${d.by?` 비밀번호는 올린 사람(${esc(d.by)})에게 물어보세요.`:""}`,false,msg,async pw=>{
     try{ await api({action:"unlock",id:d.id,lockPw:pw,unlockTry:true}); lockPws[d.id]=pw; saveLockPws(); return true; }
-    catch(err){ if(err.locked){ msg=err.message; continue; } toast("비밀번호를 확인하지 못했습니다: "+err.message,4000); return false; }
-  }
+    catch(err){ if(err.locked) return err.message||"비밀번호가 틀렸습니다"; toast("비밀번호를 확인하지 못했습니다: "+err.message,4000); return false; }
+  });
+  return r===true;
 }
 /* ⋯ 메뉴: 비밀번호 걸기·바꾸기·풀기 (올린 사람·관리자) */
 async function lockMenu(d){
