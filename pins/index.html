@@ -618,7 +618,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER="3.20";
+const APP_VER="3.21";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -2583,7 +2583,12 @@ function tourTick(){
   spot.classList.remove("none"); spot.querySelector(".ring").hidden=!s.go;
   let r=t.getBoundingClientRect(); const pad=t.id==="vp"||r.height>H*0.5?-4:6;
   const top=Math.max(2,r.top-pad), bot=Math.min(H-2,r.bottom+pad), left=Math.max(2,r.left-pad), right=Math.min(W-2,r.right+pad);
-  Object.assign(spot.style,{left:left+"px",top:top+"px",width:(right-left)+"px",height:(bot-top)+"px",borderRadius:t.id==="addBtn"?"50%":"14px"});
+  // 밝은 칸과 반짝이는 테두리를 대상 모양(동그라미·알약·둥근 네모)에 맞춘다
+  const tr=parseFloat(getComputedStyle(t).borderTopLeftRadius)||0, half=Math.min(r.width,r.height)/2;
+  const round=t.id==="addBtn"||getComputedStyle(t).borderTopLeftRadius.endsWith("%")&&parseFloat(getComputedStyle(t).borderTopLeftRadius)>=50;
+  const rad=round?"50%":tr>=half-1?"999px":Math.max(8,tr+Math.max(0,pad))+"px";
+  Object.assign(spot.style,{left:left+"px",top:top+"px",width:(right-left)+"px",height:(bot-top)+"px",borderRadius:rad});
+  spot.querySelector(".ring").style.borderRadius=round?"50%":rad==="999px"?"999px":(parseFloat(rad)+6)+"px";
   const land=W>H, big=bot-top>H*0.5, wide=right-left>=400;
   // 가로 화면: 넓은 영역은 그 안 왼쪽 위에 작게, 좁고 긴 영역(오른쪽 버튼 줄 등)은 그 왼쪽 옆에
   const side=land&&big&&!wide&&left>340, inTop=land&&big&&wide;
