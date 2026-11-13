@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="도면 핀">
-<meta name="theme-color" content="#1B2B4B">
+<meta name="theme-color" content="#8E8E88">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{
@@ -20,7 +20,7 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;background:var(--bg);color:var(--ink);
-  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:16px}
+  font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:16px}
 button{touch-action:manipulation;font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 input,textarea{font:inherit;color:inherit}
 [hidden]{display:none!important}
@@ -378,6 +378,43 @@ header .cloud span{max-width:84px;overflow:hidden;text-overflow:ellipsis}
 /* 사진 확대 */
 .viewer-img .imgbox{overflow:hidden;touch-action:none}
 .viewer-img img{transform-origin:0 0;will-change:transform}
+/* 3.20 시안 E: 회색·빨강 (로고 색) + 프리텐다드 글꼴 */
+@font-face{font-family:"Pretendard";src:url(../fonts/PretendardVariable.woff2) format("woff2");font-weight:45 920;font-display:swap}
+button,input,select,textarea{font-family:inherit}
+:root{--bg:#EDEDEB;--card:#fff;--ink:#262624;--sub:#77776F;--line:#DCDCD8;--accent:#E31937;--chip:#E4E4E1;--soft:#F5F5F3;--grid:transparent}
+header{background:#8E8E88!important;color:#fff!important;box-shadow:inset 0 -4px 0 #E31937!important;position:sticky}
+#home header h1{font-size:24px;font-weight:800}
+header h1{color:#fff}
+header .hbtn{color:#fff!important;background:rgba(255,255,255,.18)!important}
+header .hbtn.ico svg{stroke:#fff}
+header #backBtn{color:#fff!important;background:none!important}
+.appver{color:rgba(255,255,255,.7)!important}
+.nbadge{box-shadow:0 0 0 2px #8E8E88;background:#E31937!important}
+#home main{background-image:none}
+.dcard{border:0;border-left:6px solid #8E8E88;border-radius:14px;padding:16px 10px 16px 16px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.05)}
+.dcard .nm{font-size:17px}
+.cnt{border-radius:999px;padding:2px 9px}
+.hfilter{background:#DCDCD8!important;border-radius:999px}.hfilter button{border-radius:999px}
+.fab{background:var(--accent);border-radius:999px;box-shadow:0 10px 24px rgba(227,25,55,.3)}
+.toolbar button{border-radius:999px;background:#6F6F6A!important;color:#fff!important;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.toolbar button svg{stroke:#fff}
+#vp{background:#DEDEDB}
+.teambar,.pgbar{background:#F5F5F3}
+.tchip{border-radius:999px}
+.sheet{border-radius:24px 24px 0 0;box-shadow:inset 0 5px 0 #8E8E88,0 -8px 30px rgba(0,0,0,.18)}
+.seg{background:#E4E4E1!important}.seg,.seg button{border-radius:999px}
+.exp a,.exp button{border-radius:14px}
+.exp [data-v="share"],.row2 .ok,.tourGo{background:var(--accent)}
+.alist{background:#fff;border:0;box-shadow:0 0 0 1px var(--line)}
+.arow .ic{background:#8E8E88;box-shadow:none;color:#fff}
+.arow .ic svg{stroke:#fff}
+.inp{border-radius:14px;background:#F5F5F3}
+.toolbar button#addBtn{background:#E31937!important;border-color:#fff}
+.arow.danger .ic,.arow[data-v="delete"] .ic,.arow.del .ic{background:#FCE4E8!important;color:#E31937}
+.arow.danger .ic svg,.arow[data-v="delete"] .ic svg,.arow.del .ic svg{stroke:#E31937}
+#gate .gtop{background-color:#8E8E88;box-shadow:inset 0 -5px 0 #E31937}
+#gate .gstep b{background:#8E8E88}
+#gate .gbtn{background:#E31937}
 </style>
 </head>
 <body>
@@ -581,7 +618,7 @@ header .cloud span{max-width:84px;overflow:hidden;text-overflow:ellipsis}
 
 <script>
 "use strict";
-const APP_VER="3.19";
+const APP_VER="3.20";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -2483,7 +2520,7 @@ async function ensureSample(){
   await dbPut("drawings",{id:TOUR_ID,name:"견본 도면 (연습용)",pages:1,created:now,opened:now+1e9,by:"",kind:"pdf",sample:true});   // 맨 위에 오게
 }
 const T={i:-1,flag:false,timer:null};
-const vis=sel=>{const e=typeof sel==="function"?sel():$(sel); return e&&!e.hidden&&e.offsetParent!==null?e:null;};
+const vis=sel=>{const e=typeof sel==="function"?sel():$(sel); return e&&!e.hidden&&e.getClientRects().length?e:null;};   // fixed(아래 창)도 보이면 잡는다
 const sheetOpen=id=>!$(id).hidden;
 const TOUR=[
   {t:()=>$('.dcard[data-id="sample"]'),x:"<b>견본 도면</b>을 눌러 열어 보세요.",go:()=>!$("#viewer").hidden&&V.drawing&&V.drawing.id===TOUR_ID&&V.page},
@@ -2501,10 +2538,10 @@ const TOUR=[
   {t:"#listBtn",x:"<b>목록</b>을 누르세요.",go:()=>sheetOpen("#listSheet")},
   {t:"#listSheet",x:"찍은 핀이 모두 나와요. <b>미조치·조치완료</b>, 팀으로 거를 수 있고, 핀을 누르면 그 위치로 이동해요.",next:1,post:()=>closeSheets()},
   {t:"#expBtn",x:"<b>내보내기</b>를 누르세요.",go:()=>sheetOpen("#actSheet")||sheetOpen("#expSheet")},
-  {t:"#actSheet",x:"<b>부분 캡처</b>는 도면 일부를 그림으로, <b>PDF 만들기</b>는 핀 표시 도면과 사진대지를 한 파일로 만들어요. <b>PDF 만들기</b>를 눌러 보세요.",go:()=>sheetOpen("#expSheet")},
+  {t:()=>$('#actSheet [data-v="pdf"]'),x:"<b>부분 캡처</b>는 도면 일부를 그림으로, <b>PDF 만들기</b>는 핀 표시 도면과 사진대지를 한 파일로 만들어요. <b>PDF 만들기</b>를 눌러 보세요.",go:()=>sheetOpen("#expSheet")},
   {t:"#expSheet",x:"보낼 <b>팀</b>을 고르고 만들면, 핀 표시 도면 + <b>사진대지</b>(한 쪽에 핀 2개: 조치 전·후 사진, 내용, 위치도) PDF를 카톡 등으로 바로 보낼 수 있어요.",next:1,post:()=>closeSheets()},
   {t:"#backBtn",x:"<b>‹ 목록</b>을 눌러 도면 목록으로 돌아가세요.",go:()=>!$("#home").hidden},
-  {t:"#cloudBtn",x:"여러 사람이 함께 쓰려면 <b>구글 공유</b>에 웹 앱 주소·PIN·이름을 넣어요. 주소와 PIN은 관리자에게 받으세요.",next:1},
+  {t:"#cloudBtn",x:"이 버튼은 <b>구글 공유</b> 연결 상태예요. 로그인하면 <b>공유 중</b>으로 바뀌고, 협업 도면을 여러 사람이 함께 봐요. 눌러서 로그아웃할 수도 있어요.",next:1},
   {t:"#importBtn",x:"이제 실제 도면을 쓰려면 <b>도면 불러오기</b>로 카톡·파일 앱에 받은 PDF나 DWG를 고르면 돼요.",next:1},
   {t:null,x:"다 됐어요! 👏<br>연습한 <b>견본 도면</b>은 지울까요? 남겨 두면 언제든 다시 연습할 수 있어요.",end:1}
 ];
@@ -2555,7 +2592,7 @@ function tourTick(){
   card.classList.toggle("sm",land);
   const ch=card.offsetHeight;
   if(side){ card.style.top=Math.max(8,Math.min(H-ch-8,(top+bot)/2-ch/2))+"px"; card.style.bottom="auto"; }
-  else if(big){ card.style.top=(top+10)+"px"; card.style.bottom="auto"; }   // 큰 영역: 영역 위쪽 안에
+  else if(big){ card.style.top=(top-ch-14>=8?top-ch-14:top+10)+"px"; card.style.bottom="auto"; }   // 큰 영역: 위에 자리가 있으면 영역 위, 없으면 영역 위쪽 안에
   else if((top+bot)/2>H/2){ card.style.top=Math.max(8,top-ch-14)+"px"; card.style.bottom="auto"; }   // 아래쪽 버튼: 카드는 위에
   else { card.style.top=Math.min(H-ch-8,bot+14)+"px"; card.style.bottom="auto"; }
 }
