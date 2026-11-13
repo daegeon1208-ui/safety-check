@@ -675,7 +675,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER="3.23";
+const APP_VER="3.24";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -2397,7 +2397,7 @@ async function showExport(drawing,allPins){
     const draw=()=>{ const l=allPins.filter(p=>sel.has(p.team||"")), n=l.length, blocks=l.reduce((a,p)=>a+(allPh?photoRows(p):1),0);
       body.innerHTML=`<div class="lbl">사진대지 양식</div>
         <div class="seg" id="expTm"><button data-v="internal" class="${tmpl==="internal"?"on":""}">내부 관리 현황</button><button data-v="vendor" class="${tmpl==="vendor"?"on":""}">협력업체 전달</button></div>
-        <p style="font-size:13px;color:var(--sub);margin-top:6px">${tmpl==="vendor"?"「하자 조치 요청서」: 업체별로 쪽을 나누고, 우리 쪽 이름·팀은 빼고, 쪽마다 조치 예정일·확인 서명 칸을 넣어요.":"맨 앞에 전체·팀별·업체별 미조치/완료 개수와 조치율, 핀 목록 표를 넣고 그 뒤에 사진대지가 나와요."}</p>
+        <p style="font-size:13px;color:var(--sub);margin-top:6px">${tmpl==="vendor"?"「하자 조치 요청서」: 업체별로 쪽을 나누고, 조치 전 사진만 넣고(조치 후 칸 없음), 우리 쪽 이름·팀은 빼고, 쪽마다 조치 예정일·확인 서명 칸을 넣어요.":"맨 앞에 전체·팀별·업체별 미조치/완료 개수와 조치율, 핀 목록 표를 넣고 그 뒤에 사진대지가 나와요."}</p>
         <div class="lbl">넣을 팀 (여러 팀 고를 수 있음)</div><div class="tchips" id="expTeams">${teamChips(sel,none)}</div>
         <div class="lbl">사진대지에 넣을 사진</div>
         <div class="seg" id="expPh"><button data-v="rep" class="${allPh?"":"on"}">대표 사진만</button><button data-v="all" class="${allPh?"on":""}">사진 전부</button></div>
@@ -2606,8 +2606,8 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
   // 칸 목록: 대표 사진만이면 핀 하나에 한 칸, 사진 전부면 사진 짝마다 한 칸
   const rows=[];
   for(const p of pins){
-    if(!allPhotos){ rows.push({p,b:repOf(p.photos),a:repOf(p.donePhotos),i:0,n:1}); continue; }
-    const b=photoOrder(p.photos).filter(x=>x.data), a=photoOrder(p.donePhotos).filter(x=>x.data), n=Math.max(1,b.length,a.length);
+    if(!allPhotos){ rows.push({p,b:repOf(p.photos),a:VEN?null:repOf(p.donePhotos),i:0,n:1}); continue; }
+    const b=photoOrder(p.photos).filter(x=>x.data), a=VEN?[]:photoOrder(p.donePhotos).filter(x=>x.data), n=Math.max(1,b.length,a.length);
     for(let i=0;i<n;i++) rows.push({p,b:b[i]||null,a:a[i]||null,i,n});
   }
   // 쪽 배치: 한 쪽에 2칸. 협력업체용은 업체가 바뀌면 새 쪽
@@ -2653,7 +2653,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
     const tr=wrap(p.trade||"",10,CW*0.42)[0]; if(tr) page.drawText(tr,{x:xr-8-kor.widthOfTextAtSize(tr,10),y:yy-HH/2-3.6,size:10,font:kor,color:INK});
     yy-=HH;
     // 사진 줄: 조치 전 | 조치 후 (대표 사진 하나씩)
-    const PH=bh*0.56, hw=CW/2;
+    const PH=bh*0.56, hw=VEN?CW:CW/2;   // 협력업체용은 조치 전 사진만 (조치 후 칸 없음)
     const putPhoto=async(x,bx,label,lcol,empty)=>{
       const pad=7, lh=13, bw=hw-2*pad, bhh=PH-2*pad-lh;
       page.drawText(label,{x:bx+pad,y:yy-pad-9,size:9,font:kor,color:lcol});
@@ -2662,8 +2662,8 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
       else page.drawText(empty,{x:bx+(hw-kor.widthOfTextAtSize(empty,10.5))/2,y:yy-PH/2-8,size:10.5,font:kor,color:SUB});
     };
     await putPhoto(R.b,xl,"조치 전",SUB,"사진 없음");
-    await putPhoto(R.a,xl+hw,"조치 후",GREEN,done?"사진 없음":"미조치");
-    page.drawLine({start:{x:xl+hw,y:yy},end:{x:xl+hw,y:yy-PH},thickness:0.6,color:LINE});
+    if(!VEN){ await putPhoto(R.a,xl+hw,"조치 후",GREEN,done?"사진 없음":"미조치");
+      page.drawLine({start:{x:xl+hw,y:yy},end:{x:xl+hw,y:yy-PH},thickness:0.6,color:LINE}); }
     page.drawLine({start:{x:xl,y:yy-PH},end:{x:xr,y:yy-PH},thickness:0.6,color:LINE});
     yy-=PH;
     // 아래 줄: 왼쪽 내용·등록·완료, 오른쪽 위치도
