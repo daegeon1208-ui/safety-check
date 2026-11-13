@@ -7,12 +7,16 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="도면 핀">
-<meta name="theme-color" content="#1F2937">
+<meta name="theme-color" content="#1B2B4B">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{
-  --bg:#F2F2EE; --card:#fff; --ink:#1F2937; --sub:#6B7280; --line:#E5E7EB;
-  --open:#D3162F; --done:#15803D; --accent:#1F2937; --chip:#F3F4F6;
+  /* 도면 용지 느낌: 푸른 기가 도는 종이색 바탕 + 제도용 남색 잉크. 빨강·초록은 미조치·완료 상태에만 쓴다 */
+  --bg:#ECEFF3; --card:#fff; --ink:#16213A; --sub:#5B6779; --line:#DAE0E8;
+  --open:#D3162F; --done:#15803D; --accent:#1B2B4B; --chip:#E7EBF1;
+  --grid:rgba(27,43,75,.045); --soft:#F6F8FB; --ring:rgba(27,43,75,.28);
+  --sh1:0 1px 2px rgba(22,33,58,.06),0 2px 8px rgba(22,33,58,.05);
+  --sh2:0 6px 20px rgba(22,33,58,.16);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;background:var(--bg);color:var(--ink);
@@ -256,6 +260,70 @@ header .cloud[data-state="err"] i{background:#F87171}
 .arow .ck{font-size:12px;color:var(--accent);font-weight:600;flex:none}
 #vTitle{cursor:pointer}
 .exp p{color:var(--sub);font-size:14px;line-height:1.6;margin:4px 0}
+
+/* ---------- 3.18 디자인 다듬기 ---------- */
+body{letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+.cnt,.tcnt,.lpages,.dates,.li .t3,.dcard .sm,.pgbar .pgmid small,.appver,.imgpos,.badge{font-variant-numeric:tabular-nums}
+button:focus-visible,.inp:focus-visible,input:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+/* 머리줄 */
+header{background:var(--accent);box-shadow:inset 0 -1px 0 rgba(255,255,255,.08)}
+header h1{font-size:18px;font-weight:800;letter-spacing:-.02em}
+header .hbtn{font-size:14.5px;font-weight:600;padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.08)}
+header .hbtn:active{background:rgba(255,255,255,.18)}
+header #backBtn{background:none;padding-left:4px}
+/* 첫 화면: 제도 용지 모눈 */
+#home main{background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;padding-top:16px}
+.dcard{border:1px solid var(--line);border-radius:14px;padding:14px 8px 14px 16px;margin-bottom:10px;box-shadow:var(--sh1)}
+.dcard:active{background:var(--soft)}
+.dcard .nm{font-size:16.5px;font-weight:700;line-height:1.35;letter-spacing:-.02em}
+.dcard .sm{font-size:12.5px;margin-top:7px;line-height:1.6;word-break:keep-all}
+.dcard .more{width:40px;height:40px;padding:0;border-radius:50%;display:grid;place-items:center;font-size:18px;flex:none}
+.dcard .more:active{background:var(--chip)}
+.dcard.remote{background:var(--soft);border-style:dashed;box-shadow:none}
+.cnt{padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700}
+.ftype{border-radius:4px;letter-spacing:.4px}
+.hfilter{background:var(--chip);border-radius:12px;padding:3px;gap:2px;margin:0 0 12px}
+.hfilter button{background:none;border-radius:9px;padding:8px 6px;font-size:14px}
+.hfilter button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(22,33,58,.16)}
+.empty{line-height:1.8;font-size:15px}
+.fab{left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));padding:16px;border-radius:16px;font-size:16px;font-weight:700;letter-spacing:-.01em;box-shadow:0 8px 22px rgba(27,43,75,.35)}
+.fab:active,.tourGo:active{transform:translateY(1px)}
+.tourGo{border-radius:14px;padding:14px}
+/* 도면 보기 */
+#vp{background:#CDD3DC}
+.teambar,.pgbar{border-bottom-color:var(--line)}
+.pgbar>button:not(.pgmid){border-radius:12px}
+.toolbar button{border-radius:16px;font-weight:700;background:rgba(255,255,255,.97);box-shadow:0 4px 14px rgba(22,33,58,.2),0 0 0 1px rgba(22,33,58,.06)}
+.toolbar button:active{background:var(--soft)}
+.modebar button{box-shadow:0 2px 8px rgba(22,33,58,.2)}
+.hint,.toast{background:rgba(22,33,58,.94);box-shadow:var(--sh2)}
+/* 아래 창 */
+.sheet-bg{background:rgba(16,24,40,.42)}
+.sheet{border-radius:22px 22px 0 0;box-shadow:0 -8px 28px rgba(22,33,58,.18)}
+.sheet .grab{background:#CBD3DE;margin-top:9px}
+.sheet .sh{padding:10px 16px 12px}
+.sheet .sh h2{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.sheet .sb{padding:14px 16px 18px}
+.x{width:36px;height:36px;padding:0;border-radius:50%;background:var(--chip);font-size:16px;display:grid;place-items:center}
+.pnav{border-radius:50%;width:36px;height:36px}
+.lbl{font-size:12.5px;font-weight:700;color:var(--sub);letter-spacing:.02em;margin:16px 0 7px}
+.seg{border-radius:12px}
+.seg button{border-radius:9px}
+.seg button.on.a{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(22,33,58,.16)}
+.exp .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(22,33,58,.16)}
+.inp{background:var(--soft);border-color:var(--line);border-radius:12px;padding:11px 13px}
+.inp:focus{background:var(--card);border-color:var(--accent);outline:none;box-shadow:0 0 0 3px rgba(27,43,75,.12)}
+.photos .ph,.photos .add{border-radius:12px}
+.photos .add{border-color:#C3CCD8;background:var(--soft)}
+.row2 button{border-radius:14px;padding:13px}
+.exp a,.exp button{border-radius:14px}
+.alist{background:var(--soft);border:1px solid var(--line)}
+.exp button.arow{border-bottom-color:var(--line)}
+.arow .ic{background:var(--card);box-shadow:0 0 0 1px var(--line)}
+.li{padding:13px 0}
+.li .t1{font-weight:700}
+.badge{box-shadow:0 0 0 2px #fff}
+#tour .card{border-radius:18px}
 </style>
 </head>
 <body>
@@ -447,7 +515,7 @@ header .cloud[data-state="err"] i{background:#F87171}
 
 <script>
 "use strict";
-const APP_VER="3.17";
+const APP_VER="3.18";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
