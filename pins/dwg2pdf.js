@@ -234,7 +234,7 @@ export async function dwgToPdf(buf, progress) {
   for (const [key, arr] of D.strokes) {
     const c = col(key.split(",").map(Number));
     let d = "", n = 0;
-    const flush = () => { if (d) page.drawSvgPath(d, { x: 0, y: PH, borderColor: c, borderWidth: 0.45, borderLineCap: 1 }); d = ""; n = 0; };
+    const flush = () => { if (d) page.drawSvgPath(d, { x: 0, y: PH, borderColor: c, borderWidth: 0.12, borderLineCap: 1 }); d = ""; n = 0; };
     for (const p of arr) {
       let seg = "", prev = null;
       for (const q of p) { const x = X(q[0]), y = Yd(q[1]); if (!inPage(x, y)) { prev = null; continue; }

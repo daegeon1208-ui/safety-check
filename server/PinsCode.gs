@@ -51,9 +51,10 @@ function doPost(e) {
         case 'ping': ss_(); return out_({ ok: true, time: Date.now(), me: me });
         case 'drawings': return out_({ ok: true, drawings: drawings_(me), notes: notes_(me), me: me });
         case 'uploadDrawing': return out_({ ok: true, drawing: uploadDrawing_(req.drawing, req.data, me.name) });
-        case 'users': return out_({ ok: true, users: rows_('사용자').list.map(u => String(u.name).trim()).filter(Boolean) });
+        case 'users': return out_({ ok: true, users: users_(me) });
         case 'invite': return out_({ ok: true, sent: invite_(req.id, req.to || [], me), drawing: drawingOut_(rows_('도면').list.find(x => x.id === req.id) || {}) });
         case 'notes': return out_({ ok: true, notes: notes_(me) });
+        case 'changePw': changePw_(me, req.newPw); return out_({ ok: true });
         case 'readNotes': readNotes_(me); return out_({ ok: true });
         case 'respond': return out_({ ok: true, note: respond_(req.noteId, !!req.accept, me) });
         case 'renameDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
@@ -126,6 +127,7 @@ function hash_(salt, pw) {
   return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + ':' + pw, Utilities.Charset.UTF_8));
 }
 function userOut_(u) { return { name: u.name, admin: u.admin === 'true' || u.admin === true || String(u.admin).toUpperCase() === 'TRUE' }; }
+const TEST_TAG = '(테스트)';
 function auth_(req) {
   const name = String(req.user || '').trim(), pw = String(req.pw || '');
   if (!name || !pw) throw new Error('로그인이 필요합니다');
@@ -133,8 +135,18 @@ function auth_(req) {
   if (!u) throw new Error('등록되지 않은 이름입니다');
   if (hash_(u.salt, pw) !== u.hash) throw new Error('비밀번호가 맞지 않습니다');
   const me = userOut_(u);
-  if (me.admin && req.asUser) { me.admin = false; me.asUser = true; }   // 관리자가 '일반 사용자 모드'로 시험할 때
+  if (me.admin && req.asUser) { me.admin = false; me.asUser = true; me.realName = me.name; me.name = me.name + TEST_TAG; }   // 관리자가 '일반 사용자 모드'로 시험할 때: 임시 테스트 계정(이름(테스트))으로
   return me;
+}
+/* 비밀번호 바꾸기: 지금 비밀번호(req.pw)는 auth_ 에서 이미 확인했다 */
+function changePw_(me, pw) {
+  if (me.asUser) throw new Error('테스트 계정에서는 비밀번호를 바꿀 수 없습니다. 관리자로 돌아가서 바꿔 주세요');
+  pw = String(pw || '');
+  if (pw.length < 4) throw new Error('새 비밀번호는 4자 이상으로 해 주세요');
+  const { sh, list } = rows_('사용자');
+  const u = list.find(x => String(x.name).trim() === me.name); if (!u) throw new Error('등록되지 않은 이름입니다');
+  u.salt = Utilities.getUuid(); u.hash = hash_(u.salt, pw);
+  writeRow_(sh, U_COLS, u._row, u);
 }
 function login_(req) {
   const name = String(req.user || '').trim(), pw = String(req.pw || '');
@@ -151,6 +163,7 @@ function login_(req) {
   const salt = Utilities.getUuid(), now = Date.now();
   const o = { name: name, salt: salt, hash: hash_(salt, pw), admin: list.length ? 'false' : 'true', created: now, lastLogin: now };   // 첫 사용자 = 관리자
   writeRow_(sh, U_COLS, 0, o);
+  addNote_({ to: name, type: 'welcome', from: '도면 하자 핀', text: name + '님, 환영합니다! 연습 도면으로 따라하기를 해 볼까요?' });   // 첫 사용자 환영 알림
   return { me: userOut_(o), created: true, time: now };
 }
 
@@ -190,11 +203,22 @@ function setKind_(id, kind, me) {   // 원래 파일 종류(PDF·DWG) 고치기
   return drawingOut_(o);
 }
 function pinDrawing_(pinId) { const o = rows_('핀').list.find(x => x.id === pinId); return o ? o.drawingId : ''; }
+/* 참가자: 핀을 올렸거나 핀을 조치완료로 바꾼 사람 */
+function parts_(pins) {
+  const s = [];
+  pins.forEach(p => {
+    const add = n => { n = String(n || '').trim(); if (n && s.indexOf(n) < 0) s.push(n); };
+    add(p.by);
+    if (p.status === 'done') { let x = {}; try { x = JSON.parse(p['data(JSON)'] || '{}'); } catch (e) {} add(x.doneBy); }
+  });
+  return s;
+}
 function drawings_(me) {
   const pins = rows_('핀').list.filter(p => p.deleted !== 'true');
   return rows_('도면').list.map(o => {
     const d = drawingOut_(o), mine = pins.filter(p => p.drawingId === o.id);
     d.open = mine.filter(p => p.status !== 'done').length; d.done = mine.length - d.open;
+    d.parts = parts_(mine);
     return d;
   });
 }
@@ -344,10 +368,15 @@ function addNote_(n) {
   const { sh } = rows_('알림');
   writeRow_(sh, N_COLS, 0, Object.assign({ id: Utilities.getUuid(), created: Date.now(), read: 'false', state: n.type === 'invite' ? 'pending' : '' }, n));
 }
+function users_(me) {
+  const U = rows_('사용자').list, l = U.map(u => String(u.name).trim()).filter(Boolean);
+  if (me.admin || me.asUser) U.filter(u => userOut_(u).admin).forEach(u => l.push(String(u.name).trim() + TEST_TAG));   // 관리자는 자기 테스트 계정에도 보낼 수 있게
+  return l;
+}
 function invite_(id, to, me) {
   const o = rows_('도면').list.find(x => x.id === id); if (!o || o.deleted === 'true') throw new Error('도면이 없습니다');
   if (!me.admin && !(o.by && o.by === me.name)) throw new Error('도면을 올린 사람과 관리자만 협업 요청을 보낼 수 있습니다');
-  const users = rows_('사용자').list.map(u => String(u.name).trim()), N = rows_('알림').list;
+  const users = users_({ admin: true }), N = rows_('알림').list;
   let sent = 0;
   (to || []).map(x => String(x || '').trim()).forEach(name => {
     if (!name || users.indexOf(name) < 0 || name === o.by || isMember_(o, { name: name })) return;
