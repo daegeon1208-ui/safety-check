@@ -2541,7 +2541,7 @@ const TOUR=[
   {t:()=>$('#actSheet [data-v="pdf"]'),x:"<b>부분 캡처</b>는 도면 일부를 그림으로, <b>PDF 만들기</b>는 핀 표시 도면과 사진대지를 한 파일로 만들어요. <b>PDF 만들기</b>를 눌러 보세요.",go:()=>sheetOpen("#expSheet")},
   {t:"#expSheet",x:"보낼 <b>팀</b>을 고르고 만들면, 핀 표시 도면 + <b>사진대지</b>(한 쪽에 핀 2개: 조치 전·후 사진, 내용, 위치도) PDF를 카톡 등으로 바로 보낼 수 있어요.",next:1,post:()=>closeSheets()},
   {t:"#backBtn",x:"<b>‹ 목록</b>을 눌러 도면 목록으로 돌아가세요.",go:()=>!$("#home").hidden},
-  {t:"#cloudBtn",x:"여러 사람이 함께 쓰려면 <b>구글 공유</b>에 웹 앱 주소·PIN·이름을 넣어요. 주소와 PIN은 관리자에게 받으세요.",next:1},
+  {t:"#cloudBtn",x:"이 버튼은 <b>구글 공유</b> 연결 상태예요. 로그인하면 <b>공유 중</b>으로 바뀌고, 협업 도면을 여러 사람이 함께 봐요. 눌러서 로그아웃할 수도 있어요.",next:1},
   {t:"#importBtn",x:"이제 실제 도면을 쓰려면 <b>도면 불러오기</b>로 카톡·파일 앱에 받은 PDF나 DWG를 고르면 돼요.",next:1},
   {t:null,x:"다 됐어요! 👏<br>연습한 <b>견본 도면</b>은 지울까요? 남겨 두면 언제든 다시 연습할 수 있어요.",end:1}
 ];
@@ -2592,7 +2592,7 @@ function tourTick(){
   card.classList.toggle("sm",land);
   const ch=card.offsetHeight;
   if(side){ card.style.top=Math.max(8,Math.min(H-ch-8,(top+bot)/2-ch/2))+"px"; card.style.bottom="auto"; }
-  else if(big){ card.style.top=(top+10)+"px"; card.style.bottom="auto"; }   // 큰 영역: 영역 위쪽 안에
+  else if(big){ card.style.top=(top-ch-14>=8?top-ch-14:top+10)+"px"; card.style.bottom="auto"; }   // 큰 영역: 위에 자리가 있으면 영역 위, 없으면 영역 위쪽 안에
   else if((top+bot)/2>H/2){ card.style.top=Math.max(8,top-ch-14)+"px"; card.style.bottom="auto"; }   // 아래쪽 버튼: 카드는 위에
   else { card.style.top=Math.min(H-ch-8,bot+14)+"px"; card.style.bottom="auto"; }
 }
