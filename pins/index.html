@@ -280,7 +280,7 @@ header .cloud[data-state="err"] i{background:#E31937}
 .who i.pav{width:28px;height:28px;display:grid;place-items:center;background:#8E8E88;color:#fff;font-style:normal;font-size:13px;font-weight:700}
 .who small{color:var(--sub);font-size:12px;margin-left:auto;text-align:right}
 .pgrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
-.pgrow canvas{width:64px;height:64px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:6px;flex:none}
+.pgrow canvas{cursor:zoom-in;width:64px;height:64px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:6px;flex:none}
 .pgrow .t{flex:1;min-width:0;font-size:14px}
 .pgrow .t input{width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:#fff;color:var(--ink)}
 .pgrow .t small{display:block;color:var(--sub);font-size:12px;word-break:break-all}
@@ -849,7 +849,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.50";
+const APP_VER = "3.51";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1744,6 +1744,7 @@ $("#pgList").addEventListener("input",e=>{
   PE.items[+e.target.closest(".pgrow").dataset.i].name=e.target.value; PE.named=true;
 });
 $("#pgList").addEventListener("click",e=>{
+  if(PE&&e.target.matches(".pgrow canvas")){ showPageBig(+e.target.closest(".pgrow").dataset.i); return; }
   const b=e.target.closest("button"); if(!b||!PE) return;
   const i=+b.closest(".pgrow").dataset.i, it=PE.items;
   if(b.dataset.a==="up") [it[i-1],it[i]]=[it[i],it[i-1]];
@@ -2573,6 +2574,7 @@ const imgSeq=p=>[...(p.photos||[]).map((x,i)=>["photos",i]),...(p.donePhotos||[]
 async function showImg(list,i){
   const p=selPin(), x=p&&p[list]&&p[list][i]; if(!x) return;
   if(!x.data&&!(await ensurePhoto(p,x))){ toast("사진을 받지 못했습니다"); return; }
+  $("#imgView").dataset.mode=""; pgBig=null;
   resetImgZoom(); $("#imgViewImg").src=photoUrl(x); $("#imgView").hidden=false; $("#imgView").dataset.i=i; $("#imgView").dataset.list=list;
   const can=list==="photos"?canEdit(p):canDonePhoto(p), isRep=(p[list].find(y=>y.rep)||p[list][0])===x;
   $("#imgDel").hidden=$("#imgRot").hidden=!can; $("#imgRep").hidden=!can||p[list].length<2;
@@ -2581,7 +2583,29 @@ async function showImg(list,i){
   $("#imgPos").textContent=`${list==="photos"?"조치 전":"조치 후"} ${i+1}/${p[list].length}`+(seq.length>p[list].length?`  ·  전체 ${k+1}/${seq.length}`:"");
   $("#imgPrev").hidden=k<=0; $("#imgNext").hidden=k<0||k>=seq.length-1;
 }
+/* 쪽 편집: 작은 도면을 누르면 사진 보기 창에서 크게 본다 (두 손가락 확대, ‹ › 로 다른 쪽) */
+let pgBig=null;
+async function showPageBig(i){
+  if(!PE) return; const pe=PE, x=pe.items[i]; if(!x) return;
+  const tok={i}; pgBig=tok; const v=$("#imgView"); v.dataset.mode="page";
+  $("#imgDel").hidden=$("#imgRot").hidden=$("#imgRep").hidden=true;
+  $("#imgPos").textContent=`${i+1}쪽 / ${pe.items.length}`+((x.name||"").trim()?` · ${x.name.trim()}`:"");
+  $("#imgPrev").hidden=i<=0; $("#imgNext").hidden=i>=pe.items.length-1;
+  resetImgZoom(); const t=pe.thumbs[x.src+":"+x.n]; $("#imgViewImg").src=t?t.toDataURL():""; v.hidden=false;
+  try{
+    const pg=await pe.srcs[x.src].pdf.getPage(x.n), v0=pg.getViewport({scale:1});
+    const long=Math.min(3600,Math.round(Math.max(innerWidth,innerHeight)*Math.min(devicePixelRatio||2,3)*1.5)), vp=pg.getViewport({scale:long/Math.max(v0.width,v0.height)});
+    const c=document.createElement("canvas"); c.width=Math.round(vp.width); c.height=Math.round(vp.height);
+    const g=c.getContext("2d"); g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height);
+    await pg.render({canvasContext:g,viewport:vp}).promise;
+    const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.9)); c.width=c.height=0;
+    if(pgBig!==tok||v.hidden) return;
+    const old=$("#imgViewImg").dataset.pgurl; if(old) URL.revokeObjectURL(old);
+    const u=URL.createObjectURL(blob); $("#imgViewImg").dataset.pgurl=u; $("#imgViewImg").src=u;
+  }catch(err){ console.error(err); if(pgBig===tok) toast("이 쪽을 크게 그리지 못했습니다"); }
+}
 function stepImg(d){
+  if($("#imgView").dataset.mode==="page"){ if(pgBig) showPageBig(pgBig.i+d); return; }
   const p=selPin(); if(!p||$("#imgView").hidden) return;
   const seq=imgSeq(p), k=seq.findIndex(([l,j])=>l===$("#imgView").dataset.list&&j===+$("#imgView").dataset.i), n=seq[k+d];
   if(n) showImg(n[0],n[1]);
@@ -2631,7 +2655,7 @@ $("#imgRep").addEventListener("click",async()=>{
 });
 $("#pPhotos").addEventListener("click",photoBoxClick("photos","addPhoto"));
 $("#pDonePhotos").addEventListener("click",photoBoxClick("donePhotos","addDonePhoto"));
-$("#imgClose").addEventListener("click",()=>$("#imgView").hidden=true);
+$("#imgClose").addEventListener("click",()=>{ $("#imgView").hidden=true; if($("#imgView").dataset.mode==="page"){ $("#imgView").dataset.mode=""; pgBig=null; } });
 /* 사진 회전: 누를 때마다 시계 방향 90°. 회전한 사진을 새 사진으로 저장(공유면 새 파일로 올라가고 예전 파일은 지워짐) */
 async function rotatePhoto(ph){
   const im=await loadImage(new Blob([ph.data],{type:ph.type||"image/jpeg"}));
@@ -3187,10 +3211,11 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
 /* ---------- 따라하기: 연습 도면에서 실제 버튼을 눌러 보며 배우기 ---------- */
 const TOUR_ID="sample";
 async function ensureSample(){
-  if(await dbGet("drawings",TOUR_ID)&&await dbGet("files",TOUR_ID)) return;
+  const SV=2, old=await dbGet("drawings",TOUR_ID);   // SV: 견본 도면 판 (2 = 3.51 공동주택 기준층 평면도)
+  if(old&&old.sampleVer===SV&&await dbGet("files",TOUR_ID)) return;
   const buf=await (await fetch("sample.pdf")).arrayBuffer(), now=Date.now();
   await dbPut("files",{id:TOUR_ID,data:buf});
-  await dbPut("drawings",{id:TOUR_ID,name:"견본 도면 (연습용)",pages:1,created:now,opened:now+1e9,by:"",kind:"pdf",sample:true});   // 맨 위에 오게
+  await dbPut("drawings",{...(old||{}),id:TOUR_ID,name:"견본 도면 (연습용)",pages:1,created:old?old.created:now,opened:old?old.opened:now+1e9,by:"",kind:"pdf",sample:true,sampleVer:SV,ver:String(now)});   // 맨 위에 오게
 }
 const T={i:-1,flag:false,timer:null,busy:false,pinId:null};
 const vis=sel=>{const e=typeof sel==="function"?sel():$(sel); return e&&!e.hidden&&e.getClientRects().length?e:null;};   // fixed(아래 창)도 보이면 잡는다
