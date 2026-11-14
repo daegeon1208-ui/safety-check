@@ -40,6 +40,8 @@ ol.marks li::before{content:attr(data-n);position:absolute;left:0;top:1px;width:
 .team{display:inline-flex;align-items:center;gap:4px;margin-right:8px;white-space:nowrap}
 .team i{width:10px;height:10px;border-radius:50%;display:inline-block}
 footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
+.cmp{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0 14px}.cmp th,.cmp td{border:1px solid #DCDCD8;padding:7px 8px;text-align:left;vertical-align:top}.cmp th{background:#F0F0EE}.cmp td:first-child{color:#6F6F6A;white-space:nowrap}
+ul.plain{padding-left:18px;margin:8px 0}ul.plain li{margin:6px 0;line-height:1.55}
 </style>
 </head>
 <body>
@@ -58,15 +60,17 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
     <ol>
       <li><a href="#s1">앱 설치(홈 화면에 추가)</a></li>
       <li><a href="#s2">도면 불러오기</a></li>
-      <li><a href="#s3">도면 화면 살펴보기</a></li>
-      <li><a href="#s4">핀 찍기</a></li>
-      <li><a href="#s5">핀 내용·사진 넣기</a></li>
-      <li><a href="#s6">조치완료 처리</a></li>
-      <li><a href="#s7">팀별로 보기</a></li>
-      <li><a href="#s8">핀 목록</a></li>
-      <li><a href="#s9">내보내기(사진대지 PDF)</a></li>
-      <li><a href="#s10">여러 사람과 함께 쓰기(구글 공유)</a></li>
-      <li><a href="#s11">따라하기로 연습하기</a></li>
+      <li><a href="#s3">도면 관리: 협업·개인, ⋯ 도면 설정</a></li>
+      <li><a href="#s4">도면 화면 살펴보기</a></li>
+      <li><a href="#s5">핀 찍기</a></li>
+      <li><a href="#s6">핀 내용·사진 넣기</a></li>
+      <li><a href="#s7">조치완료 처리</a></li>
+      <li><a href="#s8">팀별로 보기</a></li>
+      <li><a href="#s9">핀 목록</a></li>
+      <li><a href="#s10">내보내기(사진대지 PDF)</a></li>
+      <li><a href="#s11">여러 사람과 함께 쓰기(구글 공유)</a></li>
+      <li><a href="#s12">따라하기로 연습하기</a></li>
+      <li><a href="#s13">댓글·알림·설정</a></li>
     </ol>
   </nav>
 
@@ -86,7 +90,7 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
     <div class="shots"><figure><img src="img/01-home.jpg" alt="처음 화면" loading="lazy"><figcaption>처음 화면</figcaption></figure></div>
     <ol class="marks">
       <li data-n="1"><b>＋ 도면 불러오기</b>를 눌러 카톡·파일 앱에 받은 <b>PDF</b>나 캐드 <b>DWG</b> 파일을 고르세요. DWG는 휴대폰 안에서 PDF로 바꿔서 넣어요.</li>
-      <li data-n="2">처음이라면 <b>연습 도면으로 따라하기</b>를 눌러 보세요. 버튼을 직접 눌러 가며 배울 수 있어요(11번 참고).</li>
+      <li data-n="2">처음이라면 <b>연습 도면으로 따라하기</b>를 눌러 보세요. 버튼을 직접 눌러 가며 배울 수 있어요(12번 참고).</li>
     </ol>
     <p>불러온 도면은 목록에 쌓여요. 목록 위 <b>검색창</b>에 도면 이름 일부를 넣으면 바로 찾아 주고, <b>협업 도면 / 개인 도면</b> 탭으로 나눠 볼 수 있어요. 목록의 <b>⋯</b> 에서 이름 바꾸기, 쪽 편집, 복사, 공유, 삭제를 할 수 있어요.</p>
     <div class="tip"><b>오른쪽 위 버튼:</b> 🔔 <b>알림</b>, ⚙️ <b>설정</b>(앱 버전 · 비밀번호 변경 · 어플 사용법). 비밀번호를 바꿀 때는 지금 비밀번호로 본인 확인을 한 뒤, 새 비밀번호를 두 번 넣어요.</div>
@@ -94,7 +98,33 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
   </section>
 
   <section id="s3">
-    <h2><span class="n">3</span>도면 화면 살펴보기</h2>
+    <h2><span class="n">3</span>도면 관리: 협업 도면과 개인 도면, ⋯ 도면 설정</h2>
+    <p>목록 위 탭에서 <b>협업 도면</b>과 <b>개인 도면</b>을 나눠 봐요. 둘의 차이는 이래요.</p>
+    <table class="cmp">
+      <tr><th></th><th>협업 도면</th><th>개인 도면</th></tr>
+      <tr><td>저장 위치</td><td>구글(공유 서버) + 내 휴대폰</td><td>내 휴대폰에만</td></tr>
+      <tr><td>누가 보나</td><td>로그인한 함께 쓰는 사람 모두</td><td>나만</td></tr>
+      <tr><td>핀·사진</td><td>몇 초 안에 서로 들어가요</td><td>다른 사람에게 안 보여요</td></tr>
+      <tr><td>댓글·알림</td><td>있어요</td><td>없어요</td></tr>
+      <tr><td>인터넷</td><td>필요(끊기면 모아 두었다가 다시 연결되면 보냄)</td><td>없어도 돼요</td></tr>
+      <tr><td>쓰면 좋은 때</td><td>팀과 이슈·하자·전달사항을 함께 관리</td><td>개인 메모, 연습, 아직 공유하기 이른 도면</td></tr>
+    </table>
+    <p>도면 카드 오른쪽 <b>⋯</b>를 누르면 <b>도면 설정</b>이 나와요.</p>
+    <ul class="plain">
+      <li><b>공유하기</b>: 핀 표시 도면과 사진대지를 PDF로 만들어 카톡 등으로 보내요.</li>
+      <li><b>도면 정보</b>: 올린 사람·시각, 최근 바뀐 핀, 참가자(핀을 올렸거나 조치완료한 사람)를 봐요.</li>
+      <li><b>이름 바꾸기</b>: 목록에 보이는 도면 이름을 바꿔요.</li>
+      <li><b>쪽 편집</b>: 쪽마다 이름(예: 지하1층)을 붙이고, 다른 PDF·DWG를 합치거나 쪽을 빼요.</li>
+      <li><b>도면 복사</b>: 핀·사진까지 그대로, 또는 도면만 복사해요.</li>
+      <li><b>개인 도면으로 바꾸기 / 협업 도면으로 바꾸기</b>: 공유 도면은 개인 사본을 만들거나, 올린 사람·관리자라면 공유에서 내릴 수 있어요.</li>
+      <li><b>협업 요청 보내기</b> (협업 도면, 올린 사람·관리자): 이름을 검색해 요청하면, 받은 사람은 비밀번호 없이 열 수 있어요.</li>
+      <li><b>비밀번호 걸기</b> (협업 도면, 올린 사람·관리자): 비밀번호를 아는 사람만 열어요. 올린 사람과 관리자는 그냥 열려요.</li>
+      <li><b>삭제</b>: 도면과 핀을 모두 지워요. 협업 도면은 함께 쓰는 사람 모두에게서 지워지니 조심하세요.</li>
+    </ul>
+  </section>
+
+  <section id="s4">
+    <h2><span class="n">4</span>도면 화면 살펴보기</h2>
     <p>도면을 누르면 열려요. <b>두 손가락으로 벌리면 확대</b>, <b>한 손가락으로 끌면 이동</b>이에요.</p>
     <div class="shots"><figure><img src="img/02-viewer.jpg" alt="도면 화면" loading="lazy"><figcaption>도면 화면</figcaption></figure></div>
     <ol class="marks">
@@ -113,8 +143,8 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
       · 조치완료 핀은 흐리게 ✓ 표시.</p>
   </section>
 
-  <section id="s4">
-    <h2><span class="n">4</span>핀 찍기</h2>
+  <section id="s5">
+    <h2><span class="n">5</span>핀 찍기</h2>
     <div class="shots">
       <figure><img src="img/03-addmode.jpg" alt="핀 찍기 시작" loading="lazy"><figcaption>① 핀 버튼을 누른 모습</figcaption></figure>
       <figure><img src="img/04-temppin.jpg" alt="위치를 누른 모습" loading="lazy"><figcaption>② 도면에서 위치를 누른 모습</figcaption></figure>
@@ -127,8 +157,8 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
     <div class="tip"><b>구역 핀:</b> 사각형은 손가락으로 끌어 그리고, 다각형은 꼭짓점을 차례로 누른 뒤 핀 버튼으로 고정해요. <b>스케치</b>는 한 손가락으로 그려요(두 손가락은 확대·이동).</div>
   </section>
 
-  <section id="s5">
-    <h2><span class="n">5</span>핀 내용·사진 넣기</h2>
+  <section id="s6">
+    <h2><span class="n">6</span>핀 내용·사진 넣기</h2>
     <p>핀이 고정되면 위에는 도면, 아래에는 핀 창이 반씩 보여요. 손잡이를 위로 올리면 크게, 아래로 내리면 닫혀요. <b>적는 즉시 저장</b>돼요.</p>
     <div class="shots">
       <figure><img src="img/05-pinsheet.jpg" alt="핀 창 위쪽" loading="lazy"><figcaption>핀 창 위쪽</figcaption></figure>
@@ -148,8 +178,8 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
     <p>핀 창 맨 아래에는 <b>위치 옮기기</b>, <b>삭제</b>, <b>저장하고 닫기</b>가 있어요. 이미 찍은 핀은 꾹 눌러도 움직이지 않으니, 옮길 때는 <b>위치 옮기기</b>를 쓰세요.</p>
   </section>
 
-  <section id="s6">
-    <h2><span class="n">6</span>조치완료 처리</h2>
+  <section id="s7">
+    <h2><span class="n">7</span>조치완료 처리</h2>
     <div class="shots"><figure><img src="img/07-done.jpg" alt="조치완료" loading="lazy"><figcaption>조치완료를 누른 모습</figcaption></figure></div>
     <ol class="marks">
       <li data-n="1">조치가 끝나면 핀을 눌러 열고 <b>조치완료</b>를 눌러요. 누른 사람과 시각이 기록돼요.</li>
@@ -158,26 +188,26 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
     <p>다른 사람이 만든 핀도 <b>조치완료와 조치 후 사진</b>은 누구나 넣을 수 있어요. 내용 수정·삭제·이동은 만든 사람과 관리자만 할 수 있어요.</p>
   </section>
 
-  <section id="s7">
-    <h2><span class="n">7</span>팀별로 보기</h2>
+  <section id="s8">
+    <h2><span class="n">8</span>팀별로 보기</h2>
     <div class="shots"><figure><img src="img/08-filter.jpg" alt="팀 고르기" loading="lazy"><figcaption>안전팀·전기팀을 끈 모습</figcaption></figure></div>
     <ol class="marks">
       <li data-n="1">도면 위 <b>팀 버튼</b>을 누를 때마다 그 팀 핀이 보였다 숨었다 해요. 흐린 버튼은 숨긴 팀이에요. 여러 팀을 함께 볼 수 있어요.</li>
     </ol>
   </section>
 
-  <section id="s8">
-    <h2><span class="n">8</span>핀 목록</h2>
+  <section id="s9">
+    <h2><span class="n">9</span>핀 목록</h2>
     <div class="shots"><figure><img src="img/09-list.jpg" alt="핀 목록" loading="lazy"><figcaption>목록을 누른 모습</figcaption></figure></div>
     <ol class="marks">
-      <li data-n="1"><b>팀</b>으로 거르기.</li>
+      <li data-n="1"><b>팀</b>으로 거르기. 협업 도면은 맨 위 <b>핀 · 댓글</b> 탭으로 댓글만 모아 볼 수도 있어요.</li>
       <li data-n="2"><b>전체 · 미조치 · 조치완료</b>로 거르기.</li>
       <li data-n="3">핀을 누르면 도면에서 그 위치로 바로 이동해요.</li>
     </ol>
   </section>
 
-  <section id="s9">
-    <h2><span class="n">9</span>내보내기(사진대지 PDF)</h2>
+  <section id="s10">
+    <h2><span class="n">10</span>내보내기(사진대지 PDF)</h2>
     <div class="shots">
       <figure><img src="img/10-export.jpg" alt="내보내기 고르기" loading="lazy"><figcaption>내보내기를 누른 모습</figcaption></figure>
       <figure><img src="img/11-export2.jpg" alt="PDF 만들기" loading="lazy"><figcaption>PDF 만들기를 고른 모습</figcaption></figure>
@@ -188,7 +218,7 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
     </ol>
     <p><b>PDF 만들기를 고른 모습</b></p>
     <ol class="marks">
-      <li data-n="1"><b>사진대지 양식</b>을 골라요. <b>내부 관리 현황</b>: 맨 앞에 전체·팀별·업체별 미조치/완료 개수와 조치율, 핀 목록 표가 들어가요. <b>협력업체 전달</b>: 「하자 조치 요청서」로 업체별로 쪽을 나누고, 조치 전 사진만 넣고(조치 후 칸 없음), 우리 쪽 이름·팀은 빼고, 쪽마다 조치 예정일·확인 서명 칸을 넣어요.</li>
+      <li data-n="1"><b>사진대지 양식</b>을 골라요. <b>내부 관리 현황</b>: 맨 앞에 전체·팀별·업체별 미조치/완료 개수와 조치율, 핀 목록 표가 들어가요. <b>협력업체 전달</b>: 「하자 조치 요청서」로 업체별로 쪽을 나누고, 조치 전 사진만 넣어요(조치 후 칸 없음). 업체 이름만 적고 공종·팀·등록한 사람·등록 날짜는 빼요.</li>
       <li data-n="2">넣을 <b>팀</b>을 골라요(여러 팀 가능).</li>
       <li data-n="3"><b>미리보기</b>로 만들어질 PDF를 먼저 확인할 수 있어요. <b>PDF 만들기</b>를 누르면 파일 이름을 바꾸고 카톡 등으로 바로 <b>보내기</b>하거나 저장할 수 있어요.</li>
     </ol>
@@ -199,8 +229,8 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
     </div>
   </section>
 
-  <section id="s10">
-    <h2><span class="n">10</span>여러 사람과 함께 쓰기(구글 공유)</h2>
+  <section id="s11">
+    <h2><span class="n">11</span>여러 사람과 함께 쓰기(구글 공유)</h2>
     <div class="shots"><figure><img src="img/12-cloud.jpg" alt="구글 공유" loading="lazy"><figcaption>목록 화면 위쪽 ‘공유 중’을 누른 모습</figcaption></figure></div>
     <ol class="marks">
       <li data-n="1">로그인한 사람끼리 협업 도면과 핀이 함께 보이고, 고친 내용은 몇 초 안에 서로 들어가요. 이 창에서는 누구로 로그인했는지 보고, <b>자동 연결 링크 보내기</b>와 <b>로그아웃</b>을 할 수 있어요.</li>
@@ -214,9 +244,9 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
     <div class="tip"><b>초대 링크:</b> 관리자가 보낸 초대 링크를 누르면 URL·PIN이 자동으로 들어가요. 이름과 비밀번호만 넣으면 돼요.</div>
   </section>
 
-  <section id="s11">
-    <h2><span class="n">11</span>따라하기로 연습하기</h2>
-    <p>앱 안에서 견본 도면을 열고, 노란 테두리가 가리키는 버튼을 직접 눌러 가며 배우는 연습이에요. 따라하기 중에는 밝게 비춘 곳만 누를 수 있고, <b>‹ 이전</b>으로 앞 단계를 다시 볼 수 있어요. 약 3분이면 끝나요. 연습 도면은 구글 공유로 올라가지 않고, 끝나면 지울 수 있어요.</p>
+  <section id="s12">
+    <h2><span class="n">12</span>따라하기로 연습하기</h2>
+    <p>앱 안에서 견본 도면을 열고, 노란 테두리가 가리키는 버튼을 직접 눌러 가며 배우는 연습이에요. 따라하기 중에는 밝게 비춘 곳만 누를 수 있고, <b>‹ 이전</b>으로 앞 단계를 다시 볼 수 있어요. 약 3분이면 끝나요. 견본 도면은 <b>개인 도면</b> 탭에 생기고 구글 공유로 올라가지 않아요. 끝나면 지울 수 있어요.</p>
     <div class="shots">
       <figure><img src="img/13-help.jpg" alt="설정의 따라하기 버튼" loading="lazy"><figcaption>설정 → 따라하기</figcaption></figure>
       <figure><img src="img/14-tour.jpg" alt="따라하기 중" loading="lazy"><figcaption>따라하기 중인 모습</figcaption></figure>
@@ -226,7 +256,17 @@ footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
     </ol>
     <div class="cta"><a href="../?tour=1">▶ 지금 따라하기 시작</a></div>
   </section>
+
+  <section id="s13">
+    <h2><span class="n">13</span>댓글·알림·설정</h2>
+    <ul class="plain">
+      <li><b>댓글</b>: 협업 도면의 핀 창 맨 아래에서 질문이나 전달사항을 남겨요. 도면 화면의 <b>목록 → 댓글</b> 탭에서 그 도면의 댓글을 최신순으로 모아 보고, 누르면 그 핀으로 가요.</li>
+      <li><b>🔔 알림</b>: 내 핀이 조치완료됐을 때, 협업 요청을 받았을 때, 내 핀이나 내가 댓글 단 핀에 새 댓글이 달렸을 때 와요. 알림 창을 위로 올리면 화면 가득 보이고, 하나씩 또는 모두 지울 수 있어요.</li>
+      <li><b>⚙️ 설정 · 내 설정</b>(이 휴대폰에만): 내 기본 팀, 사진 화질, 내보내기 기본 양식과 넣을 사진, 저장 공간 보기·정리.</li>
+      <li><b>⚙️ 설정 · 관리자</b>: 현장 이름(사진대지 맨 위), 현장 업체 목록, 사용자 관리(관리자 지정·비밀번호 초기화), 모든 사용자에게 따라하기 알림, 테스트 도면 만들기.</li>
+    </ul>
+  </section>
 </main>
-<footer>도면 하자 핀 · 화면은 앱 버전 3.23 기준이에요.</footer>
+<footer>도면 하자 핀 · 글은 앱 버전 3.35, 화면 사진은 3.23 기준이에요.</footer>
 </body>
 </html>
