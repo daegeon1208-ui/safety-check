@@ -796,7 +796,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.36";
+const APP_VER = "3.37";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -905,7 +905,7 @@ function sdOpen(title,html){ $("#sdTitle").textContent=title; $("#sdBody").inner
 function sdClose(){ $("#setDlg").hidden=true; $("#sdBody").innerHTML=""; }
 $("#sdX").addEventListener("click",sdClose);
 $("#setDlg").addEventListener("click",e=>{ if(e.target.id==="setDlg") sdClose(); });
-const fmtMB=b=>b>=1048576?(b/1048576).toFixed(b>=104857600?0:1)+"MB"+(b>=1073741824?` (${(b/1073741824).toFixed(b>=10737418240?0:1)}GB)`:""):Math.max(1,Math.round(b/1024))+"KB";   // 1GB 넘으면 (10GB) 같이
+const fmtMB=b=>b>=1048576?(b/1048576).toFixed(b>=104857600?0:1)+"MB"+(b>=1073741824?` (${(b/1073741824).toFixed(1)}GB)`:""):Math.max(1,Math.round(b/1024))+"KB";   // 1GB 넘으면 (10GB) 같이
 /* 저장 공간: 도면 파일·사진 크기, 구글에 올라간 사본만 지워 공간 확보(필요할 때 다시 받음) */
 async function storeInfo(){
   const ds=await dbAll("drawings"), fs=await dbAll("files"), ps=await dbAll("pins");
