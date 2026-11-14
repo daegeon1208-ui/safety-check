@@ -577,7 +577,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <!-- 도면 목록 -->
 <section id="home" class="screen">
-  <header><h1>도면 하자 핀</h1><button class="hbtn mode" id="modeBtn" hidden></button><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">구글 공유</span></button><button class="hbtn ico" id="noteBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><b class="nbadge" id="noteCnt" hidden></b></button><button class="hbtn ico" id="helpBtn" aria-label="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5"/><circle cx="12" cy="12" r="6.3"/></svg></button></header>
+  <header><h1>도면 하자 핀</h1><button class="hbtn mode" id="modeBtn" hidden></button><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">공유</span></button><button class="hbtn ico" id="noteBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><b class="nbadge" id="noteCnt" hidden></b></button><button class="hbtn ico" id="helpBtn" aria-label="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5"/><circle cx="12" cy="12" r="6.3"/></svg></button></header>
   <div class="asuser" id="asUserBar" hidden><span id="asUserTxt"></span> <button id="asUserOff">관리자로 돌아가기</button></div>
   <div class="htop" id="hTop"><div class="hsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="hq" type="search" placeholder="도면 이름으로 찾기" autocomplete="off" enterkeyhint="search"><button id="hqX" aria-label="지우기" hidden>✕</button></div><div class="hfilter" id="hTabs"></div></div>
   <main id="dlist"></main>
@@ -707,11 +707,11 @@ header #backBtn{color:#fff!important;background:none!important}
   <div class="sb exp" id="expBody"></div>
 </div>
 
-<!-- 구글 공유 연결 -->
+<!-- 공유 연결 -->
 <div class="sheet" id="cloudSheet" hidden>
-  <div class="sh"><h2>구글 공유 연결</h2><button class="x" data-close>✕</button></div>
+  <div class="sh"><h2>공유 연결</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp">
-    <p>로그인한 사람끼리 협업 도면과 핀을 함께 보고 고칩니다. 핀·메모는 구글 시트 「도면 하자 핀」에, 도면 PDF와 사진은 구글 드라이브 「도면 하자 핀」 폴더에 저장됩니다. 다른 사람이 고친 내용은 몇 초 안에 들어옵니다.</p>
+    <p>로그인한 사람끼리 협업 도면과 핀을 함께 보고 고칩니다. 핀·메모와 도면 PDF, 사진은 공유 서버에 저장됩니다. 다른 사람이 고친 내용은 몇 초 안에 들어옵니다.</p>
     <p id="cMsg" style="font-weight:700;min-height:1.4em;margin-top:10px"></p>
     <button id="cOn">로그인하기</button>
     <button id="cLink" class="sec" hidden>자동 연결 링크 보내기</button>
@@ -844,7 +844,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.46";
+const APP_VER = "3.47";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -954,7 +954,7 @@ function sdClose(){ $("#setDlg").hidden=true; $("#sdBody").innerHTML=""; }
 $("#sdX").addEventListener("click",sdClose);
 $("#setDlg").addEventListener("click",e=>{ if(e.target.id==="setDlg") sdClose(); });
 const fmtMB=b=>b>=1048576?(b/1048576).toFixed(b>=104857600?0:1)+"MB"+(b>=1073741824?` (${(b/1073741824).toFixed(1)}GB)`:""):Math.max(1,Math.round(b/1024))+"KB";   // 1GB 넘으면 (10GB) 같이
-/* 저장 공간: 도면 파일·사진 크기, 구글에 올라간 사본만 지워 공간 확보(필요할 때 다시 받음) */
+/* 저장 공간: 도면 파일·사진 크기, 공유 서버에 올라간 사본만 지워 공간 확보(필요할 때 다시 받음) */
 async function storeInfo(){
   const ds=await dbAll("drawings"), fs=await dbAll("files"), ps=await dbAll("pins");
   const fsz=id=>{ const f=fs.find(x=>x.id===id); return f&&f.data?f.data.byteLength:0; };
@@ -974,11 +974,11 @@ async function openStore(){
   $("#sdBody").innerHTML=`${quota?`<div class="stbar"><i style="width:${Math.max(2,pct).toFixed(1)}%"></i></div><p class="sdnote">이 앱이 쓰는 공간 ${fmtMB(used)} / 쓸 수 있는 공간 ${fmtMB(quota)}</p>`:""}
     <div class="strow"><span>도면 ${i.ds.filter(d=>!d.sample).length}개 (파일)</span><b>${fmtMB(i.files)}</b></div>
     <div class="strow"><span>사진</span><b>${fmtMB(i.photos)}</b></div>
-    <p class="sdnote" style="margin-top:12px">구글에 올라간 협업 도면과 사진은 휴대폰 사본을 지워도 다시 열 때 구글에서 받아요. 개인 도면, 아직 안 보낸 핀, 지금 열린 도면은 지우지 않아요.</p>
+    <p class="sdnote" style="margin-top:12px">공유 서버에 올라간 협업 도면과 사진은 휴대폰 사본을 지워도 다시 열 때 공유 서버에서 받아요. 개인 도면, 아직 안 보낸 핀, 지금 열린 도면은 지우지 않아요.</p>
     <button class="pwbtn" id="stFree" ${i.free+i.phFree?"":"disabled"}>${i.free+i.phFree?`협업 도면 사본 정리 (${fmtMB(i.free+i.phFree)} 확보)`:"정리할 사본이 없어요"}</button>
     ${cloudOn()?"":`<p class="sdnote">로그인하면 협업 도면 사본을 정리할 수 있어요.</p>`}`;
   const b=$("#stFree"); if(b) b.onclick=async()=>{
-    if(!confirm("구글에 올라간 협업 도면과 사진의 휴대폰 사본을 지울까요? 다시 열 때 인터넷으로 받아요.")) return;
+    if(!confirm("공유 서버에 올라간 협업 도면과 사진의 휴대폰 사본을 지울까요? 다시 열 때 인터넷으로 받아요.")) return;
     b.disabled=true; b.textContent="정리하는 중…";
     const j=await storeInfo();
     for(const d of j.ds){ if(!j.canFree(d)) continue;
@@ -1140,7 +1140,7 @@ function centerOnPin(p){
 
 /* ---------- 도면 목록 ---------- */
 const ftIcon=()=>"";   // PDF·DWG 구분 표시는 쓰지 않는다(3.19, 사용자 요청)
-let remoteOnly=[];   // 구글에는 있지만 이 휴대폰에는 아직 없는 도면
+let remoteOnly=[];   // 공유 서버에는 있지만 이 휴대폰에는 아직 없는 도면
 async function renderHome(){
   const [ds,ps]=await Promise.all([dbAll("drawings"),dbAll("pins")]);
   ds.sort((a,b)=>(b.opened||b.created)-(a.opened||a.created));
@@ -1164,7 +1164,7 @@ async function renderHome(){
       <button class="more" data-more="${d.id}">⋯</button></div>`;}).join("")
   +showRem.map(d=>`<div class="dcard remote" data-remote="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${lockIcon(d)}${esc(d.name)}</div>
       <div class="sm"><span class="cnt o">미조치 ${d.open||0}</span><span class="cnt d">완료 ${d.done||0}</span> ${d.pages}쪽${d.by?" · "+esc(d.by):""}${(d.parts||[]).length?` · 참가 ${d.parts.length}명`:""}</div>
-      <div class="sm" style="color:var(--accent);font-weight:600">구글 공유 도면 · 눌러서 받기</div></div></div>`).join("");
+      <div class="sm" style="color:var(--accent);font-weight:600">공유 도면 · 눌러서 받기</div></div></div>`).join("");
 }
 function homeFilter(){ try{ return localStorage.getItem("homeFilter")||"all"; }catch(e){ return "all"; } }
 async function removeLocalDrawing(id){
@@ -1189,13 +1189,13 @@ $("#dlist").addEventListener("click",async e=>{
       ["rename","이름 바꾸기","","edit"],
       ["pages","쪽 편집","쪽 이름 · 다른 PDF 합치기 · 빼기","pages"],
       ["copy","도면 복사","핀·사진까지 또는 도면만","copy"],
-      ...(d.sample?[]:d.private?[["toTeam","협업 도면으로 바꾸기","구글에 올려 함께 쓰는 사람과 핀 공유","people"]]
-        :[["toPrivate","개인 도면으로 바꾸기",shared?(lockMine(d)?"공유에서 내리거나 · 개인 사본 만들기":"내 휴대폰에만 개인 사본 만들기"):"구글에 올리지 않고 나만 쓰기","lock"]]),
+      ...(d.sample?[]:d.private?[["toTeam","협업 도면으로 바꾸기","공유 서버에 올려 함께 쓰는 사람과 핀 공유","people"]]
+        :[["toPrivate","개인 도면으로 바꾸기",shared?(lockMine(d)?"공유에서 내리거나 · 개인 사본 만들기":"내 휴대폰에만 개인 사본 만들기"):"공유 서버에 올리지 않고 나만 쓰기","lock"]]),
       ...(shared&&lockMine(d)?[["invite","협업 요청 보내기","받은 사람은 비밀번호 없이 열 수 있음","people"]]:[]),
       ...(canLock?[["lock",d.locked?"비밀번호 바꾸기·풀기":"비밀번호 걸기",d.locked?"🔒 걸려 있음 · 올린 사람과 관리자는 그냥 열림":"알려 준 사람만 열 수 있게","lock"]]:[]),
       ["-"],
       ["delete","삭제",shared?"도면과 핀 모두 · 함께 쓰는 사람 모두에게서":"도면과 핀 모두 · 되돌릴 수 없음","trash"]],
-      {sub:`${d.pages}쪽 · 미조치 ${mo} · 완료 ${mp.length-mo}${shared?" · 구글 공유":""}${d.locked?" · 🔒 비밀번호":""}`});
+      {sub:`${d.pages}쪽 · 미조치 ${mo} · 완료 ${mp.length-mo}${shared?" · 공유":""}${d.locked?" · 🔒 비밀번호":""}`});
     try{
       if(act==="info"){ showInfo(d); }
       else if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted)); }
@@ -1204,29 +1204,29 @@ $("#dlist").addEventListener("click",async e=>{
       else if(act==="copy"){ await copyDrawing(d); }
       else if(act==="lock"){ await lockMenu(d); }
       else if(act==="toTeam"){
-        if(!cloudSet()){ toast("먼저 위의 '구글 공유'에서 연결해 주세요",3500); return; }
-        if(!confirm(`「${d.name}」을(를) 협업 도면으로 바꿀까요?\n구글에 올라가서 함께 쓰는 사람들이 도면과 핀을 보고 같이 씁니다.`)) return;
+        if(!cloudSet()){ toast("먼저 위의 '공유'에서 연결해 주세요",3500); return; }
+        if(!confirm(`「${d.name}」을(를) 협업 도면으로 바꿀까요?\n공유 서버에 올라가서 함께 쓰는 사람들이 도면과 핀을 보고 같이 씁니다.`)) return;
         d.private=false; await dbPut("drawings",d); await renderHome();
-        if(cloudOn()){ toast("구글에 올리는 중…",60000); await syncDrawings(); $("#toast").hidden=true; }
-        toast(cloudOn()?"협업 도면으로 바꿨습니다":"협업 도면으로 바꿨습니다. 구글에 연결하면 올라갑니다",3000);
+        if(cloudOn()){ toast("공유 서버에 올리는 중…",60000); await syncDrawings(); $("#toast").hidden=true; }
+        toast(cloudOn()?"협업 도면으로 바꿨습니다":"협업 도면으로 바꿨습니다. 공유에 연결하면 올라갑니다",3000);
       }
       else if(act==="toPrivate") await makePrivate(d,shared);
       else if(act==="invite"){ await inviteMenu(d); }
       else if(act==="delete"){
         const ps=(await pinsOf(d.id)).filter(p=>!p.deleted);
-        if(confirm(`「${d.name}」 도면과 핀 ${ps.length}개를 삭제할까요?${shared?"\n함께 쓰는 사람들 휴대폰에서도 사라집니다. (구글 드라이브의 PDF·사진 파일은 남겨 둡니다)":" 되돌릴 수 없습니다."}`)){
+        if(confirm(`「${d.name}」 도면과 핀 ${ps.length}개를 삭제할까요?${shared?"\n함께 쓰는 사람들 휴대폰에서도 사라집니다. (공유 서버의 PDF·사진 파일은 남겨 둡니다)":" 되돌릴 수 없습니다."}`)){
           if(shared) await api({action:"deleteDrawing",id:d.id});
           await removeLocalDrawing(d.id); renderHome(); toast("삭제했습니다");
         }
       }
-    }catch(err){toast("구글에 반영하지 못했습니다: "+err.message,4000);}
+    }catch(err){toast("서버에 반영하지 못했습니다: "+err.message,4000);}
     return;
   }
   const rc=e.target.closest("[data-remote]");
   if(rc){
     const r=remoteOnly.find(x=>x.id===rc.dataset.remote); if(!r) return;
     if(!await ensureUnlocked(r)) return;
-    toast("구글에서 도면을 받는 중…",120000);
+    toast("공유 서버에서 도면을 받는 중…",120000);
     try{
       const j=await api({action:"drawingFile",id:r.id});
       await dbPut("files",{id:r.id,data:b64ToBuf(j.data)});
@@ -1265,7 +1265,7 @@ $("#pdfInput").addEventListener("change",async e=>{
   if(!await fileKind(f)){ toast(notPdfMsg(f),5000); return; }
   let priv=false;
   if(cloudSet()){
-    const how=await chooseAction("이 도면은 어떻게 쓸까요?",[["team","협업 도면","구글에 올려 함께 쓰는 사람과 핀 공유","people"],["private","개인 도면","내 휴대폰에만 · 다른 사람에게 안 보임","lock"]],{sub:f.name});
+    const how=await chooseAction("이 도면은 어떻게 쓸까요?",[["team","협업 도면","공유 서버에 올려 함께 쓰는 사람과 핀 공유","people"],["private","개인 도면","내 휴대폰에만 · 다른 사람에게 안 보임","lock"]],{sub:f.name});
     if(!how) return; priv=how==="private";
   }
   toast("도면을 불러오는 중…",120000);
@@ -1297,11 +1297,11 @@ async function copyDrawing(d){
     await dbPut("drawings",{id,name:nm.trim(),pages:d.pages,pageNames:(d.pageNames||[]).slice(),created:now,opened:now,by:myName()||"",kind:d.kind||"",private:d.private||undefined});
     if(how==="pins") await copyPins(d.id,id);
     $("#toast").hidden=true; toast(`「${nm.trim()}」(으)로 복사했습니다`); await renderHome();
-    if(cloudOn()) syncDrawings();   // 공유 중이면 새 도면도 구글에 올린다
+    if(cloudOn()) syncDrawings();   // 공유 중이면 새 도면도 공유 서버에 올린다
   }catch(err){ console.error(err); toast("복사하지 못했습니다: "+err.message,4000); }
 }
 
-/* 핀·사진을 다른 도면으로 복사 (사진은 구글에서 받아 휴대폰에 넣는다). 빠진 사진 수를 돌려준다 */
+/* 핀·사진을 다른 도면으로 복사 (사진은 공유 서버에서 받아 휴대폰에 넣는다). 빠진 사진 수를 돌려준다 */
 async function copyPins(fromId,toId){
   let miss=0; const now=Date.now();
   for(const p of (await pinsOf(fromId)).filter(q=>!q.deleted)){
@@ -1315,8 +1315,8 @@ async function copyPins(fromId,toId){
 /* 개인 도면으로: 아직 안 올린 도면은 표시만 바꾸고, 공유 도면은 핀·사진까지 개인 사본을 만든다(올린 사람·관리자는 공유에서 내릴 수도 있음) */
 async function makePrivate(d,shared){
   if(!shared){
-    if(d.cloud&&!cloudOn()){ toast("구글 공유 도면입니다. 먼저 구글에 연결해 주세요",3500); return; }
-    d.private=true; await dbPut("drawings",d); await renderHome(); toast("개인 도면으로 바꿨습니다. 구글에 올리지 않습니다",3000); return;
+    if(d.cloud&&!cloudOn()){ toast("공유 도면입니다. 먼저 공유에 연결해 주세요",3500); return; }
+    d.private=true; await dbPut("drawings",d); await renderHome(); toast("개인 도면으로 바꿨습니다. 공유 서버에 올리지 않습니다",3000); return;
   }
   if(d.stale){ toast("먼저 도면을 열어 바뀐 도면을 받아 주세요",3000); return; }
   const items=[["copy","개인 사본 만들기","공유 도면은 그대로 · 지금 핀·사진을 복사해 나만 씀","copy"]];
@@ -1332,7 +1332,7 @@ async function makePrivate(d,shared){
     const nd={id,name:how==="copy"?d.name+" (개인)":d.name,pages:d.pages,pageNames:(d.pageNames||[]).slice(),created:how==="copy"?now:d.created,opened:now,by:myName()||"",kind:d.kind||"",private:true};
     await dbPut("drawings",nd);
     const miss=await copyPins(d.id,id);
-    if(miss&&!confirm(`사진 ${miss}장을 구글에서 받지 못했습니다. 그래도 계속할까요?`)){ await removeLocalDrawing(id); $("#toast").hidden=true; return; }
+    if(miss&&!confirm(`사진 ${miss}장을 공유 서버에서 받지 못했습니다. 그래도 계속할까요?`)){ await removeLocalDrawing(id); $("#toast").hidden=true; return; }
     if(how==="move"){ await api({action:"deleteDrawing",id:d.id}); await removeLocalDrawing(d.id); }
     $("#toast").hidden=true; await renderHome();
     toast(how==="move"?"공유에서 내리고 개인 도면으로 바꿨습니다":`「${nd.name}」 개인 사본을 만들었습니다`,3500);
@@ -1355,7 +1355,7 @@ async function showInfo(d){
     <div class="kv"><b>올린 사람</b><span>${esc(d.by||(shared?"-":"이 휴대폰"))}</span></div>
     <div class="kv"><b>올린 시각</b><span>${fmtDate(d.created)}</span></div>
     <div class="kv"><b>쪽수</b><span>${d.pages}쪽<button class="ibtn" id="infoPages">쪽 이름·편집</button></span></div>
-    <div class="kv"><b>공유</b><span>${shared?"구글 공유 중":"이 휴대폰에만 저장"}</span></div>
+    <div class="kv"><b>공유</b><span>${shared?"공유 중":"이 휴대폰에만 저장"}</span></div>
     ${d.locked?`<div class="kv"><b>비밀번호</b><span>🔒 걸려 있음${lockMine(d)?`<button class="ibtn" id="infoLock">바꾸기·풀기</button>`:""}</span></div>`:shared&&lockMine(d)?`<div class="kv"><b>비밀번호</b><span>없음<button class="ibtn" id="infoLock">걸기</button></span></div>`:""}
     <div class="kv"><b>핀</b><span>전체 ${pins.length} · 미조치 ${o} · 완료 ${pins.length-o}${zones?` · 구역 ${zones}`:""}</span></div>
     <div class="kv"><b>최근 핀 변경</b><span>${last?`${fmtDate(last.updated)} · ${pinLabel(last)}${(last.editor||last.by)?" · "+esc(last.editor||last.by):""}`:"-"}</span></div>
@@ -1375,7 +1375,7 @@ async function showInfo(d){
 /* 도면 이름 바꾸기 (목록 ⋯ 메뉴, 도면 정보) */
 async function renameDrawing(d){
   const nm=prompt("도면 이름",d.name); if(!nm||!nm.trim()||nm.trim()===d.name) return false;
-  if(cloudOn()&&d.cloud){ try{ await api({action:"renameDrawing",id:d.id,name:nm.trim()}); }catch(err){ toast("구글에 반영하지 못했습니다: "+err.message,4000); return false; } }
+  if(cloudOn()&&d.cloud){ try{ await api({action:"renameDrawing",id:d.id,name:nm.trim()}); }catch(err){ toast("서버에 반영하지 못했습니다: "+err.message,4000); return false; } }
   d.name=nm.trim(); await dbPut("drawings",d); toast("이름을 바꿨습니다"); return true;
 }
 /* items: [값, 제목, 설명, 아이콘] — 값이 "-"이면 구분선, 아이콘 자리에 글자를 넣어도 된다. opt.sub: 제목 아래 작은 글, opt.cur: 지금 고른 값 */
@@ -1391,7 +1391,7 @@ function chooseAction(title,items,opt){
   });
 }
 
-/* ---------- 구글 공유 (시트·드라이브) ---------- */
+/* ---------- 공유 (시트·드라이브) ---------- */
 /* 연결 정보: URL·팀 PIN·이름은 늘 저장, 개인 비밀번호는 '기억하기'를 켰을 때만 저장(끄면 앱을 닫을 때까지만) */
 let cloud={url:"",pin:"",name:"",pw:"",remember:false,admin:false};
 try{cloud=Object.assign(cloud,JSON.parse(localStorage.getItem("pinsCloud")||"{}"));}catch(e){}
@@ -1472,7 +1472,7 @@ function askLockPw(title,desc,twice,msg,check){
 /* 잠긴 도면을 열기 전에: 열 수 있으면 true */
 async function ensureUnlocked(d){
   if(!d||!d.locked||lockFree(d)) return true;
-  if(!cloudOn()){ toast("비밀번호가 걸린 도면입니다. 구글 공유에 로그인한 뒤 열 수 있습니다",4000); return false; }
+  if(!cloudOn()){ toast("비밀번호가 걸린 도면입니다. 공유에 로그인한 뒤 열 수 있습니다",4000); return false; }
   let msg="";
   if(lockPws[d.id]){   // 전에 맞힌 비밀번호: 아직 맞는지 서버에 확인(바뀌었으면 다시 묻는다). 인터넷이 안 되면 그대로 연다
     try{ await api({action:"unlock",id:d.id}); return true; }
@@ -1519,10 +1519,10 @@ function canEdit(p){
 function bufToB64(buf){const a=new Uint8Array(buf);let s="";for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode.apply(null,a.subarray(i,i+32768));return btoa(s);}
 function b64ToBuf(b){const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a.buffer;}
 function setSync(state,txt){
-  const b=$("#cloudBtn"); b.dataset.state=cloudOn()?state:""; $("#cloudTxt").textContent=cloudOn()?txt:cloudSet()?"로그인":"구글 공유";
+  const b=$("#cloudBtn"); b.dataset.state=cloudOn()?state:""; $("#cloudTxt").textContent=cloudOn()?txt:cloudSet()?"로그인":"공유";
   const v=$("#syncTxt"); v.hidden=!cloudOn(); v.dataset.state=state; v.textContent=txt;
 }
-/* 핀을 고치면 휴대폰에 먼저 저장하고, 공유 중이면 곧 구글로 보낸다 */
+/* 핀을 고치면 휴대폰에 먼저 저장하고, 공유 중이면 곧 공유 서버로 보낸다 */
 async function savePin(p){
   p.updated=Date.now(); if(canEdit(p)) p.editor=myName()||p.editor||"";
   if(cloudOn()&&V.drawing&&V.drawing.cloud) p.dirty=true;
@@ -1541,7 +1541,7 @@ let homeSyncing=false;
 async function syncDrawings(){
   if(!cloudOn()||homeSyncing) return; homeSyncing=true;
   try{
-    setSync("wait","구글 확인 중…");
+    setSync("wait","서버 확인 중…");
     const j=await api({action:"drawings"}), locals=await dbAll("drawings");
     setNotes(j.notes);
     if(j.settings) applySettings(j.settings);
@@ -1561,7 +1561,7 @@ async function syncDrawings(){
     for(const l of await dbAll("drawings")) if(l.cloud){ try{ await pushDirty(l.id); }catch(e){ if(!e.locked) throw e; } }   // 비밀번호를 모르는 잠긴 도면은 건너뜀
     await renderHome();
     setSync("on","공유 중");
-  }catch(err){ setSync("err",navigator.onLine===false?"오프라인":"구글 연결 실패"); }
+  }catch(err){ setSync("err",navigator.onLine===false?"오프라인":"서버 연결 실패"); }
   finally{ homeSyncing=false; }
 }
 /* 1) 보내기: 고친 핀 */
@@ -1621,7 +1621,7 @@ async function syncPins(){
   }catch(err){
     console.error(err);
     if(err.locked&&V.drawing===d){ toast("도면 비밀번호가 바뀌었습니다. 다시 열어 주세요",4000); syncing=false; $("#backBtn").click(); return; }
-    setSync("err",navigator.onLine===false?"오프라인 · 휴대폰에 보관":"구글 연결 실패");
+    setSync("err",navigator.onLine===false?"오프라인 · 휴대폰에 보관":"서버 연결 실패");
   }finally{
     syncing=false; if(syncAgain){syncAgain=false;schedulePush();}
   }
@@ -1629,7 +1629,7 @@ async function syncPins(){
 setInterval(()=>{ if(document.visibilityState==="visible"&&!$("#viewer").hidden) syncPins(); },8000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState!=="visible") return; if($("#viewer").hidden) syncDrawings(); else syncPins(); });
 window.addEventListener("online",()=>{ if($("#viewer").hidden) syncDrawings(); else syncPins(); });
-/* 사진은 필요할 때 구글에서 받아 휴대폰에 보관 */
+/* 사진은 필요할 때 공유 서버에서 받아 휴대폰에 보관 */
 async function ensurePhoto(p,x){
   if(x.data||!x.id||!cloudOn()) return !!x.data;
   try{ const j=await api({action:"photo",id:x.id}); x.data=b64ToBuf(j.data); x.type="image/jpeg";
@@ -1680,7 +1680,7 @@ async function loginAs(nw,msg){
     cloud=old;
     msg(/PIN이/.test(err.message)?"팀 PIN이 맞지 않습니다. 관리자에게 받은 PIN을 넣어 주세요."
       :/비밀번호|이름|4자/.test(err.message)?err.message
-      :/알 수 없는 요청/.test(err.message)?"구글 스크립트가 예전 코드입니다. 자동 업데이트 코드(PinsLoader)로 바꾸고 새 버전으로 배포해 주세요."
+      :/알 수 없는 요청/.test(err.message)?"공유 서버가 예전 코드입니다. 관리자에게 서버 업데이트를 요청해 주세요."
       :"연결하지 못했습니다. 인터넷과 웹 앱 URL을 확인해 주세요.");
     return false;
   }
@@ -1784,7 +1784,7 @@ $("#pgSave").addEventListener("click",async()=>{
     const map={}; pe.items.forEach((x,i)=>{ if(x.src===0) map[x.n]=i+1; });
     const pages=pe.items.length;
     if(cloudOn()&&d.cloud){
-      msg("구글에 올리는 중…");
+      msg("공유 서버에 올리는 중…");
       const j=await api({action:"replaceDrawingFile",id:d.id,data:bufToB64(buf),pages,map,names});
       d.ver=j.drawing.ver;
     }else d.ver=String(Date.now());
@@ -1808,7 +1808,7 @@ async function openDrawing(id,pageNo){
   if(!await ensureUnlocked(d)) return;
   V.cm=[];   // 댓글은 도면을 열 때마다 서버에서 다시 받는다
   if(d&&d.stale&&cloudOn()){
-    toast("바뀐 도면을 구글에서 받는 중…",120000);
+    toast("바뀐 도면을 공유 서버에서 받는 중…",120000);
     try{ const j=await api({action:"drawingFile",id}); f={id,data:b64ToBuf(j.data)}; await dbPut("files",f); d.stale=false; await dbPut("drawings",d); $("#toast").hidden=true; }
     catch(err){ toast("바뀐 도면을 받지 못해 예전 도면을 엽니다: "+err.message,4000); }
   }
@@ -2627,7 +2627,7 @@ $("#imgRep").addEventListener("click",async()=>{
 $("#pPhotos").addEventListener("click",photoBoxClick("photos","addPhoto"));
 $("#pDonePhotos").addEventListener("click",photoBoxClick("donePhotos","addDonePhoto"));
 $("#imgClose").addEventListener("click",()=>$("#imgView").hidden=true);
-/* 사진 회전: 누를 때마다 시계 방향 90°. 회전한 사진을 새 사진으로 저장(구글 공유면 새 파일로 올라가고 예전 파일은 지워짐) */
+/* 사진 회전: 누를 때마다 시계 방향 90°. 회전한 사진을 새 사진으로 저장(공유면 새 파일로 올라가고 예전 파일은 지워짐) */
 async function rotatePhoto(ph){
   const im=await loadImage(new Blob([ph.data],{type:ph.type||"image/jpeg"}));
   const w=im.naturalWidth, h=im.naturalHeight, c=document.createElement("canvas"); c.width=h; c.height=w;
@@ -3209,9 +3209,9 @@ const TOUR=[
   {t:()=>$('#actSheet [data-v="pdf"]'),x:"<b>부분 캡처</b>는 도면 일부를 그림으로, <b>PDF 만들기</b>는 핀 표시 도면과 사진대지를 한 파일로 만들어요. <b>PDF 만들기</b>를 눌러 보세요.",go:()=>sheetOpen("#expSheet")},
   {t:"#expSheet",x:"보낼 <b>팀</b>을 고르고 <b>미리보기</b>로 먼저 확인할 수 있어요. 만들면, 핀 표시 도면 + <b>사진대지</b>(한 쪽에 핀 2개: 조치 전·후 사진, 내용, 위치도) PDF를 카톡 등으로 바로 보낼 수 있어요.",next:1,post:()=>closeSheets()},
   {t:"#backBtn",x:"<b>‹ 목록</b>을 눌러 도면 목록으로 돌아가세요.",go:()=>!$("#home").hidden},
-  {t:"#cloudBtn",x:"이 버튼은 <b>구글 공유</b> 연결 상태예요. 로그인하면 <b>공유 중</b>으로 바뀌고, 협업 도면을 여러 사람이 함께 봐요. 눌러서 로그아웃할 수도 있어요.",next:1,post:()=>closeSheets()},
+  {t:"#cloudBtn",x:"이 버튼은 <b>공유</b> 연결 상태예요. 로그인하면 <b>공유 중</b>으로 바뀌고, 협업 도면을 여러 사람이 함께 봐요. 눌러서 로그아웃할 수도 있어요.",next:1,post:()=>closeSheets()},
   {t:"#importBtn",x:"이제 실제 도면을 쓰려면 <b>도면 불러오기</b>로 카톡·파일 앱에 받은 PDF나 DWG를 고르면 돼요.",next:1,pre:()=>closeSheets()},
-  {t:"#hTabs",x:"<b>협업 도면</b>은 구글에 올라가서 함께 쓰는 사람 모두가 같은 도면·핀·사진·댓글을 봐요. (로그인 필요)<br><b>개인 도면</b>은 내 휴대폰에만 저장돼서 나만 보고, 인터넷이 없어도 써요. 도면 <b>⋯</b> 메뉴에서 서로 바꿀 수 있어요.",next:1,pre:()=>{ closeSheets(); tourHome(); renderHome(); }},
+  {t:"#hTabs",x:"<b>협업 도면</b>은 공유 서버에 올라가서 함께 쓰는 사람 모두가 같은 도면·핀·사진·댓글을 봐요. (로그인 필요)<br><b>개인 도면</b>은 내 휴대폰에만 저장돼서 나만 보고, 인터넷이 없어도 써요. 도면 <b>⋯</b> 메뉴에서 서로 바꿀 수 있어요.",next:1,pre:()=>{ closeSheets(); tourHome(); renderHome(); }},
   {t:()=>$('[data-more="sample"]'),x:"도면 오른쪽 <b>⋯</b>를 누르면 <b>도면 설정</b>이 나와요. 눌러 보세요.",go:()=>sheetOpen("#actSheet"),pre:()=>closeSheets()},
   {t:"#actSheet",x:"<b>도면 설정</b>이에요. <b>공유하기</b>(PDF 보내기) · <b>도면 정보</b>(참가자·최근 변경) · <b>이름 바꾸기</b> · <b>쪽 편집</b> · <b>도면 복사</b> · <b>삭제</b>. 협업 도면에는 <b>개인 도면으로 바꾸기 · 협업 요청 · 비밀번호 걸기</b>도 있어요.",next:1,post:()=>closeSheets()},
   {t:"#noteBtn",x:"🔔 <b>알림</b>: 내 핀이 조치완료됐을 때, 협업 요청을 받았을 때, 핀에 <b>댓글</b>이 달렸을 때 와요. 알림을 누르면 그 핀으로 바로 가요. 댓글은 협업 도면의 핀 창 아래에서 남겨요.",next:1,pre:()=>closeSheets()},
@@ -3277,7 +3277,7 @@ async function tourBack(){
 }
 function tourTick(){
   const s=TOUR[T.i]; if(!s||T.busy) return;
-  // PDF 미리보기나, 구글 공유 단계에서 직접 연 공유 창을 보는 동안은 따라하기를 잠시 숨긴다 (닫으면 다시 나옴)
+  // PDF 미리보기나, 공유 단계에서 직접 연 공유 창을 보는 동안은 따라하기를 잠시 숨긴다 (닫으면 다시 나옴)
   const away=!$("#pvw").hidden||(s.t==="#cloudBtn"&&sheetOpen("#cloudSheet"));
   $("#tour").style.visibility=away?"hidden":""; if(away) return;
   if(s.go&&s.go()){ tourStep(T.i+1); return; }
