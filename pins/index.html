@@ -752,6 +752,7 @@ header #backBtn{color:#fff!important;background:none!important}
       <button class="sec" id="vendBtn">현장 업체 목록 관리</button>
       <button class="sec" id="userBtn">사용자 관리</button>
       <button id="tourAllBtn" class="sec">모든 사용자에게 따라하기 알림 보내기</button>
+      <button id="demoBtn" class="sec">테스트 도면 만들기 (개인 도면 · 핀 50개)</button>
     </div>
   </div>
 </div>
@@ -794,7 +795,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.33";
+const APP_VER = "3.34";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -3385,6 +3386,7 @@ async function makeDemo(){
   }
   $("#toast").hidden=true; setPref("homeFilter","private"); await renderHome(); toast("개인 도면에 「테스트 도면 (핀 50개)」을 만들었어요",4000);
 }
+$("#demoBtn").addEventListener("click",()=>{ if(!confirm("이 휴대폰 개인 도면에 테스트 도면(5개 팀 × 핀 10개, 사진 150장)을 만들까요?")) return; closeSheets(); makeDemo().catch(e=>toast("만들지 못했습니다: "+e.message,4000)); });
 if(/[?&]demo=1/.test(location.search)){ try{history.replaceState(null,"",location.pathname+location.hash);}catch(e){}
   setTimeout(()=>{ if(confirm("이 휴대폰 개인 도면에 테스트 도면(핀 50개, 사진 150장)을 만들까요?")) makeDemo().catch(e=>toast("만들지 못했습니다: "+e.message,4000)); },800); }
 if(/[?&]tour=1/.test(location.search)){ try{history.replaceState(null,"",location.pathname+location.hash);}catch(e){} if($("#gate").hidden) setTimeout(startTour,300); else tourAfterLogin=true; }   // 가이드의 "따라하기" 링크
