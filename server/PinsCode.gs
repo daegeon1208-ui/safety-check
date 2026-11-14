@@ -33,7 +33,7 @@ const ROOT_NAME = '도면 하자 핀';
 const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames', 'kind', 'lockSalt', 'lockHash', 'members'];
 const N_COLS = ['id', 'to', 'type', 'from', 'drawingId', 'pinId', 'text', 'created', 'read', 'state'];
 const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
-const C_COLS = ['id', 'drawingId', 'pinId', 'by', 'text', 'created', 'deleted'];
+const C_COLS = ['id', 'drawingId', 'pinId', 'by', 'text', 'created', 'deleted', 'edited'];
 const P_COLS = ['id', 'drawingId', 'no', 'page', 'status', 'trade', 'text', 'by', 'editor', 'created', 'updated', 'doneAt', 'deleted', 'data(JSON)'];
 
 function doGet() { return out_({ ok: true, app: 'drawing-pins', time: Date.now() }); }
@@ -75,6 +75,7 @@ function doPost(e) {
         case 'pins': gate_(req.drawingId, me, req); return out_({ ok: true, pins: pins_(req.drawingId), ver: drawingVer_(req.drawingId), comments: comments_(req.drawingId), time: Date.now() });
         case 'addComment': gate_(req.drawingId, me, req); return out_({ ok: true, comments: addComment_(req.drawingId, req.pinId, req.text, me) });
         case 'delComment': return out_({ ok: true, comments: delComment_(req.id, me, req) });
+        case 'editComment': return out_({ ok: true, comments: editComment_(req.id, req.text, me, req) });
         case 'savePin': gate_(req.item && req.item.drawingId, me, req); return out_({ ok: true, pin: savePin_(req.item, req.photos || {}, me) });
         case 'deletePin': gate_(pinDrawing_(req.id), me, req); return out_({ ok: true, pin: deletePin_(req.id, me) });
         default: return out_({ ok: false, error: '알 수 없는 요청' });
@@ -448,7 +449,7 @@ function readNotes_(me) {
   list.filter(n => n.to === me.name && n.read !== 'true').forEach(n => { n.read = 'true'; writeRow_(sh, N_COLS, n._row, n); });
 }
 /* ---------- 핀 댓글 ---------- */
-function commentOut_(c) { return { id: c.id, pinId: c.pinId, by: c.by, text: String(c.text || ''), created: +c.created || 0 }; }
+function commentOut_(c) { return { id: c.id, pinId: c.pinId, by: c.by, text: String(c.text || ''), created: +c.created || 0, edited: +c.edited || 0 }; }
 function comments_(drawingId) {
   return rows_('댓글').list.filter(c => c.drawingId === drawingId && c.deleted !== 'true').map(commentOut_).sort((a, b) => a.created - b.created);
 }
@@ -471,6 +472,18 @@ function delComment_(id, me, req) {
   gate_(c.drawingId, me, req);
   if (c.by !== me.name && !me.admin) throw new Error('내 댓글만 지울 수 있습니다');
   c.deleted = 'true'; writeRow_(sh, C_COLS, c._row, c);
+  return comments_(c.drawingId);
+}
+/* 댓글 수정: 쓴 사람만. 수정 시각을 남겨 '수정됨'으로 보인다 */
+function editComment_(id, text, me, req) {
+  text = String(text || '').trim().slice(0, 1000);
+  if (!text) throw new Error('댓글 내용을 적어 주세요');
+  const { sh, list } = rows_('댓글');
+  const c = list.find(x => x.id === id && x.deleted !== 'true'); if (!c) throw new Error('댓글이 없습니다');
+  gate_(c.drawingId, me, req);
+  if (c.by !== me.name) throw new Error('내 댓글만 고칠 수 있습니다');
+  if (String(sh.getRange(1, C_COLS.length, 1, 1).getValues()[0][0]) !== 'edited') sh.getRange(1, C_COLS.length, 1, 1).setValues([['edited']]);   // 예전 시트에 열 이름 추가
+  if (c.text !== text) { c.text = text; c.edited = Date.now(); writeRow_(sh, C_COLS, c._row, c); }
   return comments_(c.drawingId);
 }
 /* 관리자: 가입한 모든 사람에게 '연습 도면 따라하기' 알림 */

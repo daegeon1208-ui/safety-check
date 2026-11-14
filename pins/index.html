@@ -203,6 +203,11 @@ textarea.inp{min-height:90px;resize:vertical}
 #pCmList .cm .ch b{color:var(--ink)}
 #pCmList .cm .ch small{color:var(--sub);font-variant-numeric:tabular-nums}
 #pCmList .cm .ch button{margin-left:auto;border:0;background:none;color:var(--sub);font-size:12.5px;padding:2px 4px}
+#pCmList .cm .ch button+button{margin-left:0}
+#pCmList .cmed textarea{width:100%;margin-top:6px;font-size:15px;resize:none}
+#pCmList .cmed div{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
+#pCmList .cmed button{border:0;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;background:var(--chip);color:var(--ink)}
+#pCmList .cmed button.ok{background:var(--accent);color:#fff}
 #pCmList .cm p{margin:3px 0 0;font-size:14.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
 #pCmList .cmnone{font-size:13.5px;color:var(--sub);margin:2px 0 8px}
 .cmform{display:flex;gap:8px;align-items:flex-end}
@@ -805,7 +810,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.41";
+const APP_VER = "3.42";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -2354,7 +2359,7 @@ async function openPin(id){
   const works=[...new Set(VENDORS.map(x=>x[1]).concat(allP.map(workOf)).filter(Boolean))];
   $("#workList").innerHTML=works.map(t=>`<option value="${esc(t)}">`).join("");
   vendorTyping=false; renderVendorUI(p);
-  renderPhotos(p); $("#pCmIn").value=""; renderCm();
+  renderPhotos(p); $("#pCmIn").value=""; renderCm(true);
   const sh=$("#pinSheet"), was=!sh.hidden;
   openSheet("#pinSheet"); $("#sheetBg").hidden=true;   // 도면을 가리지 않게 (위쪽 도면은 그대로 만질 수 있음)
   if(!was) sh.classList.remove("full");
@@ -2402,25 +2407,39 @@ const selPin=()=>V.pins.find(q=>q.id===V.sel);
 /* ---------- 핀 댓글 (협업 도면) ---------- */
 const cmOf=id=>(V.cm||[]).filter(c=>c.pinId===id);
 const cmOn=()=>cloudOn()&&V.drawing&&!V.drawing.sample&&!V.drawing.private;
-function renderCm(){
+let cmEdit=null;   // 고치는 중인 댓글 id (동기화로 다시 그려도 입력이 지워지지 않게)
+function renderCm(force){
+  if(cmEdit&&!force&&$("#pCmList .cmed")) return;
+  if(force) cmEdit=null;
   const p=selPin(), on=!!p&&cmOn(); $("#pCmBox").hidden=!on; if(!on) return;
   const l=cmOf(p.id); $("#pCmN").textContent=l.length?`(${l.length})`:"";
-  $("#pCmList").innerHTML=l.length?l.map(c=>`<div class="cm"><div class="ch"><b>${esc(c.by)}</b><small>${fmtDate(c.created)}</small>${c.by===myName()||isAdmin()?`<button data-cdel="${c.id}">삭제</button>`:""}</div><p>${esc(c.text)}</p></div>`).join("")
+  $("#pCmList").innerHTML=l.length?l.map(c=>`<div class="cm" data-cid="${c.id}"><div class="ch"><b>${esc(c.by)}</b><small>${fmtDate(c.created)}${c.edited?" · 수정됨":""}</small>${c.by===myName()?`<button data-cedit="${c.id}">수정</button>`:""}${c.by===myName()||isAdmin()?`<button data-cdel="${c.id}">삭제</button>`:""}</div><p>${esc(c.text)}</p></div>`).join("")
     :`<p class="cmnone">아직 댓글이 없어요. 질문이나 전달사항을 남겨 보세요.</p>`;
 }
+/* 댓글 수정: 쓴 사람만. 그 자리에서 고치고 저장하면 '수정됨' */
+$("#pCmList").addEventListener("click",async e=>{
+  const ed=e.target.closest("[data-cedit]"), sv=e.target.closest("[data-csave]"), cx=e.target.closest("[data-ccancel]");
+  if(ed){ const c=(V.cm||[]).find(x=>x.id===ed.dataset.cedit), box=ed.closest(".cm"); if(!c||!box) return;
+    box.querySelector("p").outerHTML=`<div class="cmed"><textarea class="inp" rows="2">${esc(c.text)}</textarea><div><button data-ccancel="1">취소</button><button class="ok" data-csave="${c.id}">저장</button></div></div>`;
+    ed.hidden=true; cmEdit=c.id; const t=box.querySelector("textarea"); t.style.height=Math.min(140,t.scrollHeight+2)+"px"; t.focus(); return; }
+  if(cx){ renderCm(true); return; }
+  if(sv){ const t=sv.closest(".cm").querySelector("textarea").value.trim(); if(!t){ toast("댓글 내용을 적어 주세요"); return; } sv.disabled=true;
+    try{ const j=await api({action:"editComment",id:sv.dataset.csave,text:t,drawingId:V.drawing.id}); V.cm=j.comments; renderCm(true); toast("댓글을 고쳤어요",2000); }
+    catch(err){ sv.disabled=false; toast(/알 수 없는 요청/.test(err.message)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":"고치지 못했습니다: "+err.message,4000); } }
+});
 $("#pCmIn").addEventListener("input",e=>{ const t=e.target; t.style.height="auto"; t.style.height=Math.min(120,t.scrollHeight+2)+"px"; });
 $("#pCmGo").addEventListener("click",async()=>{
   const p=selPin(), t=$("#pCmIn").value.trim(); if(!p||!t) return;
   const b=$("#pCmGo"); b.disabled=true;
   try{
     const j=await api({action:"addComment",drawingId:V.drawing.id,pinId:p.id,text:t});
-    V.cm=(V.cm||[]).filter(c=>c.pinId!==p.id).concat(j.comments); $("#pCmIn").value=""; $("#pCmIn").style.height=""; renderCm();
+    V.cm=(V.cm||[]).filter(c=>c.pinId!==p.id).concat(j.comments); $("#pCmIn").value=""; $("#pCmIn").style.height=""; renderCm(true);
   }catch(e){ toast(/알 수 없는 요청/.test(e.message)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":"댓글을 올리지 못했습니다: "+e.message,4000); }
   finally{ b.disabled=false; }
 });
 $("#pCmList").addEventListener("click",async e=>{
   const b=e.target.closest("[data-cdel]"); if(!b||!confirm("이 댓글을 지울까요?")) return;
-  try{ const j=await api({action:"delComment",id:b.dataset.cdel,drawingId:V.drawing.id}); V.cm=j.comments; renderCm(); }
+  try{ const j=await api({action:"delComment",id:b.dataset.cdel,drawingId:V.drawing.id}); V.cm=j.comments; renderCm(true); }
   catch(err){ toast("지우지 못했습니다: "+err.message,4000); }
 });
 let saveT=null;
@@ -2612,7 +2631,7 @@ function renderCmList(){
   $("#lTitle").textContent=`댓글 목록 (${all.length})`;
   $("#lItems").innerHTML=all.length?all.map(c=>{ const p=V.pins.find(q=>q.id===c.pinId);
     return `<div class="li" data-id="${p.id}"><span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${pinLabel(p)}</span>
-    <div class="t"><div class="t1">${esc(c.by)} <span style="color:var(--sub);font-weight:500;font-size:13px">${fmtDate(c.created)}</span></div><div class="t2" style="white-space:normal">💬 ${esc(c.text)}</div>
+    <div class="t"><div class="t1">${esc(c.by)} <span style="color:var(--sub);font-weight:500;font-size:13px">${fmtDate(c.created)}${c.edited?" · 수정됨":""}</span></div><div class="t2" style="white-space:normal">💬 ${esc(c.text)}</div>
     <div class="t3">${esc(vendorOf(p)||"미분류")} · ${esc(p.text||"(내용 없음)")}</div></div></div>`; }).join("")
     :`<div class="empty" style="padding:30px">아직 댓글이 없어요</div>`;
 }
