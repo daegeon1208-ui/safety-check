@@ -4,269 +4,382 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>핀톡 사용 가이드</title>
-<meta name="theme-color" content="#1F2937">
+<meta name="theme-color" content="#8E8E88">
+<link rel="icon" href="../icon-192.png">
 <style>
-:root{--ink:#111827;--sub:#6B7280;--line:#E5E7EB;--bg:#F2F2EE;--card:#fff;--red:#E31937;--mark:#F59E0B;--accent:#1F2937}
+@font-face{font-family:"Pretendard";src:url(../../fonts/PretendardVariable.woff2) format("woff2");font-weight:45 920;font-display:swap}
+:root{--ink:#262624;--sub:#6F6F69;--line:#DCDCD8;--bg:#EDEDEB;--card:#fff;--red:#E31937;--gray:#8E8E88;--mark:#F59E0B;--soft:#F5F5F3}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-text-size-adjust:100%}
-header{background:#1F2937;color:#fff;padding:calc(env(safe-area-inset-top) + 22px) 18px 22px}
-header h1{margin:0;font-size:24px}
-header p{margin:6px 0 0;color:#D1D5DB;font-size:15px}
-main{max-width:760px;margin:0 auto;padding:12px 16px 40px}
-.cta{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
-.cta a{flex:1 1 200px;text-align:center;text-decoration:none;font-weight:700;padding:13px 12px;border-radius:12px;background:var(--red);color:#fff}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 "Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-text-size-adjust:100%}
+header{background:var(--gray);color:#fff;box-shadow:inset 0 -5px 0 var(--red);padding:calc(env(safe-area-inset-top) + 26px) max(18px,env(safe-area-inset-right)) 30px max(18px,env(safe-area-inset-left))}
+header .in{max-width:780px;margin:0 auto;display:flex;gap:16px;align-items:center}
+header img{width:64px;height:64px;border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.2);flex:none}
+header h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
+header p{margin:4px 0 0;color:rgba(255,255,255,.85);font-size:15px;line-height:1.5}
+main{max-width:780px;margin:0 auto;padding:12px max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 6px}
+.cta a{flex:1 1 200px;text-align:center;text-decoration:none;font-weight:700;padding:14px 12px;border-radius:14px;background:var(--red);color:#fff}
 .cta a.sec{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
-nav{background:var(--card);border-radius:14px;padding:12px 16px;margin:14px 0}
-nav b{display:block;margin-bottom:4px}
-nav ol{margin:0;padding-left:22px}
+nav{background:var(--card);border-radius:16px;padding:14px 18px;margin:14px 0}
+nav b{display:block;margin-bottom:6px}
+nav ol{margin:0;padding-left:22px;columns:2;column-gap:24px}
+nav li{break-inside:avoid;font-size:15px}
 nav a{color:var(--ink)}
-section{background:var(--card);border-radius:16px;padding:18px 16px;margin:14px 0;box-shadow:0 1px 2px rgba(0,0,0,.05)}
-section h2{margin:0 0 6px;font-size:20px;display:flex;align-items:center;gap:10px}
-section h2 .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-size:15px;display:grid;place-items:center}
+@media (max-width:520px){ nav ol{columns:1} }
+section{background:var(--card);border-radius:18px;padding:20px 18px;margin:14px 0;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+section h2{margin:0 0 8px;font-size:21px;display:flex;align-items:center;gap:10px;letter-spacing:-.02em}
+section h2 .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--gray);color:#fff;font-size:15px;display:grid;place-items:center}
+section h3{font-size:16.5px;margin:18px 0 4px}
 section>p{margin:6px 0}
-.shots{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:12px 0 4px}
-figure{margin:0;flex:0 1 270px;text-align:center}
-figure img{width:100%;max-width:270px;border-radius:18px;border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.12);display:block;margin:0 auto}
-figure.doc{flex-basis:340px}
-figure.doc img{max-width:340px;border-radius:6px}
+.shots{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:14px 0 6px}
+figure{margin:0;flex:0 1 250px;text-align:center}
+figure img{width:100%;max-width:250px;border-radius:20px;border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.12);display:block;margin:0 auto}
+figure.doc{flex-basis:360px}
+figure.doc img{max-width:360px;border-radius:6px}
+figure.docv{flex-basis:250px}
+figure.docv img{border-radius:6px}
 figcaption{font-size:13px;color:var(--sub);margin-top:6px}
 ol.marks{list-style:none;padding:0;margin:10px 0 0}
 ol.marks li{position:relative;padding-left:34px;margin:8px 0}
-ol.marks li::before{content:attr(data-n);position:absolute;left:0;top:1px;width:24px;height:24px;border-radius:50%;background:var(--mark);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center}
-.tip{background:#FEF3C7;border-radius:10px;padding:10px 12px;font-size:14.5px;margin-top:10px}
+ol.marks li::before{content:attr(data-n);position:absolute;left:0;top:2px;width:24px;height:24px;border-radius:50%;background:var(--mark);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center}
+.tip{background:#FEF3C7;border-radius:12px;padding:11px 13px;font-size:14.5px;margin-top:12px;line-height:1.6}
 .tip b{color:#92400E}
+.note{background:var(--soft);border-radius:12px;padding:11px 13px;font-size:14.5px;margin-top:12px;line-height:1.6}
 .steps{margin:6px 0 0;padding-left:22px}
-.steps li{margin:4px 0}
+.steps li{margin:5px 0}
 .team{display:inline-flex;align-items:center;gap:4px;margin-right:8px;white-space:nowrap}
 .team i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.cmp{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0 6px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+.cmp th{background:#F0F0EE}
+.cmp td:first-child{color:var(--sub);white-space:nowrap}
+.tbl{overflow-x:auto}
+ul.plain{padding-left:18px;margin:8px 0}
+ul.plain li{margin:6px 0;line-height:1.6}
+dl.faq dt{font-weight:700;margin-top:14px}
+dl.faq dd{margin:4px 0 0;color:#3d3d3a}
 footer{text-align:center;color:var(--sub);font-size:13px;padding:10px 16px 30px}
-.cmp{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0 14px}.cmp th,.cmp td{border:1px solid #DCDCD8;padding:7px 8px;text-align:left;vertical-align:top}.cmp th{background:#F0F0EE}.cmp td:first-child{color:#6F6F6A;white-space:nowrap}
-ul.plain{padding-left:18px;margin:8px 0}ul.plain li{margin:6px 0;line-height:1.55}
 </style>
 </head>
 <body>
-<header>
-  <h1>핀톡 사용 가이드</h1>
-  <p>처음 쓰는 분을 위한 사진 설명서예요. 도면에 번호 핀을 찍고, 내용과 사진을 넣고, 사진대지 PDF로 보내는 방법까지 차례로 보여 드려요.</p>
-</header>
+<header><div class="in">
+  <img src="../icon-192.png" alt="핀톡">
+  <div><h1>핀톡 사용 가이드</h1>
+  <p>이슈·하자·전달사항을 도면 위 그 자리에 콕. 처음 연결부터 핀 찍기, 댓글, 사진대지 PDF까지 화면 사진으로 차례로 보여 드려요.</p></div>
+</div></header>
 <main>
   <div class="cta">
     <a href="../?tour=1">▶ 앱에서 직접 따라하기</a>
-    <a class="sec" href="../">앱 열기</a>
+    <a class="sec" href="../">핀톡 열기</a>
   </div>
-
   <nav>
     <b>목차</b>
     <ol>
-      <li><a href="#s1">앱 설치(홈 화면에 추가)</a></li>
-      <li><a href="#s2">도면 불러오기</a></li>
-      <li><a href="#s3">도면 관리: 협업·개인, ⋯ 도면 설정</a></li>
-      <li><a href="#s4">도면 화면 살펴보기</a></li>
-      <li><a href="#s5">핀 찍기</a></li>
-      <li><a href="#s6">핀 내용·사진 넣기</a></li>
-      <li><a href="#s7">조치완료 처리</a></li>
-      <li><a href="#s8">팀별로 보기</a></li>
-      <li><a href="#s9">핀 목록</a></li>
-      <li><a href="#s10">내보내기(사진대지 PDF)</a></li>
-      <li><a href="#s11">여러 사람과 함께 쓰기(공유)</a></li>
-      <li><a href="#s12">따라하기로 연습하기</a></li>
-      <li><a href="#s13">댓글·알림·설정</a></li>
+      <li><a href="#s1">핀톡은 이런 앱이에요</a></li>
+      <li><a href="#s2">설치 (홈 화면에 추가)</a></li>
+      <li><a href="#s3">처음 연결과 로그인</a></li>
+      <li><a href="#s4">도면 목록</a></li>
+      <li><a href="#s5">도면 설정과 쪽 편집</a></li>
+      <li><a href="#s6">도면 화면과 거르기</a></li>
+      <li><a href="#s7">핀 찍기</a></li>
+      <li><a href="#s8">핀 내용과 사진</a></li>
+      <li><a href="#s9">조치완료</a></li>
+      <li><a href="#s10">댓글</a></li>
+      <li><a href="#s11">핀 목록</a></li>
+      <li><a href="#s12">내보내기 (사진대지 PDF)</a></li>
+      <li><a href="#s13">알림</a></li>
+      <li><a href="#s14">함께 쓰기 (공유)</a></li>
+      <li><a href="#s15">설정</a></li>
+      <li><a href="#s16">따라하기로 연습</a></li>
+      <li><a href="#s17">자주 묻는 질문</a></li>
     </ol>
   </nav>
 
   <section id="s1">
-    <h2><span class="n">1</span>앱 설치(홈 화면에 추가)</h2>
-    <p>이 앱은 앱스토어 없이 인터넷 주소로 열어요. 한 번 홈 화면에 추가하면 일반 앱처럼 아이콘으로 열 수 있어요.</p>
-    <ol class="steps">
-      <li><b>아이폰:</b> 사파리에서 <b>daegeon1208-ui.github.io/safety-check/pins/</b> 를 열고, 아래 <b>공유 버튼(□↑)</b> → <b>홈 화면에 추가</b>.</li>
-      <li><b>안드로이드:</b> 크롬에서 같은 주소를 열고, 오른쪽 위 <b>⋮</b> → <b>홈 화면에 추가</b>(또는 앱 설치).</li>
-    </ol>
-    <div class="tip"><b>알아 두세요.</b> 공유를 켜지 않으면 기록은 이 휴대폰 안에만 저장돼요. 중요한 기록은 PDF로 내보내 두세요.</div>
+    <h2><span class="n">1</span>핀톡은 이런 앱이에요</h2>
+    <p>현장 도면(PDF·DWG) 위에 <b>번호 핀</b>을 찍고, 그 자리에 내용·사진·댓글을 남기는 앱이에요. 하자뿐 아니라 현장 이슈, 도면 확인 요청, 협력업체 전달사항까지 위치와 함께 기록해요.</p>
+    <ul class="plain">
+      <li><b>팀별 색 핀</b>: <span class="team"><i style="background:#2563EB"></i>공사</span><span class="team"><i style="background:#EA580C"></i>안전</span><span class="team"><i style="background:#9333EA"></i>품질</span><span class="team"><i style="background:#CA8A04"></i>전기</span><span class="team"><i style="background:#0D9488"></i>설비</span>. 핀 이름은 팀 글자 + 팀 안 번호예요(공1, 안2 …).</li>
+      <li><b>함께 쓰기</b>: 로그인한 사람끼리 협업 도면의 핀·사진·댓글이 몇 초 안에 서로 들어가요.</li>
+      <li><b>사진대지 PDF</b>: 핀 표시 도면, 팀·업체별 현황표, 조치 전·후 사진대지를 한 번에 만들어 카톡으로 보내요.</li>
+      <li><b>신호가 없어도</b>: 지하층처럼 인터넷이 끊겨도 핀과 사진은 휴대폰에 보관됐다가 다시 연결되면 자동으로 올라가요.</li>
+    </ul>
   </section>
 
   <section id="s2">
-    <h2><span class="n">2</span>도면 불러오기</h2>
-    <p>처음 열면 도면 목록이 비어 있어요.</p>
-    <div class="shots"><figure><img src="img/01-home.jpg" alt="처음 화면" loading="lazy"><figcaption>처음 화면</figcaption></figure></div>
-    <ol class="marks">
-      <li data-n="1"><b>＋ 도면 불러오기</b>를 눌러 카톡·파일 앱에 받은 <b>PDF</b>나 캐드 <b>DWG</b> 파일을 고르세요. DWG는 휴대폰 안에서 PDF로 바꿔서 넣어요.</li>
-      <li data-n="2">처음이라면 <b>연습 도면으로 따라하기</b>를 눌러 보세요. 버튼을 직접 눌러 가며 배울 수 있어요(12번 참고).</li>
+    <h2><span class="n">2</span>설치 (홈 화면에 추가)</h2>
+    <p>앱스토어 없이 인터넷 주소로 열어요. 한 번 홈 화면에 추가하면 일반 앱처럼 아이콘으로 열려요.</p>
+    <ol class="steps">
+      <li><b>아이폰</b>: 사파리에서 <b>daegeon1208-ui.github.io/safety-check/pins/</b> 를 열고, 아래 <b>공유 버튼(□↑)</b> → <b>홈 화면에 추가</b>.</li>
+      <li><b>안드로이드</b>: 크롬에서 같은 주소를 열고, 오른쪽 위 <b>⋮</b> → <b>홈 화면에 추가</b>(또는 앱 설치).</li>
     </ol>
-    <p>불러온 도면은 목록에 쌓여요. 목록 위 <b>검색창</b>에 도면 이름 일부를 넣으면 바로 찾아 주고, <b>협업 도면 / 개인 도면</b> 탭으로 나눠 볼 수 있어요. 목록의 <b>⋯</b> 에서 이름 바꾸기, 쪽 편집, 복사, 공유, 삭제를 할 수 있어요.</p>
-    <div class="tip"><b>오른쪽 위 버튼:</b> 🔔 <b>알림</b>, ⚙️ <b>설정</b>(앱 버전 · 비밀번호 변경 · 어플 사용법). 비밀번호를 바꿀 때는 지금 비밀번호로 본인 확인을 한 뒤, 새 비밀번호를 두 번 넣어요.</div>
-    <div class="tip"><b>DWG 도면:</b> 휴대폰 안에서 PDF로 바꿀 때 모든 선을 얇은 선으로 그려요. 이전에 불러온 DWG를 얇은 선으로 보려면 다시 불러오세요.</div>
+    <div class="tip"><b>아이콘이나 이름이 예전 그대로라면</b> 홈 화면에서 앱을 지우고 다시 추가하세요. 앱 내용은 열 때마다 자동으로 최신이 돼요.</div>
   </section>
 
   <section id="s3">
-    <h2><span class="n">3</span>도면 관리: 협업 도면과 개인 도면, ⋯ 도면 설정</h2>
-    <p>목록 위 탭에서 <b>협업 도면</b>과 <b>개인 도면</b>을 나눠 봐요. 둘의 차이는 이래요.</p>
-    <table class="cmp">
-      <tr><th></th><th>협업 도면</th><th>개인 도면</th></tr>
-      <tr><td>저장 위치</td><td>공유 서버 + 내 휴대폰</td><td>내 휴대폰에만</td></tr>
-      <tr><td>누가 보나</td><td>로그인한 함께 쓰는 사람 모두</td><td>나만</td></tr>
-      <tr><td>핀·사진</td><td>몇 초 안에 서로 들어가요</td><td>다른 사람에게 안 보여요</td></tr>
-      <tr><td>댓글·알림</td><td>있어요</td><td>없어요</td></tr>
-      <tr><td>인터넷</td><td>필요(끊기면 모아 두었다가 다시 연결되면 보냄)</td><td>없어도 돼요</td></tr>
-      <tr><td>쓰면 좋은 때</td><td>팀과 이슈·하자·전달사항을 함께 관리</td><td>개인 메모, 연습, 아직 공유하기 이른 도면</td></tr>
-    </table>
-    <p>도면 카드 오른쪽 <b>⋯</b>를 누르면 <b>도면 설정</b>이 나와요.</p>
-    <ul class="plain">
-      <li><b>공유하기</b>: 핀 표시 도면과 사진대지를 PDF로 만들어 카톡 등으로 보내요.</li>
-      <li><b>도면 정보</b>: 올린 사람·시각, 최근 바뀐 핀, 참가자(핀을 올렸거나 조치완료한 사람)를 봐요.</li>
-      <li><b>이름 바꾸기</b>: 목록에 보이는 도면 이름을 바꿔요.</li>
-      <li><b>쪽 편집</b>: 쪽마다 이름(예: 지하1층)을 붙이고, 다른 PDF·DWG를 합치거나 쪽을 빼요.</li>
-      <li><b>도면 복사</b>: 핀·사진까지 그대로, 또는 도면만 복사해요.</li>
-      <li><b>개인 도면으로 바꾸기 / 협업 도면으로 바꾸기</b>: 공유 도면은 개인 사본을 만들거나, 올린 사람·관리자라면 공유에서 내릴 수 있어요.</li>
-      <li><b>협업 요청 보내기</b> (협업 도면, 올린 사람·관리자): 이름을 검색해 요청하면, 받은 사람은 비밀번호 없이 열 수 있어요.</li>
-      <li><b>비밀번호 걸기</b> (협업 도면, 올린 사람·관리자): 비밀번호를 아는 사람만 열어요. 올린 사람과 관리자는 그냥 열려요.</li>
-      <li><b>삭제</b>: 도면과 핀을 모두 지워요. 협업 도면은 함께 쓰는 사람 모두에게서 지워지니 조심하세요.</li>
-    </ul>
+    <h2><span class="n">3</span>처음 연결과 로그인</h2>
+    <p>처음 열면 <b>① 서버 연결 → ② 로그인</b> 두 단계가 나와요. 관리자가 보낸 <b>자동 연결 링크</b>로 열면 서버 주소와 PIN이 저절로 들어가서 ② 로그인부터 시작해요.</p>
+    <div class="shots">
+      <figure><img src="img/01-gate.jpg" alt="서버 연결 화면" loading="lazy"><figcaption>① 서버 연결</figcaption></figure>
+      <figure><img src="img/02-login.jpg" alt="로그인 화면" loading="lazy"><figcaption>② 로그인</figcaption></figure>
+    </div>
+    <p><b>① 서버 연결</b></p>
+    <ol class="marks">
+      <li data-n="1"><b>서버 주소</b>: 관리자에게 받은 주소를 그대로 넣어요.</li>
+      <li data-n="2"><b>팀 PIN</b>: 관리자에게 받은 번호예요.</li>
+      <li data-n="3"><b>다음</b>을 누르면 로그인 화면으로 넘어가요.</li>
+    </ol>
+    <p><b>② 로그인</b></p>
+    <ol class="marks">
+      <li data-n="1"><b>이름</b>: 실명으로 넣어 주세요. 핀·댓글에 이 이름이 표시돼요.</li>
+      <li data-n="2"><b>비밀번호</b>: 4자 이상. 처음 로그인하면 넣은 비밀번호로 바로 등록돼요.</li>
+      <li data-n="3"><b>비밀번호 기억하기</b>를 켜 두면 다음부터 바로 열려요.</li>
+    </ol>
+    <div class="note">휴대폰을 가로로 눕히면 아이콘과 이름이 위쪽 가운데로 가고, 입력 칸은 화면 가운데에 그대로 있어요.</div>
   </section>
 
   <section id="s4">
-    <h2><span class="n">4</span>도면 화면 살펴보기</h2>
-    <p>도면을 누르면 열려요. <b>두 손가락으로 벌리면 확대</b>, <b>한 손가락으로 끌면 이동</b>이에요.</p>
-    <div class="shots"><figure><img src="img/02-viewer.jpg" alt="도면 화면" loading="lazy"><figcaption>도면 화면</figcaption></figure></div>
+    <h2><span class="n">4</span>도면 목록</h2>
+    <div class="shots"><figure><img src="img/03-home.jpg" alt="도면 목록" loading="lazy"><figcaption>로그인한 뒤 첫 화면</figcaption></figure></div>
     <ol class="marks">
-      <li data-n="1"><b>도면 제목(ⓘ)</b>: 누르면 도면 정보(올린 사람, 팀별 핀 수, 최근 변경)가 나와요.</li>
-      <li data-n="2"><b>팀 버튼</b>: 보고 싶은 팀의 핀만 골라 볼 수 있어요(7번 참고).</li>
-      <li data-n="3"><b>목록</b>: 찍은 핀을 한눈에 봐요(8번 참고).</li>
-      <li data-n="4"><b>핀 버튼</b>: 핀을 찍고 고정하는 가운데 빨간 버튼이에요.</li>
-      <li data-n="5"><b>내보내기</b>: 사진대지 PDF나 부분 캡처를 만들어요(9번 참고).</li>
+      <li data-n="1"><b>검색</b>: 도면 이름 일부만 넣어도 바로 찾아요.</li>
+      <li data-n="2"><b>개인 도면 / 협업 도면</b> 탭으로 나눠 봐요(14번 참고). 카드에는 미조치·완료 핀 수, 쪽 수, 올린 날짜, 참가자가 보여요.</li>
+      <li data-n="3"><b>⋯</b>: 도면 설정을 열어요(5번).</li>
+      <li data-n="4"><b>공유 중</b>: 서버 연결 상태예요. 누르면 자동 연결 링크 보내기와 로그아웃이 있어요.</li>
+      <li data-n="5"><b>🔔 알림</b>: 빨간 숫자는 아직 안 읽은 알림이에요(13번).</li>
+      <li data-n="6"><b>⚙️ 설정</b>(15번).</li>
+      <li data-n="7"><b>＋ 도면 불러오기</b>: 카톡·파일 앱에 받은 <b>PDF</b>나 캐드 <b>DWG</b>를 골라요. DWG는 휴대폰 안에서 PDF로 바꿔 넣어요.</li>
     </ol>
-    <p>핀 색은 팀 색이에요:
-      <span class="team"><i style="background:#2563EB"></i>공사</span>
-      <span class="team"><i style="background:#EA580C"></i>안전</span>
-      <span class="team"><i style="background:#9333EA"></i>품질</span>
-      <span class="team"><i style="background:#CA8A04"></i>전기</span>
-      <span class="team"><i style="background:#0D9488"></i>설비</span>
-      · 조치완료 핀은 흐리게 ✓ 표시.</p>
+    <div class="note">관리자에게는 맨 위에 <b>관리자</b> 버튼이 보여요. 누르면 「이름(테스트)」 임시 계정으로 바뀌어 일반 사용자 화면을 확인할 수 있어요.</div>
   </section>
 
   <section id="s5">
-    <h2><span class="n">5</span>핀 찍기</h2>
+    <h2><span class="n">5</span>도면 설정과 쪽 편집</h2>
     <div class="shots">
-      <figure><img src="img/03-addmode.jpg" alt="핀 찍기 시작" loading="lazy"><figcaption>① 핀 버튼을 누른 모습</figcaption></figure>
-      <figure><img src="img/04-temppin.jpg" alt="위치를 누른 모습" loading="lazy"><figcaption>② 도면에서 위치를 누른 모습</figcaption></figure>
+      <figure><img src="img/04-actsheet.jpg" alt="도면 설정" loading="lazy"><figcaption>⋯ 도면 설정</figcaption></figure>
+      <figure><img src="img/05-pages.jpg" alt="쪽 편집" loading="lazy"><figcaption>쪽 편집</figcaption></figure>
+      <figure><img src="img/06-pagebig.jpg" alt="쪽 크게 보기" loading="lazy"><figcaption>작은 도면을 눌러 크게 보기</figcaption></figure>
     </div>
-    <ol class="steps">
-      <li>가운데 <b>핀 버튼</b>을 누르면 핀 찍기가 시작돼요. 아래에 핀 모양(<b>점·사각형·다각형·스케치</b>)이 나와요. 보통은 <b>점</b>이면 돼요.</li>
-      <li>도면에서 하자 위치를 한 번 누르면 빨간 <b>＋ 임시 핀</b>이 놓여요. 다른 곳을 누르면 위치가 바뀌고, 꾹 누르면 끌어서 맞출 수 있어요.</li>
-      <li><b>핀 버튼을 한 번 더</b> 누르면 그 자리에 핀이 고정되고 핀 창이 열려요. 핀 이름은 팀 글자 + 팀 안 번호예요(공1, 안1 …). 팀을 바꾸면 그 팀의 번호로 바뀌어요. 그만두려면 <b>취소</b>.</li>
+    <ol class="marks">
+      <li data-n="1"><b>도면 설정</b>에 있는 것들:
+        <ul class="plain">
+          <li><b>공유하기</b>: 핀 표시 도면과 사진대지를 PDF로 만들어 보내요.</li>
+          <li><b>도면 정보</b>: 올린 사람, 팀별 핀 수, 참가자, 최근 바뀐 핀.</li>
+          <li><b>이름 바꾸기 · 쪽 편집 · 도면 복사</b>(핀·사진까지 또는 도면만).</li>
+          <li><b>개인 도면으로 바꾸기 / 협업 도면으로 바꾸기</b>.</li>
+          <li><b>협업 요청 보내기</b>, <b>비밀번호 걸기</b> (협업 도면, 올린 사람·관리자).</li>
+          <li><b>삭제</b>: 협업 도면은 함께 쓰는 사람 모두에게서 지워지니 조심하세요.</li>
+        </ul></li>
     </ol>
-    <div class="tip"><b>구역 핀:</b> 사각형은 손가락으로 끌어 그리고, 다각형은 꼭짓점을 차례로 누른 뒤 핀 버튼으로 고정해요. <b>스케치</b>는 한 손가락으로 그려요(두 손가락은 확대·이동).</div>
+    <p><b>쪽 편집</b></p>
+    <ol class="marks">
+      <li data-n="1"><b>작은 도면을 누르면 크게</b> 볼 수 있어요. 두 손가락으로 확대하고, ‹ › 로 다른 쪽을 넘겨 봐요.</li>
+      <li data-n="2"><b>쪽 이름</b>(예: 지하 4층)을 붙이면 도면 화면과 사진대지에 이 이름이 나와요.</li>
+      <li data-n="3"><b>다른 PDF·DWG 더하기</b>로 쪽을 합치고, ↑ ↓ 로 순서를, ✕ 로 쪽을 빼요. 핀이 있는 쪽은 뺄 수 없어요.</li>
+    </ol>
   </section>
 
   <section id="s6">
-    <h2><span class="n">6</span>핀 내용·사진 넣기</h2>
-    <p>핀이 고정되면 위에는 도면, 아래에는 핀 창이 반씩 보여요. 손잡이를 위로 올리면 크게, 아래로 내리면 닫혀요. <b>적는 즉시 저장</b>돼요.</p>
+    <h2><span class="n">6</span>도면 화면과 거르기</h2>
+    <p>도면을 누르면 열려요. <b>두 손가락으로 벌리면 확대</b>, <b>한 손가락으로 끌면 이동</b>이에요.</p>
     <div class="shots">
-      <figure><img src="img/05-pinsheet.jpg" alt="핀 창 위쪽" loading="lazy"><figcaption>핀 창 위쪽</figcaption></figure>
-      <figure><img src="img/06-pinsheet2.jpg" alt="핀 창 아래쪽" loading="lazy"><figcaption>핀 창 아래쪽(올려서 보기)</figcaption></figure>
+      <figure><img src="img/07-viewer.jpg" alt="도면 화면" loading="lazy"><figcaption>도면 화면</figcaption></figure>
+      <figure><img src="img/08-filter.jpg" alt="거르기" loading="lazy"><figcaption>안전팀·전기팀을 끈 모습</figcaption></figure>
     </div>
-    <p><b>핀 창 위쪽</b></p>
+    <p><b>도면 화면</b></p>
     <ol class="marks">
-      <li data-n="1"><b>상태</b>: 처음엔 미조치예요. 조치가 끝나면 조치완료를 눌러요(6번 참고).</li>
-      <li data-n="2"><b>팀</b>: 담당 팀을 고르면 핀 색이 팀 색으로 바뀌어요.</li>
+      <li data-n="1"><b>도면 이름(ⓘ)</b>: 누르면 도면 정보가 나와요.</li>
+      <li data-n="2"><b>팀 · 업체 · 공종 줄</b>: 보고 싶은 핀만 골라 봐요.</li>
+      <li data-n="3"><b>▲ 탭</b>: 위로 밀면 거르기 줄이 접히고, 아래로 밀면 펼쳐져요. 도면을 넓게 보고 싶을 때 접으세요.</li>
+      <li data-n="4"><b>목록</b>: 찍은 핀과 댓글을 한눈에(11번).</li>
+      <li data-n="5"><b>핀 버튼</b>: 핀을 찍고 고정하는 가운데 빨간 버튼(7번).</li>
+      <li data-n="6"><b>내보내기</b>: 사진대지 PDF나 부분 캡처(12번).</li>
     </ol>
-    <p><b>핀 창 아래쪽</b></p>
+    <p><b>거르기</b></p>
     <ol class="marks">
-      <li data-n="1"><b>업체 / 공종</b>: 예) 동우건설 골조. 한 번 쓴 업체는 다음에 골라 쓸 수 있어요.</li>
-      <li data-n="2"><b>내용</b>: 하자·이슈 내용을 적어요.</li>
-      <li data-n="3"><b>사진(조치 전)</b>: ＋를 눌러 사진을 찍거나 앨범에서 골라요. 사진을 눌러 크게 보면 <b>↻ 회전</b>으로 방향을 바로잡을 수 있고, 여러 장이면 <b>☆ 대표 사진</b>을 눌러 사진대지에 들어갈 사진을 골라요.</li>
+      <li data-n="1"><b>팀 버튼</b>을 누를 때마다 그 팀 핀이 보였다 숨었다 해요. 여러 팀을 함께 볼 수 있어요.</li>
+      <li data-n="2"><b>업체 줄</b>과 <b>3</b> <b>공종 줄</b>은 고른 팀의 핀에 있는 업체·공종만 나와요. <b>전체</b>를 누르면 거르기가 풀려요.</li>
     </ol>
-    <p>핀 창 맨 아래에는 <b>위치 옮기기</b>, <b>삭제</b>, <b>저장하고 닫기</b>가 있어요. 이미 찍은 핀은 꾹 눌러도 움직이지 않으니, 옮길 때는 <b>위치 옮기기</b>를 쓰세요.</p>
+    <div class="note">쪽이 여러 개인 도면은 위쪽 <b>‹ 쪽 이름 ›</b>으로 넘겨요. 조치완료 핀은 흐리게 ✓ 로 보여요.</div>
   </section>
 
   <section id="s7">
-    <h2><span class="n">7</span>조치완료 처리</h2>
-    <div class="shots"><figure><img src="img/07-done.jpg" alt="조치완료" loading="lazy"><figcaption>조치완료를 누른 모습</figcaption></figure></div>
-    <ol class="marks">
-      <li data-n="1">조치가 끝나면 핀을 눌러 열고 <b>조치완료</b>를 눌러요. 누른 사람과 시각이 기록돼요.</li>
-      <li data-n="2"><b>조치완료 사진</b> 칸이 생겨요. 조치 후 사진을 넣으면 사진대지에 조치 전·후가 나란히 들어가요.</li>
+    <h2><span class="n">7</span>핀 찍기</h2>
+    <div class="shots">
+      <figure><img src="img/09-addmode.jpg" alt="핀 찍기 시작" loading="lazy"><figcaption>① 핀 버튼을 누른 모습</figcaption></figure>
+      <figure><img src="img/10-temppin.jpg" alt="임시 핀" loading="lazy"><figcaption>② 위치를 누른 모습</figcaption></figure>
+    </div>
+    <ol class="steps">
+      <li>가운데 <b>핀 버튼</b>을 누르면 핀 찍기가 시작되고 아래에 핀 모양(<b>점·사각형·다각형·스케치</b>)이 나와요. 보통은 <b>점</b>이면 돼요.</li>
+      <li>도면에서 위치를 한 번 누르면 빨간 <b>＋ 임시 핀</b>이 놓여요. 다른 곳을 누르면 옮겨지고, 꾹 누르면 끌어서 맞출 수 있어요.</li>
+      <li><b>핀 버튼을 한 번 더</b> 누르면 고정되고 핀 창이 열려요. 그만두려면 <b>취소</b>.</li>
     </ol>
-    <p>다른 사람이 만든 핀도 <b>조치완료와 조치 후 사진</b>은 누구나 넣을 수 있어요. 내용 수정·삭제·이동은 만든 사람과 관리자만 할 수 있어요.</p>
+    <div class="tip"><b>구역 핀:</b> 사각형은 끌어서 그리고, 다각형은 꼭짓점을 차례로 누른 뒤 핀 버튼으로 고정해요. <b>스케치</b>는 한 손가락으로 그려요(두 손가락은 확대·이동).</div>
   </section>
 
   <section id="s8">
-    <h2><span class="n">8</span>팀별로 보기</h2>
-    <div class="shots"><figure><img src="img/08-filter.jpg" alt="팀 고르기" loading="lazy"><figcaption>안전팀·전기팀을 끈 모습</figcaption></figure></div>
+    <h2><span class="n">8</span>핀 내용과 사진</h2>
+    <p>핀 창은 위에 도면, 아래에 내용이 반씩 보여요. 손잡이를 올리면 크게, 내리면 닫혀요. <b>적는 즉시 저장</b>되고, 창 위 ‹ › 로 다음 핀으로 넘어가요.</p>
+    <div class="shots">
+      <figure><img src="img/11-pinsheet.jpg" alt="핀 창 위쪽" loading="lazy"><figcaption>핀 창 위쪽</figcaption></figure>
+      <figure><img src="img/12-pinsheet2.jpg" alt="핀 창 아래쪽" loading="lazy"><figcaption>핀 창 아래쪽</figcaption></figure>
+      <figure><img src="img/15-photo.jpg" alt="사진 크게 보기" loading="lazy"><figcaption>사진을 눌러 크게 본 모습</figcaption></figure>
+    </div>
+    <p><b>핀 창 위쪽</b></p>
     <ol class="marks">
-      <li data-n="1">도면 위 <b>팀 버튼</b>을 누를 때마다 그 팀 핀이 보였다 숨었다 해요. 흐린 버튼은 숨긴 팀이에요. 여러 팀을 함께 볼 수 있어요.</li>
+      <li data-n="1"><b>상태</b>: 처음엔 미조치예요. 조치가 끝나면 조치완료(9번).</li>
+      <li data-n="2"><b>팀</b>: 담당 팀을 고르면 핀 색과 번호가 그 팀 것으로 바뀌어요. 설정에서 <b>내 기본 팀</b>을 정해 두면 처음부터 골라져 있어요.</li>
     </ol>
+    <p><b>핀 창 아래쪽</b></p>
+    <ol class="marks">
+      <li data-n="1"><b>업체</b>: 현장 업체 목록에서 고르거나 <b>직접 입력</b>. 모르면 <b>미분류</b>.</li>
+      <li data-n="2"><b>공종</b>: 예) 골조, 방수, 전기. 한 번 쓴 공종은 목록에서 골라요.</li>
+      <li data-n="3"><b>내용</b>: 이슈·하자·전달사항을 적어요.</li>
+      <li data-n="4"><b>사진(조치 전)</b>: ＋를 눌러 찍거나 앨범에서 골라요. 여러 장 넣을 수 있어요.</li>
+    </ol>
+    <p><b>사진 크게 보기</b>: 두 손가락으로 벌리거나 두 번 누르면 확대, 옆으로 밀면 다음 사진이에요.</p>
+    <ol class="marks">
+      <li data-n="1"><b>↻ 회전</b>: 누울 때마다 시계 방향 90°.</li>
+      <li data-n="2"><b>☆ 대표 사진</b>: 사진대지에 들어갈 사진을 정해요.</li>
+    </ol>
+    <div class="note">핀 창 맨 아래 <b>위치 옮기기</b>로 핀 자리를 바꿔요(이미 찍은 핀은 꾹 눌러도 움직이지 않아요). 내용 수정·삭제·이동은 만든 사람과 관리자만 할 수 있어요.</div>
   </section>
 
   <section id="s9">
-    <h2><span class="n">9</span>핀 목록</h2>
-    <div class="shots"><figure><img src="img/09-list.jpg" alt="핀 목록" loading="lazy"><figcaption>목록을 누른 모습</figcaption></figure></div>
+    <h2><span class="n">9</span>조치완료</h2>
+    <div class="shots"><figure><img src="img/14-done.jpg" alt="조치완료" loading="lazy"><figcaption>조치완료로 바꾼 핀</figcaption></figure></div>
     <ol class="marks">
-      <li data-n="1"><b>팀</b>으로 거르기. 협업 도면은 맨 위 <b>핀 · 댓글</b> 탭으로 댓글만 모아 볼 수도 있어요.</li>
-      <li data-n="2"><b>전체 · 미조치 · 조치완료</b>로 거르기.</li>
-      <li data-n="3">핀을 누르면 도면에서 그 위치로 바로 이동해요.</li>
+      <li data-n="1"><b>조치완료</b>를 누르면 누른 사람과 시각이 기록되고, 핀을 만든 사람에게 알림이 가요.</li>
+      <li data-n="2"><b>조치완료 사진</b> 칸이 생겨요. 조치 후 사진을 넣으면 사진대지에 조치 전·후가 나란히 들어가요.</li>
     </ol>
+    <p>다른 사람이 만든 핀도 <b>조치완료와 조치 후 사진</b>은 누구나 넣을 수 있어요.</p>
   </section>
 
   <section id="s10">
-    <h2><span class="n">10</span>내보내기(사진대지 PDF)</h2>
+    <h2><span class="n">10</span>댓글</h2>
+    <p>협업 도면의 핀에는 댓글을 달 수 있어요. 질문, 확인 요청, "오늘 오후까지 하겠습니다" 같은 답을 핀 위치와 함께 남겨요.</p>
     <div class="shots">
-      <figure><img src="img/10-export.jpg" alt="내보내기 고르기" loading="lazy"><figcaption>내보내기를 누른 모습</figcaption></figure>
-      <figure><img src="img/11-export2.jpg" alt="PDF 만들기" loading="lazy"><figcaption>PDF 만들기를 고른 모습</figcaption></figure>
+      <figure><img src="img/13-comment.jpg" alt="핀 댓글" loading="lazy"><figcaption>핀 창의 댓글</figcaption></figure>
+      <figure><img src="img/17-listcm.jpg" alt="댓글 목록" loading="lazy"><figcaption>목록 › 댓글 탭</figcaption></figure>
     </div>
-    <p><b>내보내기를 누른 모습</b></p>
+    <p><b>핀 창의 댓글</b></p>
     <ol class="marks">
-      <li data-n="1"><b>부분 캡처</b>: 도면에서 영역을 끌어 그리면 그 부분만 그림으로 만들어요. <b>PDF 만들기</b>: 핀 표시 도면과 사진대지를 PDF 한 파일로 만들어요.</li>
+      <li data-n="1">댓글은 오래된 것부터 쌓여요. 내 댓글은 <b>수정</b>(‘수정됨’ 표시)·<b>삭제</b>할 수 있어요.</li>
+      <li data-n="2">댓글 칸에 적고 <b>등록</b>. 핀을 만든 사람과 그 핀에 댓글 단 사람에게 알림이 가요.</li>
     </ol>
-    <p><b>PDF 만들기를 고른 모습</b></p>
+    <p><b>목록 › 댓글 탭</b></p>
     <ol class="marks">
-      <li data-n="1"><b>사진대지 양식</b>을 골라요. <b>내부 관리 현황</b>: 맨 앞에 전체·팀별·업체별 미조치/완료 개수와 조치율, 핀 목록 표가 들어가요. <b>협력업체 전달</b>: 「하자 조치 요청서」로 업체별로 쪽을 나누고, 조치 전 사진만 넣어요(조치 후 칸 없음). 업체 이름만 적고 공종·팀·등록한 사람·등록 날짜는 빼요.</li>
-      <li data-n="2">넣을 <b>팀</b>을 골라요(여러 팀 가능).</li>
-      <li data-n="3"><b>미리보기</b>로 만들어질 PDF를 먼저 확인할 수 있어요. <b>PDF 만들기</b>를 누르면 파일 이름을 바꾸고 카톡 등으로 바로 <b>보내기</b>하거나 저장할 수 있어요.</li>
+      <li data-n="1">그 도면의 댓글을 최신순으로 모아 봐요. 누르면 그 핀으로 바로 가요.</li>
     </ol>
-    <p>만들어지는 PDF는 이렇게 생겼어요. 첫 쪽은 핀이 표시된 도면, 그다음부터 <b>사진대지</b>(A4 한 쪽에 핀 2개: 조치 전·후 대표 사진, 내용, 위치도)예요.</p>
-    <div class="shots">
-      <figure class="doc"><img src="img/16-pdfdrawing.jpg" alt="핀 표시 도면" loading="lazy"><figcaption>PDF 첫 쪽: 핀 표시 도면</figcaption></figure>
-      <figure class="doc"><img src="img/15-photosheet.jpg" alt="사진대지" loading="lazy"><figcaption>PDF 사진대지</figcaption></figure>
-    </div>
   </section>
 
   <section id="s11">
-    <h2><span class="n">11</span>여러 사람과 함께 쓰기(공유)</h2>
-    <div class="shots"><figure><img src="img/12-cloud.jpg" alt="공유" loading="lazy"><figcaption>목록 화면 위쪽 ‘공유 중’을 누른 모습</figcaption></figure></div>
+    <h2><span class="n">11</span>핀 목록</h2>
+    <div class="shots"><figure><img src="img/16-list.jpg" alt="핀 목록" loading="lazy"><figcaption>목록을 누른 모습</figcaption></figure></div>
     <ol class="marks">
-      <li data-n="1">로그인한 사람끼리 협업 도면과 핀이 함께 보이고, 고친 내용은 몇 초 안에 서로 들어가요. 이 창에서는 누구로 로그인했는지 보고, <b>자동 연결 링크 보내기</b>와 <b>로그아웃</b>을 할 수 있어요.</li>
+      <li data-n="1"><b>핀 · 댓글</b> 탭(협업 도면).</li>
+      <li data-n="2"><b>팀</b>으로 거르기(여러 팀 가능).</li>
+      <li data-n="3"><b>전체 · 미조치 · 조치완료</b>로 거르기.</li>
+      <li data-n="4">업체·공종, 내용, 쪽, 등록일·등록자, 사진·댓글 수가 보여요. 누르면 도면에서 그 핀으로 이동해요.</li>
     </ol>
-    <div class="tip"><b>처음 열 때:</b> 앱을 열면 ① 서버 연결(웹 앱 URL·팀 PIN) → ② 로그인(이름·비밀번호) 화면이 나오고, 로그인하면 도면 목록으로 가요. 비밀번호 기억하기를 켜 두면 다음부터는 바로 목록이 열려요. 처음 등록한 사람에게는 🔔 알림에 <b>환영 메시지</b>가 오고, 거기서 바로 따라하기를 시작할 수 있어요.</div>
-    <div class="tip"><b>협업 요청과 알림:</b> 도면을 올린 사람이나 관리자는 ⋯ → <b>협업 요청 보내기</b>에서 함께 쓸 사람의 <b>이름을 검색</b>해 고를 수 있어요. 받은 사람이 목록 위 🔔 알림에서 <b>수락</b>하면 비밀번호가 걸린 도면도 비밀번호 없이 열려요. 내가 만든 핀을 다른 사람이 조치완료로 바꾸면 🔔에 알림이 오고, 누르면 그 핀으로 바로 가요.</div>
-    <div class="tip"><b>사진 확대:</b> 사진을 눌러 크게 본 뒤 두 손가락으로 벌리거나 두 번 누르면 확대돼요. 확대한 상태에서는 한 손가락으로 옮겨 보고, 원래 크기일 때 옆으로 밀면 다음 사진으로 넘어가요.</div>
-    <div class="tip"><b>협업 도면과 개인 도면:</b> 공유에 연결한 뒤 도면을 불러오면 <b>협업 도면</b>(함께 쓰는 사람과 핀 공유)인지 <b>개인 도면</b>(내 휴대폰에만, 다른 사람에게 안 보임)인지 물어봐요. 개인 도면은 이름 앞에 회색 <b>개인</b> 표시가 붙고, 목록 위 <b>협업 도면 · 개인 도면</b> 탭으로 나눠 볼 수 있어요. 나중에 바꾸려면 도면 ⋯ 메뉴의 <b>협업 도면으로 바꾸기</b> / <b>개인 도면으로 바꾸기</b>를 누르세요. 공유 도면을 개인으로 바꿀 때는 개인 사본을 만들거나, 올린 사람·관리자라면 공유에서 내릴 수 있어요.</div>
-    <div class="tip"><b>참가자:</b> 도면 ⋯ → <b>도면 정보</b>에 그 도면에 핀을 올렸거나 조치완료로 바꾼 사람이 <b>참가자</b>로 나오고, 목록 카드에도 참가 인원이 보여요.</div>
-    <div class="tip"><b>관리자 일반 사용자 모드:</b> 관리자가 목록 위 <b>관리자</b> 버튼을 누르면 「이름(테스트)」 임시 테스트 계정으로 바뀌어요. 이때 찍은 핀·조치완료·알림은 테스트 계정 이름으로 남아서 다른 사람처럼 시험해 볼 수 있어요.</div>
-    <div class="tip"><b>초대 링크:</b> 관리자가 보낸 초대 링크를 누르면 URL·PIN이 자동으로 들어가요. 이름과 비밀번호만 넣으면 돼요.</div>
   </section>
 
   <section id="s12">
-    <h2><span class="n">12</span>따라하기로 연습하기</h2>
-    <p>앱 안에서 견본 도면을 열고, 노란 테두리가 가리키는 버튼을 직접 눌러 가며 배우는 연습이에요. 따라하기 중에는 밝게 비춘 곳만 누를 수 있고, <b>‹ 이전</b>으로 앞 단계를 다시 볼 수 있어요. 약 3분이면 끝나요. 견본 도면은 <b>개인 도면</b> 탭에 생기고 공유로 올라가지 않아요. 끝나면 지울 수 있어요.</p>
+    <h2><span class="n">12</span>내보내기 (사진대지 PDF)</h2>
     <div class="shots">
-      <figure><img src="img/13-help.jpg" alt="설정의 따라하기 버튼" loading="lazy"><figcaption>설정 → 따라하기</figcaption></figure>
-      <figure><img src="img/14-tour.jpg" alt="따라하기 중" loading="lazy"><figcaption>따라하기 중인 모습</figcaption></figure>
+      <figure><img src="img/18-export.jpg" alt="내보내기" loading="lazy"><figcaption>내보내기를 누른 모습</figcaption></figure>
+      <figure><img src="img/19-export2.jpg" alt="PDF 만들기" loading="lazy"><figcaption>PDF 만들기</figcaption></figure>
     </div>
+    <p><b>내보내기를 누른 모습</b></p>
     <ol class="marks">
-      <li data-n="1">목록 화면 오른쪽 위 ⚙️ <b>설정</b> → 어플 사용법의 <b>▶ 연습 도면으로 따라하기</b>. (도면이 하나도 없을 때는 첫 화면에도 버튼이 있어요.)</li>
+      <li data-n="1"><b>부분 캡처</b>: 도면 일부를 그림으로 만들어요(펜으로 표시 가능). <b>PDF 만들기</b>: 핀 표시 도면 + 사진대지.</li>
     </ol>
-    <div class="cta"><a href="../?tour=1">▶ 지금 따라하기 시작</a></div>
+    <p><b>PDF 만들기</b></p>
+    <ol class="marks">
+      <li data-n="1"><b>사진대지 양식</b>: <b>내부 관리 현황</b>은 맨 앞에 전체·팀별·업체별·공종별 미조치/완료와 조치율, 핀 목록 표가 들어가요. <b>협력업체 전달</b>은 업체별로 묶고 우리 쪽 등록자·팀은 빼요.</li>
+      <li data-n="2">넣을 <b>팀 · 업체 · 공종</b>, 넣을 사진(대표 사진만 / 사진 전부)을 골라요.</li>
+      <li data-n="3"><b>미리보기</b>로 먼저 확인하고, <b>PDF 만들기</b> → 파일 이름 확인 → <b>보내기</b>로 카톡 등에 바로 보내요.</li>
+    </ol>
+    <p>만들어지는 PDF는 이렇게 생겼어요(내부 관리 현황).</p>
+    <div class="shots">
+      <figure class="doc"><img src="img/pdf-1.jpg" alt="핀 표시 도면" loading="lazy"><figcaption>첫 쪽: 핀 표시 도면</figcaption></figure>
+      <figure class="docv"><img src="img/pdf-2.jpg" alt="현황표" loading="lazy"><figcaption>현황표</figcaption></figure>
+      <figure class="docv"><img src="img/pdf-4.jpg" alt="사진대지" loading="lazy"><figcaption>사진대지 (A4 한 쪽에 핀 2개)</figcaption></figure>
+    </div>
   </section>
 
   <section id="s13">
-    <h2><span class="n">13</span>댓글·알림·설정</h2>
+    <h2><span class="n">13</span>알림</h2>
+    <div class="shots"><figure><img src="img/20-notes.jpg" alt="알림" loading="lazy"><figcaption>🔔 알림</figcaption></figure></div>
+    <ol class="marks">
+      <li data-n="1">이럴 때 알림이 와요: 내 핀이 <b>조치완료</b>됐을 때, <b>협업 요청</b>을 받았을 때(수락·거절), 내 핀이나 내가 댓글 단 핀에 <b>새 댓글</b>이 달렸을 때. 알림을 누르면 그 도면·핀으로 가요. ✕ 로 하나씩, <b>모두 지우기</b>로 한 번에 지워요.</li>
+    </ol>
+  </section>
+
+  <section id="s14">
+    <h2><span class="n">14</span>함께 쓰기 (공유)</h2>
+    <div class="shots"><figure><img src="img/21-cloud.jpg" alt="공유 연결" loading="lazy"><figcaption>‘공유 중’을 누른 모습</figcaption></figure></div>
+    <ol class="marks">
+      <li data-n="1"><b>자동 연결 링크 보내기</b>: 서버 주소와 PIN이 담긴 링크를 카톡으로 보내요. 받은 사람은 링크를 열고 이름·비밀번호만 넣으면 돼요.</li>
+    </ol>
+    <div class="tbl"><table class="cmp">
+      <tr><th></th><th>협업 도면</th><th>개인 도면</th></tr>
+      <tr><td>저장 위치</td><td>공유 서버 + 내 휴대폰</td><td>내 휴대폰에만</td></tr>
+      <tr><td>누가 보나</td><td>로그인한 사람 모두 (비밀번호를 건 도면은 아는 사람·초대받은 사람만)</td><td>나만</td></tr>
+      <tr><td>핀·사진·댓글</td><td>몇 초 안에 서로 들어가요</td><td>나만 보고, 댓글은 없어요</td></tr>
+      <tr><td>인터넷</td><td>필요 (끊기면 휴대폰에 모아 두었다가 연결되면 보냄)</td><td>없어도 돼요</td></tr>
+      <tr><td>쓰면 좋은 때</td><td>팀과 이슈·하자·전달사항을 함께 관리</td><td>개인 메모, 연습, 아직 공유하기 이른 도면</td></tr>
+    </table></div>
     <ul class="plain">
-      <li><b>댓글</b>: 협업 도면의 핀 창 맨 아래에서 질문이나 전달사항을 남겨요. 도면 화면의 <b>목록 → 댓글</b> 탭에서 그 도면의 댓글을 최신순으로 모아 보고, 누르면 그 핀으로 가요.</li>
-      <li><b>🔔 알림</b>: 내 핀이 조치완료됐을 때, 협업 요청을 받았을 때, 내 핀이나 내가 댓글 단 핀에 새 댓글이 달렸을 때 와요. 알림 창을 위로 올리면 화면 가득 보이고, 하나씩 또는 모두 지울 수 있어요.</li>
-      <li><b>⚙️ 설정 · 내 설정</b>(이 휴대폰에만): 내 기본 팀, 사진 화질, 내보내기 기본 양식과 넣을 사진, 저장 공간 보기·정리.</li>
-      <li><b>⚙️ 설정 · 관리자</b>: 현장 이름(사진대지 맨 위), 현장 업체 목록, 사용자 관리(관리자 지정·비밀번호 초기화), 모든 사용자에게 따라하기 알림, 테스트 도면 만들기.</li>
+      <li><b>협업 요청</b>: 도면 ⋯ → 협업 요청 보내기에서 이름을 검색해 고르면, 받은 사람은 알림에서 수락하고 비밀번호 없이 열 수 있어요.</li>
+      <li><b>참가자</b>: 그 도면에 핀을 올렸거나 조치완료한 사람이 도면 정보와 목록 카드에 나와요.</li>
+      <li><b>권한</b>: 남의 핀 내용 수정·삭제·이동은 관리자만, 조치완료와 조치 후 사진은 누구나.</li>
     </ul>
   </section>
+
+  <section id="s15">
+    <h2><span class="n">15</span>설정</h2>
+    <div class="shots">
+      <figure><img src="img/22-settings.jpg" alt="설정" loading="lazy"><figcaption>⚙️ 설정</figcaption></figure>
+      <figure><img src="img/23-admin.jpg" alt="관리자 설정" loading="lazy"><figcaption>설정 아래쪽 (관리자)</figcaption></figure>
+    </div>
+    <p><b>설정</b></p>
+    <ol class="marks">
+      <li data-n="1"><b>어플 사용법</b>: 연습 도면으로 따라하기, 이 가이드 열기.</li>
+      <li data-n="2"><b>내 기본 팀</b>: 새 핀을 찍을 때 먼저 골라지는 팀.</li>
+      <li data-n="3"><b>사진 화질</b>: 사진 한 장 기준 <b>저화질 약 0.2MB · 보통 약 0.6MB · 고화질 약 2MB</b>. 보통이면 사진대지에 충분해요.</li>
+      <li data-n="4"><b>내보내기 기본 양식</b>과 넣을 사진. 아래에 <b>휴대폰 저장 공간 보기·정리</b>, 현장 이름, <b>비밀번호 변경</b>(지금 비밀번호 확인 → 새 비밀번호 두 번)이 있어요.</li>
+    </ol>
+    <p><b>관리자</b></p>
+    <ol class="marks">
+      <li data-n="1"><b>현장 이름 바꾸기</b>(사진대지 맨 위), <b>현장 업체 목록 관리</b>, <b>사용자 관리</b>(관리자 지정·비밀번호 초기화), <b>모든 사용자에게 따라하기 알림</b>, <b>테스트 도면 만들기</b>(핀 50개 · 개인 도면).</li>
+    </ol>
+  </section>
+
+  <section id="s16">
+    <h2><span class="n">16</span>따라하기로 연습</h2>
+    <p>앱 안에서 <b>견본 도면</b>(공동주택 기준층 평면도)을 열고, 테두리가 가리키는 버튼을 직접 눌러 가며 배워요. 25단계로 핀 찍기부터 목록·내보내기·도면 관리·알림·설정까지 다뤄요. 견본 도면은 개인 도면이라 다른 사람에게 보이지 않아요.</p>
+    <div class="shots"><figure><img src="img/24-tour.jpg" alt="따라하기" loading="lazy"><figcaption>따라하기 중인 모습</figcaption></figure></div>
+    <p>설정 → <b>▶ 연습 도면으로 따라하기</b>로 언제든 다시 시작해요. 중간에 <b>‹ 이전</b>으로 돌아가거나 <b>그만하기</b>로 끝낼 수 있어요.</p>
+    <div class="cta"><a href="../?tour=1">▶ 지금 따라하기 시작</a></div>
+  </section>
+
+  <section id="s17">
+    <h2><span class="n">17</span>자주 묻는 질문</h2>
+    <dl class="faq">
+      <dt>지하층처럼 신호가 안 터지는 곳에서도 되나요?</dt>
+      <dd>네. 한 번 열어 본 도면은 휴대폰에 저장돼 있어서 열리고, 그때 찍은 핀과 사진은 휴대폰에 보관돼요. 위쪽에 ‘오프라인 · 휴대폰에 보관’이 보이고, 신호가 잡히면 자동으로 올라가요.</dd>
+      <dt>핀 번호가 바뀌었어요.</dt>
+      <dd>두 사람이 동시에 같은 팀 번호를 쓰면 나중에 올린 쪽이 다음 빈 번호로 바뀌어요. 지운 번호는 다음 핀이 다시 써요.</dd>
+      <dt>사진이 많아 휴대폰 용량이 걱정돼요.</dt>
+      <dd>설정 → 휴대폰 저장 공간에서 공유 서버에 이미 올라간 사진을 휴대폰에서 지울 수 있어요. 필요할 때 다시 받아요. 사진 화질을 ‘저화질’로 두면 용량이 1/3로 줄어요.</dd>
+      <dt>DWG 도면 선이 얇아요.</dt>
+      <dd>DWG는 휴대폰 안에서 PDF로 바꿀 때 모든 선을 얇은 선으로 그려요. 선 굵기가 중요하면 캐드에서 PDF로 뽑아 올려 주세요.</dd>
+      <dt>다른 사람 핀을 고칠 수 없어요.</dt>
+      <dd>내용 수정·삭제·이동은 만든 사람과 관리자만 할 수 있어요. 대신 댓글로 요청하거나, 조치완료와 조치 후 사진은 누구나 넣을 수 있어요.</dd>
+    </dl>
+  </section>
 </main>
-<footer>핀톡 · 글은 앱 버전 3.35, 화면 사진은 3.23 기준이에요.</footer>
+<footer>핀톡 · 앱 버전 3.53 기준 (2026.11)</footer>
 </body>
 </html>
