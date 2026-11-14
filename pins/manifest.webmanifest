@@ -1,6 +1,6 @@
 {
-  "name": "도면 하자 핀",
-  "short_name": "도면 핀",
+  "name": "핀톡 PinTalk",
+  "short_name": "핀톡",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

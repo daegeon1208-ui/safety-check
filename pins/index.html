@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>도면 하자 핀</title>
+<title>핀톡</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="도면 핀">
+<meta name="apple-mobile-web-app-title" content="핀톡">
 <meta name="theme-color" content="#8E8E88">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
@@ -385,7 +385,8 @@ header .cloud span{max-width:84px;overflow:hidden;text-overflow:ellipsis}
 /* 시작 화면 */
 #gate{z-index:25;background:var(--bg);overflow:auto;display:block}
 #gate .gtop{background:var(--accent);color:#fff;text-align:center;padding:calc(env(safe-area-inset-top) + 44px) 24px 64px;background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);background-size:24px 24px}
-#gate .gmark{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:#fff;color:var(--open);display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+#gate .gmark img{width:100%;height:100%;display:block;border-radius:inherit}
+#gate .gmark{overflow:hidden;width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:#fff;color:var(--open);display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 #gate .gmark svg{width:38px;height:38px}
 #gate h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.03em}
 #gate .gtop p{margin:6px 0 0;color:rgba(255,255,255,.72);font-size:14.5px}
@@ -577,7 +578,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <!-- 도면 목록 -->
 <section id="home" class="screen">
-  <header><h1>도면 하자 핀</h1><button class="hbtn mode" id="modeBtn" hidden></button><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">공유</span></button><button class="hbtn ico" id="noteBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><b class="nbadge" id="noteCnt" hidden></b></button><button class="hbtn ico" id="helpBtn" aria-label="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5"/><circle cx="12" cy="12" r="6.3"/></svg></button></header>
+  <header><h1>핀톡</h1><button class="hbtn mode" id="modeBtn" hidden></button><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">공유</span></button><button class="hbtn ico" id="noteBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><b class="nbadge" id="noteCnt" hidden></b></button><button class="hbtn ico" id="helpBtn" aria-label="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5"/><circle cx="12" cy="12" r="6.3"/></svg></button></header>
   <div class="asuser" id="asUserBar" hidden><span id="asUserTxt"></span> <button id="asUserOff">관리자로 돌아가기</button></div>
   <div class="htop" id="hTop"><div class="hsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="hq" type="search" placeholder="도면 이름으로 찾기" autocomplete="off" enterkeyhint="search"><button id="hqX" aria-label="지우기" hidden>✕</button></div><div class="hfilter" id="hTabs"></div></div>
   <main id="dlist"></main>
@@ -588,18 +589,18 @@ header #backBtn{color:#fff!important;background:none!important}
 <!-- 도면 보기 -->
 <!-- 시작: 연결 → 로그인 -->
 <section id="gate" class="screen" hidden>
-  <div class="gtop"><div class="gmark"><svg viewBox="0 0 24 24"><path d="M12 2.5a7 7 0 0 0-7 7c0 5.1 6.1 11.4 6.4 11.7a.85.85 0 0 0 1.2 0C12.9 20.9 19 14.6 19 9.5a7 7 0 0 0-7-7z" fill="currentColor"/><circle cx="12" cy="9.5" r="2.7" fill="#1B2B4B"/></svg></div>
-    <h1>도면 하자 핀</h1><p>이슈·하자·전달사항을 그 자리에 콕</p></div>
+  <div class="gtop"><div class="gmark"><img src="icon-192.png" alt="핀톡"></div>
+    <h1>핀톡</h1><p>이슈·하자·전달사항을 그 자리에 콕</p></div>
   <div class="gcard">
     <div id="gStep1">
       <div class="gstep"><b>1</b> 서버 연결 <span>2 로그인</span></div>
-      <label class="lbl" for="gUrl">웹 앱 URL</label>
-      <input class="inp" id="gUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label class="lbl" for="gUrl">서버 주소</label>
+      <input class="inp" id="gUrl" placeholder="관리자에게 받은 서버 주소" autocomplete="off" autocapitalize="off" spellcheck="false">
       <label class="lbl" for="gPin">팀 PIN</label>
       <input class="inp" id="gPin" inputmode="numeric" autocomplete="off" placeholder="관리자에게 받은 번호">
       <p class="gmsg" id="gMsg1"></p>
       <button class="gbtn" id="gNext">다음</button>
-      <p class="gtip">관리자가 보낸 자동 연결 링크를 열면 URL과 PIN이 저절로 들어가요.</p>
+      <p class="gtip">관리자가 보낸 자동 연결 링크를 열면 서버 주소와 PIN이 저절로 들어가요.</p>
     </div>
     <div id="gStep2" hidden>
       <div class="gstep"><span>1 서버 연결</span> <b>2</b> 로그인</div>
@@ -844,7 +845,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.48";
+const APP_VER = "3.49";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1648,7 +1649,7 @@ $("#cloudBtn").addEventListener("click",openCloudSheet);
 function inviteLink(){ return location.origin+location.pathname+"#c="+encodeURIComponent(btoa(JSON.stringify({u:cloud.url,p:cloud.pin}))); }
 $("#cLink").addEventListener("click",async()=>{
   const link=inviteLink();
-  try{ if(navigator.share){ await navigator.share({title:"도면 하자 핀",text:"도면 하자 핀 앱 자동 연결 링크",url:link}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
+  try{ if(navigator.share){ await navigator.share({title:"핀톡",text:"핀톡 앱 자동 연결 링크",url:link}); return; } }catch(e){ if(e&&e.name==="AbortError") return; }
   try{ await navigator.clipboard.writeText(link); toast("링크를 복사했습니다"); }catch(e){ prompt("링크를 복사해 주세요",link); }
 });
 function readInvite(){
@@ -1665,7 +1666,7 @@ function readInvite(){
 /* 로그인: 성공하면 true. msg로 진행·오류 문구를 보여 준다 */
 async function loginAs(nw,msg){
   const old={...cloud};
-  if(!/^https:\/\/script\.google\.com\//.test(nw.url)){ msg("웹 앱 URL은 https://script.google.com/ 으로 시작해야 합니다."); return false; }
+  if(!/^https:\/\/script\.google\.com\//.test(nw.url)){ msg("서버 주소가 맞지 않습니다. 관리자에게 받은 주소를 그대로 넣어 주세요."); return false; }
   if(!nw.pin||!nw.name){ msg("PIN과 이름을 넣어 주세요."); return false; }
   if(nw.pw.length<4){ msg("비밀번호를 4자 이상으로 넣어 주세요."); return false; }
   msg("로그인하는 중…"); cloud={...nw,admin:false};
@@ -1681,7 +1682,7 @@ async function loginAs(nw,msg){
     msg(/PIN이/.test(err.message)?"팀 PIN이 맞지 않습니다. 관리자에게 받은 PIN을 넣어 주세요."
       :/비밀번호|이름|4자/.test(err.message)?err.message
       :/알 수 없는 요청/.test(err.message)?"공유 서버가 예전 코드입니다. 관리자에게 서버 업데이트를 요청해 주세요."
-      :"연결하지 못했습니다. 인터넷과 웹 앱 URL을 확인해 주세요.");
+      :"연결하지 못했습니다. 인터넷과 서버 주소를 확인해 주세요.");
     return false;
   }
   cloud.admin=!!(j.me&&j.me.admin); saveCloud(); renderMode();
@@ -3336,7 +3337,7 @@ function enterApp(){
 }
 $("#gNext").addEventListener("click",async()=>{
   const url=$("#gUrl").value.trim(), pin=$("#gPin").value.trim(), msg=t=>$("#gMsg1").textContent=t;
-  if(!/^https:\/\/script\.google\.com\//.test(url)) return msg("웹 앱 URL은 https://script.google.com/ 으로 시작해야 합니다.");
+  if(!/^https:\/\/script\.google\.com\//.test(url)) return msg("서버 주소가 맞지 않습니다. 관리자에게 받은 주소를 그대로 넣어 주세요.");
   if(!pin) return msg("팀 PIN을 넣어 주세요.");
   const b=$("#gNext"); b.disabled=true; msg("서버를 확인하는 중…");
   try{
@@ -3345,7 +3346,7 @@ $("#gNext").addEventListener("click",async()=>{
     if(!j.ok&&/PIN이/.test(j.error||"")){ msg("팀 PIN이 맞지 않습니다. 관리자에게 받은 PIN을 넣어 주세요."); return; }
     if(cloud.url!==url||cloud.pin!==pin){ cloud.url=url; cloud.pin=pin; cloud.pw=""; cloud.admin=false; saveCloud(); }
     showGate(2); setTimeout(()=>$("#gName").focus(),50);
-  }catch(err){ msg("서버에 연결하지 못했습니다. 인터넷과 웹 앱 URL을 확인해 주세요."); }
+  }catch(err){ msg("서버에 연결하지 못했습니다. 인터넷과 서버 주소를 확인해 주세요."); }
   finally{ b.disabled=false; }
 });
 $("#gLogin").addEventListener("click",async()=>{
