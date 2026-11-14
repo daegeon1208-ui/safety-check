@@ -465,6 +465,22 @@ header #backBtn{color:#fff!important;background:none!important}
 .arow .ic svg{stroke:#fff}
 .inp{border-radius:14px;background:#F5F5F3}
 .toolbar button#addBtn{background:#E31937!important;border-color:#fff}
+/* 아래 버튼: 짙은 독 하나 (3.45, 시안 B1). 양쪽 칸 폭을 같게 해 핀 버튼이 정확히 가운데 */
+.toolbar{justify-content:center;padding-bottom:calc(env(safe-area-inset-bottom) + 14px)}
+.toolbar .dock{display:grid;grid-template-columns:112px 64px 112px;align-items:center;background:#3A3A37;border-radius:36px;padding:6px;box-shadow:0 8px 22px rgba(0,0,0,.28);pointer-events:auto}
+.toolbar .dock button{flex:none;width:auto;height:56px;padding:0;margin:0;border:0;border-radius:28px;background:none!important;box-shadow:none!important;color:#fff!important;display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:700;white-space:nowrap}
+.toolbar .dock button i{display:block;line-height:0}
+.toolbar .dock button i svg{width:21px;height:21px;stroke:currentColor}
+.toolbar .dock button:active{background:rgba(255,255,255,.12)!important}
+.toolbar .dock button.on{background:#E31937!important}
+.toolbar .dock button.on i{display:none}
+.toolbar .dock button#addBtn{width:60px;height:60px;justify-self:center;border:0;border-radius:50%;background:#E31937!important;box-shadow:none!important}
+.toolbar .dock button#addBtn svg{width:30px;height:30px}
+@media (orientation:landscape) and (max-height:600px){
+  .toolbar .dock{grid-template-columns:84px;grid-template-rows:auto;justify-items:center;gap:6px;padding:6px;border-radius:30px}
+  .toolbar .dock button{width:84px;height:64px;flex-direction:column;gap:3px;font-size:12.5px;padding:0}
+  .toolbar .dock button#addBtn{width:64px;height:64px}
+}
 .arow.danger .ic,.arow[data-v="delete"] .ic,.arow.del .ic{background:#FCE4E8!important;color:#E31937}
 .arow.danger .ic svg,.arow[data-v="delete"] .ic svg,.arow.del .ic svg{stroke:#E31937}
 #gate .gtop{background-color:#8E8E88;box-shadow:inset 0 -5px 0 #E31937}
@@ -623,9 +639,11 @@ header #backBtn{color:#fff!important;background:none!important}
     <div class="hint" id="hint" hidden></div>
   </div>
   <div class="toolbar">
-    <button id="listBtn">목록</button>
-    <button id="addBtn" aria-label="핀 찍기"></button>
-    <button id="expBtn">내보내기</button>
+    <div class="dock">
+      <button id="listBtn"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg></i><span>목록</span></button>
+      <button id="addBtn" aria-label="핀 찍기"></button>
+      <button id="expBtn"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v6.5A2 2 0 0 0 7 20.5h10a2 2 0 0 0 2-2V12"/></svg></i><span>내보내기</span></button>
+    </div>
   </div>
 </section>
 
@@ -826,7 +844,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.44";
+const APP_VER = "3.45";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -2316,7 +2334,7 @@ function updateModeUI(){
   $("#addBtn").classList.toggle("arm",arm); $("#addBtn").setAttribute("aria-label",arm?"핀 고정":"핀 찍기");
   placeGlow(arm);
   $("#expBtn").classList.toggle("on",V.mode==="capture");
-  $("#expBtn").textContent=V.mode==="capture"?"캡처 취소":"내보내기";
+  $("#expBtn span").textContent=V.mode==="capture"?"캡처 취소":"내보내기";
   const h=$("#hint"), mb=$("#modeBar"), d=V.draft, n=d?d.pts.length:0;
   h.hidden=false; mb.hidden=true;
   if(V.mode==="add"){
