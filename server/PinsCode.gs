@@ -50,7 +50,12 @@ function doPost(e) {
       const me = auth_(req);
       switch (req.action) {
         case 'ping': ss_(); return out_({ ok: true, time: Date.now(), me: me });
-        case 'drawings': return out_({ ok: true, drawings: drawings_(me), notes: notes_(me), me: me });
+        case 'drawings': return out_({ ok: true, drawings: drawings_(me), notes: notes_(me), settings: settings_(), me: me });
+        case 'settings': return out_({ ok: true, settings: settings_() });
+        case 'saveSettings': return out_({ ok: true, settings: saveSettings_(req.settings || {}, me) });
+        case 'userList': return out_({ ok: true, users: userList_(me) });
+        case 'setAdmin': return out_({ ok: true, users: setAdmin_(req.name, !!req.admin, me) });
+        case 'resetPw': return out_({ ok: true, temp: resetPw_(req.name, me) });
         case 'uploadDrawing': return out_({ ok: true, drawing: uploadDrawing_(req.drawing, req.data, me.name) });
         case 'users': return out_({ ok: true, users: users_(me) });
         case 'invite': return out_({ ok: true, sent: invite_(req.id, req.to || [], me), drawing: drawingOut_(rows_('도면').list.find(x => x.id === req.id) || {}) });
@@ -148,6 +153,42 @@ function auth_(req) {
   return me;
 }
 /* 비밀번호 바꾸기: 지금 비밀번호(req.pw)는 auth_ 에서 이미 확인했다 */
+/* ---------- 공용 설정 (관리자가 정함): 현장 이름, 현장 업체 목록 ---------- */
+const DEF_SETTINGS = { site: '온천제2공영아파트일원 가로주택정비사업',
+  vendors: [['세모건설', '토목'], ['동우건설', '골조'], ['수우전기', '전기'], ['정진설비', '설비'], ['HK안전시스템', '안전시설물'], ['청오건설', '방수']] };
+function settings_() {
+  let o = null; try { o = JSON.parse(PropertiesService.getScriptProperties().getProperty('PINS_SETTINGS') || 'null'); } catch (e) {}
+  return Object.assign({}, DEF_SETTINGS, o || {});
+}
+function saveSettings_(n, me) {
+  if (!me.admin) throw new Error('관리자만 바꿀 수 있습니다');
+  const o = settings_();
+  if (n.site !== undefined) o.site = String(n.site || '').trim().slice(0, 80);
+  if (Array.isArray(n.vendors)) o.vendors = n.vendors.map(v => [String(v[0] || '').trim().slice(0, 40), String(v[1] || '').trim().slice(0, 40)]).filter(v => v[0]).slice(0, 60);
+  PropertiesService.getScriptProperties().setProperty('PINS_SETTINGS', JSON.stringify(o));
+  return o;
+}
+/* ---------- 사용자 관리 (관리자) ---------- */
+function userList_(me) {
+  if (!me.admin) throw new Error('관리자만 볼 수 있습니다');
+  return rows_('사용자').list.filter(u => String(u.name).trim()).map(u => ({ name: String(u.name).trim(), admin: userOut_(u).admin, created: +u.created || 0, lastLogin: +u.lastLogin || 0 }));
+}
+function setAdmin_(name, admin, me) {
+  if (!me.admin) throw new Error('관리자만 바꿀 수 있습니다');
+  const { sh, list } = rows_('사용자');
+  const u = list.find(x => String(x.name).trim() === String(name || '').trim()); if (!u) throw new Error('없는 사용자입니다');
+  if (!admin && list.filter(x => userOut_(x).admin).length <= 1 && userOut_(u).admin) throw new Error('관리자가 한 명은 있어야 합니다');
+  u.admin = admin ? 'true' : 'false'; writeRow_(sh, U_COLS, u._row, u);
+  return userList_(me);
+}
+function resetPw_(name, me) {
+  if (!me.admin) throw new Error('관리자만 초기화할 수 있습니다');
+  const { sh, list } = rows_('사용자');
+  const u = list.find(x => String(x.name).trim() === String(name || '').trim()); if (!u) throw new Error('없는 사용자입니다');
+  const temp = String(Math.floor(100000 + Math.random() * 900000));   // 6자리 임시 비밀번호
+  u.salt = Utilities.getUuid(); u.hash = hash_(u.salt, temp); writeRow_(sh, U_COLS, u._row, u);
+  return temp;
+}
 function changePw_(me, pw) {
   if (me.asUser) throw new Error('테스트 계정에서는 비밀번호를 바꿀 수 없습니다. 관리자로 돌아가서 바꿔 주세요');
   pw = String(pw || '');
