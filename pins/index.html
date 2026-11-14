@@ -79,12 +79,16 @@ header{position:relative}
 #viewer .teambar small{display:none}
 #viewer .teambar .tchip{padding:5px 7px;gap:4px}
 #viewer .workbar{padding-top:3px;padding-bottom:5px;gap:5px}
-#fPanel.closed{display:none}
+#fPanel{max-height:220px;overflow:hidden;touch-action:pan-x;transition:max-height .22s ease-out;flex:none}
+#fPanel.closed{max-height:0}
+#fPanel .teambar>:first-child{margin-left:auto}#fPanel .teambar>:last-child{margin-right:auto}   /* 버튼이 적으면 가운데 */
+#viewer #fPanel .workbar small{display:none}
 #viewer .teambar .tchip.vf{display:none}   /* 세로 화면은 업체·공종 줄이 따로 있다 */
-.fhandle{display:flex;align-items:center;gap:8px;padding:4px 12px 7px;background:#F5F5F3;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--sub);flex:none;touch-action:none;cursor:pointer;position:relative}
-.fhandle span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
-.fhandle .grip{position:absolute;left:50%;bottom:3px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:#C9C9C4}
-.fhandle.closed{padding-top:7px;padding-bottom:10px}
+/* 펼치기·접기 손잡이: 아래로 튀어나온 탭. 아래로 밀면 펼침, 위로 밀면 접힘 */
+.fhandle{position:relative;height:0;flex:none;z-index:25;border-top:1px solid var(--line)}
+.ftab{position:absolute;left:50%;top:-1px;width:74px;height:24px;margin-left:-37px;background:#F5F5F3;border:1px solid var(--line);border-top:0;border-radius:0 0 16px 16px;box-shadow:0 3px 6px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;touch-action:none}
+.ftab i{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:8px solid #3A3A37;transition:transform .2s}
+.fhandle.closed .ftab i{transform:rotate(180deg)}
 #viewer .workbar small{display:inline;font-weight:700;margin-right:2px}
 #viewer .workbar .tchip{padding:5px 10px}
 .workbar .tchip.on{background:var(--ink);color:#fff}
@@ -166,7 +170,7 @@ header{position:relative}
   #viewer .teambar{position:absolute;z-index:20;left:calc(env(safe-area-inset-left) + 8px);top:50%;transform:translateY(-30%);flex-direction:column;align-items:stretch;gap:8px;padding:0;background:none;border:0;overflow:visible;pointer-events:none}
   #viewer .teambar small{display:none}
   #viewer .workbar,.fhandle{display:none!important}   /* 가로 화면은 업체·공종 ▾ 버튼으로 */
-  #fPanel.closed{display:block}
+  #fPanel,#fPanel.closed{max-height:none;overflow:visible}
   #viewer .teambar .tchip.vf{display:inline-flex}
   #viewer .teambar .tchip{pointer-events:auto;padding:10px 12px;font-size:14px;background:rgba(255,255,255,.9);box-shadow:0 2px 8px rgba(0,0,0,.2)}
   #viewer .teambar .tchip.on{background:#fff}
@@ -607,7 +611,7 @@ header #backBtn{color:#fff!important;background:none!important}
     <div class="teambar workbar" id="vendBar" hidden></div>
     <div class="teambar workbar" id="workBar" hidden></div>
   </div>
-  <div class="fhandle" id="fHandle"><span id="fSum"></span><i class="grip"></i></div>
+  <div class="fhandle" id="fHandle"><div class="ftab" id="fTab" aria-label="팀·업체·공종 펼치기·접기"><i></i></div></div>
   <div id="vp">
     <canvas id="base"></canvas>
     <canvas id="detail" hidden></canvas>
@@ -822,7 +826,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.43";
+const APP_VER = "3.44";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1936,23 +1940,19 @@ function renderWorkBar(){
     if(bar.hidden) return;
     bar.innerHTML=`<small>${lb}</small><button class="tchip all${VF[k]?"":" on"}" data-fk="${k}" data-fv="__all">전체</button>`+vals.map(x=>`<button class="tchip${VF[k]&&VF[k].has(x)?" on":""}" data-fk="${k}" data-fv="${esc(x)}">${esc(x||none)} <span class="tcnt">${pins.filter(p=>f(p)===x).length}</span></button>`).join("");
   });
-  // 접었을 때 보이는 요약
-  const tn=TEAMS.filter(t=>teamFilter.has(t[0])), sum=[tn.length===TEAMS.length?"모든 팀":tn.length?tn.map(t=>t[1].replace("팀","")).join("·"):"팀 없음",
-    VF.v?`업체 ${[...VF.v].map(x=>x||"미분류").join("·")}`:"모든 업체", VF.w?`공종 ${[...VF.w].map(x=>x||"미지정").join("·")}`:"모든 공종"];
-  $("#fSum").textContent=(fOpen()?"▲ 접기  ·  ":"▼ 보기  ·  ")+sum.join("  /  ")+`  (${V.pins.filter(p=>p.id!=="temp"&&!p.deleted&&passFilter(p)).length}개)`;
 }
 ["#vendBar","#workBar"].forEach(id=>$(id).addEventListener("click",e=>{ const b=e.target.closest("[data-fk]"); if(!b) return;
   const k=b.dataset.fk; vfToggle(k,b.dataset.fv,scopedVals(k)[0]); renderTeamBar(); drawPins(); if(!$("#listSheet").hidden) renderList(); }));
 /* 팀·업체·공종 줄 펼치기/접기: 손잡이를 아래로 밀면 펼침, 위로 밀면 접힘 (누르면 바뀜) */
 const fOpen=()=>myPref("filterOpen","1")==="1";
-function setFOpen(o){ setPref("filterOpen",o?"1":"0"); $("#fPanel").classList.toggle("closed",!o); $("#fHandle").classList.toggle("closed",!o); renderWorkBar(); if(V.page) requestAnimationFrame(()=>{ apply(); scheduleDetail(); }); }
-(()=>{ let y0=null, x0=0;
-  const st=e=>{ const t=e.touches[0]; y0=t.clientY; x0=t.clientX; };
-  const en=open=>e=>{ if(y0===null) return; const t=e.changedTouches[0], dy=t.clientY-y0, dx=t.clientX-x0; y0=null;
-    if(Math.abs(dy)>24&&Math.abs(dy)>Math.abs(dx)){ if(dy>0&&!fOpen()) setFOpen(true); else if(dy<0&&fOpen()) setFOpen(false); e.preventDefault&&e.cancelable&&e.preventDefault(); } };
-  $("#fHandle").addEventListener("touchstart",st,{passive:true}); $("#fHandle").addEventListener("touchend",en(),{passive:false});
-  $("#fPanel").addEventListener("touchstart",st,{passive:true}); $("#fPanel").addEventListener("touchend",en(),{passive:false});
-  $("#fHandle").addEventListener("click",()=>setFOpen(!fOpen()));
+function setFOpen(o){ setPref("filterOpen",o?"1":"0"); $("#fPanel").classList.toggle("closed",!o); $("#fHandle").classList.toggle("closed",!o); if(V.page) setTimeout(()=>{ apply(); scheduleDetail(); },240); }
+(()=>{ let y0=null, x0=0, y1=0, x1=0;   // 밀기만 (누르기로는 안 바뀜)
+  const st=e=>{ y0=y1=e.clientY; x0=x1=e.clientX; };
+  const mv=e=>{ if(y0===null) return; y1=e.clientY; x1=e.clientX; if(y1-y0>20&&!fOpen()){ y0=null; setFOpen(true); } else if(y0-y1>20&&fOpen()&&Math.abs(y1-y0)>Math.abs(x1-x0)){ y0=null; setFOpen(false); } };
+  const en=()=>{ if(y0===null) return; const dy=y1-y0, dx=x1-x0; y0=null;
+    if(Math.abs(dy)>20&&Math.abs(dy)>Math.abs(dx)){ if(dy>0&&!fOpen()) setFOpen(true); else if(dy<0&&fOpen()) setFOpen(false); } };
+  ["#fTab","#fPanel"].forEach(id=>$(id).addEventListener("pointerdown",st));
+  window.addEventListener("pointermove",mv,true); window.addEventListener("pointerup",en,true);   // 손가락이 탭 밖으로 나가도 처리 (움직이는 중에 바로 펼침·접힘)
 })();
 setFOpen(fOpen());
 $("#teamBar").addEventListener("click",e=>{ if(e.target.closest("[data-vf]")){ openVf(); return; } const b=e.target.closest("[data-team]"); if(!b) return;
@@ -3184,7 +3184,7 @@ const TOUR=[
   {t:"#pPhotos",x:"<b>사진</b> 칸을 누르면 사진을 찍거나 앨범에서 고를 수 있어요. 연습에서는 건너뛰어도 돼요.",next:1},
   {t:"#pStatus",x:"조치가 끝나면 <b>조치완료</b>를 눌러요. 그러면 조치 후 사진 칸이 생기고 핀이 흐리게 ✓로 바뀌어요.",next:1},
   {t:()=>$("#pinSheet .ok"),x:"<b>저장하고 닫기</b>를 누르세요.",go:()=>!sheetOpen("#pinSheet")},
-  {t:"#teamBar",x:"위쪽 <b>팀 버튼</b>으로 보고 싶은 팀의 핀만 골라 볼 수 있어요. (여러 팀 가능) 아래 <b>업체</b>·<b>공종</b> 줄은 고른 팀의 핀에 있는 것만 나와요. 맨 아래 손잡이를 <b>위로 밀면 접히고, 아래로 밀면 펼쳐져요</b>.",next:1,pre:()=>{ if(!fOpen()) setFOpen(true); }},
+  {t:"#teamBar",x:"위쪽 <b>팀 버튼</b>으로 보고 싶은 팀의 핀만 골라 볼 수 있어요. (여러 팀 가능) 아래 <b>업체</b>·<b>공종</b> 줄은 고른 팀의 핀에 있는 것만 나와요. 가운데 아래 <b>▲ 탭을 위로 밀면 접히고, 아래로 밀면 펼쳐져요</b>.",next:1,pre:()=>{ if(!fOpen()) setFOpen(true); }},
   {t:"#listBtn",x:"<b>목록</b>을 누르세요.",go:()=>sheetOpen("#listSheet")},
   {t:"#listSheet",x:"찍은 핀이 모두 나와요. <b>미조치·조치완료</b>, 팀으로 거를 수 있고, 핀을 누르면 그 위치로 이동해요.",next:1,post:()=>closeSheets()},
   {t:"#expBtn",x:"<b>내보내기</b>를 누르세요.",go:()=>sheetOpen("#actSheet")||sheetOpen("#expSheet")},
