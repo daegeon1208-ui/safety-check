@@ -78,6 +78,11 @@ header{position:relative}
 #viewer .teambar{gap:4px}
 #viewer .teambar small{display:none}
 #viewer .teambar .tchip{padding:5px 7px;gap:4px}
+#viewer .workbar{padding-top:3px;padding-bottom:6px;gap:5px}
+#viewer .workbar small{display:inline;font-weight:700;margin-right:2px}
+#viewer .workbar .tchip{padding:5px 10px}
+.workbar .tchip.on{background:var(--ink);color:#fff}
+.workbar .tchip.all.on{background:#6F6F6A}
 #viewer .teambar .tchip i{width:8px;height:8px}   /* 팀 5개가 한 줄에 들어가게 */
 .tchip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;font-size:13px;font-weight:600;background:var(--chip);color:var(--sub);flex:none;border:1.5px solid transparent}
 .tchip i{width:10px;height:10px;border-radius:50%;background:var(--tc);opacity:.35}
@@ -154,8 +159,10 @@ header{position:relative}
   .pgbar .pgmid small{display:none}
   #viewer .teambar{position:absolute;z-index:20;left:calc(env(safe-area-inset-left) + 8px);top:50%;transform:translateY(-30%);flex-direction:column;align-items:stretch;gap:8px;padding:0;background:none;border:0;overflow:visible;pointer-events:none}
   #viewer .teambar small{display:none}
+  #viewer .workbar{display:none!important}   /* 가로 화면은 업체·공종 ▾ 버튼으로 */
   #viewer .teambar .tchip{pointer-events:auto;padding:10px 12px;font-size:14px;background:rgba(255,255,255,.9);box-shadow:0 2px 8px rgba(0,0,0,.2)}
   #viewer .teambar .tchip.on{background:#fff}
+  #viewer .teambar .tchip.vf.on{background:var(--accent)!important;color:#fff}
   .toolbar{left:auto;top:0;right:0;bottom:0;width:calc(env(safe-area-inset-right) + 108px);flex-direction:column;justify-content:center;gap:14px;padding:8px calc(env(safe-area-inset-right) + 10px) calc(env(safe-area-inset-bottom) + 8px) 8px}
   .toolbar button{flex:none;width:90px;padding:11px 4px}
   .toolbar button#addBtn{width:70px;height:70px;margin:0}
@@ -582,6 +589,7 @@ header #backBtn{color:#fff!important;background:none!important}
   </header>
   <div class="pgbar" id="pager" hidden><button id="prevPg" aria-label="이전 쪽">‹</button><button class="pgmid" id="pgMid"><b id="pgTxt"></b><small id="pgNum"></small></button><button id="nextPg" aria-label="다음 쪽">›</button></div>
   <div class="teambar" id="teamBar"></div>
+  <div class="teambar workbar" id="workBar" hidden></div>
   <div id="vp">
     <canvas id="base"></canvas>
     <canvas id="detail" hidden></canvas>
@@ -796,7 +804,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.38";
+const APP_VER = "3.39";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1894,7 +1902,17 @@ function renderTeamBar(){
   const none=V.pins.some(p=>p.id!=="temp"&&!p.team);
   const n=(VF.v?VF.v.size:0)+(VF.w?VF.w.size:0);
   $("#teamBar").innerHTML=`<small>보기</small>`+teamChips(teamFilter,none)+`<button class="tchip vf${n?" on":""}" data-vf="1">업체·공종${n?` ${n}`:""} ▾</button>`;
+  renderWorkBar();
 }
+/* 팀 아래 공종 줄: 이 도면 핀에 있는 공종을 바로 골라 보기 (여러 개 가능) */
+function renderWorkBar(){
+  const pins=V.pins.filter(p=>p.id!=="temp"&&!p.deleted), ws=vfVals(pins)[1];
+  $("#workBar").hidden=!ws.length||(ws.length===1&&ws[0]==="");
+  if($("#workBar").hidden) return;
+  $("#workBar").innerHTML=`<small>공종</small><button class="tchip all${VF.w?"":" on"}" data-wk="__all">전체</button>`+ws.map(w=>`<button class="tchip${VF.w&&VF.w.has(w)?" on":""}" data-wk="${esc(w)}">${esc(w||"미지정")} <span class="tcnt">${pins.filter(p=>workOf(p)===w).length}</span></button>`).join("");
+}
+$("#workBar").addEventListener("click",e=>{ const b=e.target.closest("[data-wk]"); if(!b) return;
+  const pins=V.pins.filter(p=>p.id!=="temp"&&!p.deleted); vfToggle("w",b.dataset.wk,vfVals(pins)[1]); renderTeamBar(); drawPins(); if(!$("#listSheet").hidden) renderList(); });
 $("#teamBar").addEventListener("click",e=>{ if(e.target.closest("[data-vf]")){ openVf(); return; } const b=e.target.closest("[data-team]"); if(!b) return;
   toggleTeam(teamFilter,b.dataset.team); saveTeamFilter(); renderTeamBar(); drawPins(); });
 function colorsOf(pins){ return p=>teamColor(p.team); }
@@ -2409,7 +2427,7 @@ let saveP=null;
 function saveSoon(){saveP=selPin();clearTimeout(saveT);saveT=setTimeout(flushSave,400);}
 function flushSave(){clearTimeout(saveT);if(saveP){const p=saveP;saveP=null;savePin(p);}}
 let knownVendors=[], vendorTyping=false;
-function setVW(p,v,w){ p.vendor=v; p.work=w; p.trade=[v,w].filter(Boolean).join(" "); saveSoon(); }
+function setVW(p,v,w){ p.vendor=v; p.work=w; p.trade=[v,w].filter(Boolean).join(" "); saveSoon(); clearTimeout(setVW.t); setVW.t=setTimeout(renderWorkBar,600); }
 function renderVendorUI(p){
   const [v,w]=splitTrade(p), ed=canEdit(p), names=VENDORS.map(x=>x[0]).concat(knownVendors), custom=v&&!names.includes(v);
   const list=custom?names.concat([v]):names;
@@ -3110,7 +3128,7 @@ const TOUR=[
   {t:"#pPhotos",x:"<b>사진</b> 칸을 누르면 사진을 찍거나 앨범에서 고를 수 있어요. 연습에서는 건너뛰어도 돼요.",next:1},
   {t:"#pStatus",x:"조치가 끝나면 <b>조치완료</b>를 눌러요. 그러면 조치 후 사진 칸이 생기고 핀이 흐리게 ✓로 바뀌어요.",next:1},
   {t:()=>$("#pinSheet .ok"),x:"<b>저장하고 닫기</b>를 누르세요.",go:()=>!sheetOpen("#pinSheet")},
-  {t:"#teamBar",x:"위쪽 <b>팀 버튼</b>으로 보고 싶은 팀의 핀만 골라 볼 수 있어요. (여러 팀 가능) 오른쪽 끝 <b>업체·공종</b>을 누르면 업체나 공종으로도 거를 수 있어요.",next:1},
+  {t:"#teamBar",x:"위쪽 <b>팀 버튼</b>으로 보고 싶은 팀의 핀만 골라 볼 수 있어요. (여러 팀 가능) 아래 <b>공종</b> 줄로 공종별로 바로 거르고, 오른쪽 끝 <b>업체·공종</b>을 누르면 업체로도 거를 수 있어요.",next:1},
   {t:"#listBtn",x:"<b>목록</b>을 누르세요.",go:()=>sheetOpen("#listSheet")},
   {t:"#listSheet",x:"찍은 핀이 모두 나와요. <b>미조치·조치완료</b>, 팀으로 거를 수 있고, 핀을 누르면 그 위치로 이동해요.",next:1,post:()=>closeSheets()},
   {t:"#expBtn",x:"<b>내보내기</b>를 누르세요.",go:()=>sheetOpen("#actSheet")||sheetOpen("#expSheet")},
