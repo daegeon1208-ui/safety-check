@@ -246,6 +246,7 @@ header .cloud[data-state="err"] i{background:#E31937}
 #tour .card .bt{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
 #tour .card .bt button{padding:9px 16px;border-radius:10px;font-weight:700;font-size:14px;background:var(--chip);color:var(--ink)}
 #tour .card .bt button.nx{background:var(--accent);color:#fff}
+#tour .card .bt button.pv{margin-right:auto}   /* 이전은 왼쪽 아래 */
 #tour .card.sm{font-size:13.5px;padding:10px 12px 8px}
 #tour .card.sm .bt{margin-top:6px}
 #tour .card.sm .bt button{padding:7px 12px}
@@ -804,7 +805,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.39";
+const APP_VER = "3.40";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -3168,7 +3169,8 @@ function tourStep(i){
   c.querySelector(".tx").innerHTML=s.x+(s.go?'<br><span class="do">👆 직접 눌러 보세요</span>':"");
   const bt=c.querySelector(".bt");
   bt.innerHTML=s.end?'<button data-a="keep">남겨 두기</button><button class="nx" data-a="del">지우기</button>'
-    :`<button data-a="stop">그만하기</button>${i>0?'<button data-a="prev">‹ 이전</button>':""}${s.next?'<button class="nx" data-a="next">다음</button>':""}`;
+    :i===TOUR.length-2?`${i>0?'<button class="pv" data-a="prev">‹ 이전</button>':""}<button class="nx" data-a="next">가이드 종료하기</button>`   // 마지막 단계
+    :`${i>0?'<button class="pv" data-a="prev">‹ 이전</button>':""}<button data-a="stop">그만하기</button>${s.next?'<button class="nx" data-a="next">다음</button>':""}`;
   const t=s.t&&vis(s.t); if(t&&t.closest(".sb")) t.scrollIntoView({block:"center",behavior:"smooth"});
   tourTick();
 }
