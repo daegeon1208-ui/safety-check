@@ -582,11 +582,14 @@ header #backBtn{color:#fff!important;background:none!important}
 #gate .gtop{grid-column:1;grid-row:1;align-self:end;padding:16px 0 20px;background:none;box-shadow:none;color:#fff}
 #gate .gtop p{color:rgba(255,255,255,.75)}
 #gate .gcard{grid-column:1;grid-row:2;margin:0;width:100%;max-width:400px;box-sizing:border-box;border-top:5px solid #E31937;border-radius:20px;box-shadow:0 18px 44px rgba(0,0,0,.25)}
-/* 가로 화면: 카드는 가운데 칸, 로고는 왼쪽 칸 */
+/* 가로 화면 (시안 C2): 아이콘 · 핀톡 | 소개 한 줄을 위쪽 가운데, 카드는 화면 가운데 */
 @media (orientation:landscape) and (max-height:540px){
-  #gate:not([hidden]){grid-template-columns:1fr minmax(0,400px) 1fr;grid-template-rows:1fr;align-items:center;column-gap:20px;overflow:hidden}
-  #gate .gtop{grid-column:1;grid-row:1;align-self:center;justify-self:center;padding:0;text-align:center}
-  #gate .gcard{grid-column:2;grid-row:1;max-height:calc(100dvh - 16px);overflow:hidden;margin:0;width:100%;max-width:400px;padding:10px 16px}
+  #gate:not([hidden]){grid-template-columns:1fr;grid-template-rows:1fr auto 1fr;overflow:auto}
+  #gate .gtop{grid-column:1;grid-row:1;align-self:end;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:10px;padding:8px 0 10px;flex:none}
+  #gate .gmark{width:36px;height:36px;border-radius:10px;margin:0}
+  #gate h1{font-size:22px}
+  #gate .gtop p{margin:0 0 0 4px;font-size:13px;padding-left:12px;border-left:1px solid rgba(255,255,255,.4)}
+  #gate .gcard{grid-column:1;grid-row:2;max-height:none;overflow:visible;margin:0;width:100%;max-width:400px;padding:10px 16px}
 }
 </style>
 </head>
@@ -861,7 +864,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.52";
+const APP_VER = "3.53";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
