@@ -452,6 +452,30 @@ header #backBtn{color:#fff!important;background:none!important}
 #pwDlg .pwhd{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 #pwDlg .pwhd h2{flex:1;margin:0;font-size:18px;font-weight:800}
 #pwDlg .inp{margin-bottom:8px}
+#setDlg{position:fixed;inset:0;z-index:16;background:rgba(0,0,0,.45);display:flex;justify-content:center;align-items:flex-start;padding:max(10vh,calc(env(safe-area-inset-top) + 20px)) 14px 14px}
+#setDlg[hidden]{display:none}
+#setDlg .pwbox{width:100%;max-width:420px;max-height:80vh;overflow:auto;background:var(--card);border-radius:20px;padding:16px 18px 18px;box-shadow:0 18px 50px rgba(0,0,0,.3);border-top:5px solid #E31937}
+#setDlg .pwhd{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+#setDlg .pwhd h2{flex:1;margin:0;font-size:18px;font-weight:800}
+#setDlg .pwbtn{display:block;width:100%;margin-top:8px;padding:13px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:15.5px;font-weight:700}
+#setDlg .pwbtn.sec2{background:var(--chip);color:var(--ink)}
+#setDlg .pwbtn:disabled{opacity:.55}
+#setDlg .sdnote{font-size:13.5px;color:var(--sub);line-height:1.55;margin:4px 0 8px}
+#setDlg .vrow{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+#setDlg .vrow .inp{margin:0;flex:1;min-width:0;padding:10px}
+#setDlg .vrow button{flex:none;width:36px;height:36px;border:0;border-radius:10px;background:var(--chip);color:var(--sub);font-size:15px}
+#setDlg .urow2{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+#setDlg .urow2 .un{flex:1;min-width:0}
+#setDlg .urow2 .un b{display:block;font-size:15px}
+#setDlg .urow2 .un small{color:var(--sub);font-size:12px}
+#setDlg .urow2 button{flex:none;border:0;border-radius:10px;background:var(--chip);color:var(--ink);font-size:13px;font-weight:600;padding:8px 10px}
+#setDlg .urow2 button.on{background:var(--accent);color:#fff}
+#setDlg .stbar{height:10px;border-radius:6px;background:var(--chip);overflow:hidden;margin:6px 0 4px}
+#setDlg .stbar i{display:block;height:100%;background:var(--accent)}
+#setDlg .strow{display:flex;justify-content:space-between;font-size:14px;padding:5px 0}
+.exp .setsub{font-size:13.5px;font-weight:700;color:var(--ink);margin:12px 0 6px}
+.exp .setsub small{font-weight:500;color:var(--sub);margin-left:4px}
+.exp .seg button{margin:0}
 #pwDlg .pwstep{font-size:14px;color:var(--sub);margin:0 0 8px;font-weight:600}
 #pwDlg .pwstep.ok{color:var(--done)}
 #pwDlg .pwbtn{display:block;width:100%;margin-top:4px;padding:13px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:15.5px;font-weight:700}
@@ -704,6 +728,19 @@ header #backBtn{color:#fff!important;background:none!important}
     <button class="tourGo" data-tour style="margin:0 0 4px">▶ 연습 도면으로 따라하기</button>
     <a class="guideGo" href="guide/" target="_blank" rel="noopener">사진으로 보는 사용 가이드 열기</a>
     <div class="setrow"><span>앱 버전</span><b id="verTxt"></b></div>
+    <div class="lbl">내 설정 <small style="font-weight:500;color:var(--sub)">· 이 휴대폰에만 적용</small></div>
+    <div class="setsub">내 기본 팀 <small>새 핀을 찍을 때 먼저 골라져요</small></div>
+    <div class="vchips" id="setTeam"></div>
+    <div class="setsub">사진 화질</div>
+    <div class="seg" id="setPhoto"><button data-v="normal">보통 (용량 절약)</button><button data-v="high">고화질</button></div>
+    <div class="setsub">내보내기 기본 양식</div>
+    <div class="seg" id="setTmpl"><button data-v="internal">내부 관리 현황</button><button data-v="vendor">협력업체 전달</button></div>
+    <div class="setsub">사진대지에 넣을 사진</div>
+    <div class="seg" id="setPh"><button data-v="0">대표 사진만</button><button data-v="1">사진 전부</button></div>
+    <div class="setsub">저장 공간</div>
+    <button class="sec" id="storeBtn">휴대폰 저장 공간 보기 · 정리</button>
+    <div class="lbl">현장</div>
+    <div class="setrow"><span>현장 이름</span><b id="siteTxt" style="text-align:right;max-width:65%;word-break:keep-all"></b></div>
     <div class="lbl">계정</div>
     <div id="pwBox">
       <p class="pwoff" id="pwOff" hidden>로그인한 뒤에 바꿀 수 있어요.</p>
@@ -711,11 +748,21 @@ header #backBtn{color:#fff!important;background:none!important}
     </div>
     <div id="admBox" hidden>
       <div class="lbl">관리자</div>
+      <button class="sec" id="siteBtn">현장 이름 바꾸기</button>
+      <button class="sec" id="vendBtn">현장 업체 목록 관리</button>
+      <button class="sec" id="userBtn">사용자 관리</button>
       <button id="tourAllBtn" class="sec">모든 사용자에게 따라하기 알림 보내기</button>
     </div>
   </div>
 </div>
 
+<!-- 설정 팝업 (업체 목록·사용자 관리·저장 공간·현장 이름) -->
+<div id="setDlg" hidden>
+  <div class="pwbox" role="dialog" aria-modal="true" aria-labelledby="sdTitle">
+    <div class="pwhd"><h2 id="sdTitle"></h2><button class="x" id="sdX" aria-label="닫기">✕</button></div>
+    <div id="sdBody"></div>
+  </div>
+</div>
 <!-- 비밀번호 변경 팝업 -->
 <div id="pwDlg" hidden>
   <div class="pwbox" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
@@ -747,7 +794,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.32";
+const APP_VER = "3.33";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -819,7 +866,7 @@ $("#verTxt").textContent=APP_VER;
 const sheets=["#pinSheet","#listSheet","#expSheet","#helpSheet","#cloudSheet","#actSheet","#capSheet","#infoSheet","#pageSheet","#lockSheet","#noteSheet","#vfSheet"];
 let onSheetClose=null;
 function openSheet(id){sheets.forEach(s=>$(s).hidden=(s!==id));$("#sheetBg").hidden=false;}
-function closeSheets(){const pd=document.getElementById("pwDlg");if(pd)pd.hidden=true;const ns=document.getElementById("noteSheet");if(ns)ns.classList.remove("full");const pv=document.getElementById("pvw");if(pv&&!pv.hidden)document.getElementById("pvClose").click();const cb=onSheetClose;onSheetClose=null;if(typeof V!=="undefined"&&V.split){V.split=false;if(V.page)requestAnimationFrame(apply);}sheets.forEach(s=>$(s).hidden=true);$("#sheetBg").hidden=true;if(cb)cb();}
+function closeSheets(){const pd=document.getElementById("pwDlg");if(pd)pd.hidden=true;const sd=document.getElementById("setDlg");if(sd)sd.hidden=true;const ns=document.getElementById("noteSheet");if(ns)ns.classList.remove("full");const pv=document.getElementById("pvw");if(pv&&!pv.hidden)document.getElementById("pvClose").click();const cb=onSheetClose;onSheetClose=null;if(typeof V!=="undefined"&&V.split){V.split=false;if(V.page)requestAnimationFrame(apply);}sheets.forEach(s=>$(s).hidden=true);$("#sheetBg").hidden=true;if(cb)cb();}
 $("#sheetBg").addEventListener("click",closeSheets);
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",closeSheets));
 $("#helpBtn").addEventListener("click",()=>{
@@ -828,6 +875,7 @@ $("#helpBtn").addEventListener("click",()=>{
   ["#pwCur","#pwNew","#pwNew2"].forEach(x=>$(x).value=""); $("#pwMsg").textContent="";
   if(on&&cloud.admin&&asUser){ $("#pwOff").hidden=false; $("#pwOpen").hidden=true; $("#pwOff").textContent="테스트 계정에서는 바꿀 수 없어요. 관리자로 돌아간 뒤 바꿔 주세요."; }
   $("#admBox").hidden=!(on&&cloud.admin&&!asUser);
+  renderPrefs();
   openSheet("#helpSheet");
 });
 $("#tourAllBtn").addEventListener("click",async()=>{
@@ -838,6 +886,102 @@ $("#tourAllBtn").addEventListener("click",async()=>{
   finally{ b.disabled=false; }
 });
 /* 비밀번호 변경: 버튼을 눌러야 입력칸이 열린다. 지금 비밀번호로 본인 확인 → 새 비밀번호 두 번 */
+/* ---------- 설정: 내 설정 ---------- */
+function renderPrefs(){
+  const mt=myPref("myTeam","");
+  $("#setTeam").innerHTML=`<button class="vchip${mt?"":" on"}" data-mt="">마지막에 쓴 팀</button>`+TEAMS.map(([v,n,c])=>`<button class="vchip${mt===v?" on":""}" data-mt="${v}" style="${mt===v?`background:${c}`:""}">${n}</button>`).join("");
+  const seg=(id,val)=>document.querySelectorAll(id+" button").forEach(b=>b.classList.toggle("on",b.dataset.v===val));
+  seg("#setPhoto",myPref("photoQ","normal")); seg("#setTmpl",myPref("expTmpl","internal")==="vendor"?"vendor":"internal"); seg("#setPh",myPref("expAllPhotos","0")==="1"?"1":"0");
+  $("#siteTxt").textContent=SITE||"(없음)";
+}
+$("#setTeam").addEventListener("click",e=>{ const b=e.target.closest("[data-mt]"); if(!b) return; setPref("myTeam",b.dataset.mt); renderPrefs(); });
+$("#setPhoto").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; setPref("photoQ",b.dataset.v); renderPrefs(); });
+$("#setTmpl").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; setPref("expTmpl",b.dataset.v); renderPrefs(); });
+$("#setPh").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; setPref("expAllPhotos",b.dataset.v); renderPrefs(); });
+/* 설정 팝업 */
+function sdOpen(title,html){ $("#sdTitle").textContent=title; $("#sdBody").innerHTML=html; $("#setDlg").hidden=false; }
+function sdClose(){ $("#setDlg").hidden=true; $("#sdBody").innerHTML=""; }
+$("#sdX").addEventListener("click",sdClose);
+$("#setDlg").addEventListener("click",e=>{ if(e.target.id==="setDlg") sdClose(); });
+const fmtMB=b=>b>=1048576?(b/1048576).toFixed(b>=104857600?0:1)+"MB":Math.max(1,Math.round(b/1024))+"KB";
+/* 저장 공간: 도면 파일·사진 크기, 구글에 올라간 사본만 지워 공간 확보(필요할 때 다시 받음) */
+async function storeInfo(){
+  const ds=await dbAll("drawings"), fs=await dbAll("files"), ps=await dbAll("pins");
+  const fsz=id=>{ const f=fs.find(x=>x.id===id); return f&&f.data?f.data.byteLength:0; };
+  let files=0, photos=0, free=0, freeN=0;
+  fs.forEach(f=>files+=f.data?f.data.byteLength:0);
+  const dirty=new Set(ps.filter(p=>p.dirty).map(p=>p.drawingId));
+  const canFree=d=>cloudOn()&&d.cloud&&!d.private&&!d.sample&&!dirty.has(d.id)&&!(V.drawing&&V.drawing.id===d.id);
+  ds.forEach(d=>{ if(canFree(d)&&fsz(d.id)){ free+=fsz(d.id); freeN++; } });
+  let phFree=0;
+  ps.forEach(p=>{ [...(p.photos||[]),...(p.donePhotos||[])].forEach(x=>{ if(x.data){ photos+=x.data.byteLength; const d=ds.find(q=>q.id===p.drawingId); if(x.id&&!p.dirty&&d&&canFree(d)) phFree+=x.data.byteLength; } }); });
+  let est=null; try{ est=await navigator.storage.estimate(); }catch(e){}
+  return {ds,files,photos,free,freeN,phFree,est,canFree};
+}
+async function openStore(){
+  sdOpen("저장 공간","<p class='sdnote'>계산하는 중…</p>");
+  const i=await storeInfo(), used=i.est&&i.est.usage||0, quota=i.est&&i.est.quota||0, pct=quota?Math.min(100,used/quota*100):0;
+  $("#sdBody").innerHTML=`${quota?`<div class="stbar"><i style="width:${Math.max(2,pct).toFixed(1)}%"></i></div><p class="sdnote">이 앱이 쓰는 공간 ${fmtMB(used)} / 쓸 수 있는 공간 ${fmtMB(quota)}</p>`:""}
+    <div class="strow"><span>도면 ${i.ds.filter(d=>!d.sample).length}개 (파일)</span><b>${fmtMB(i.files)}</b></div>
+    <div class="strow"><span>사진</span><b>${fmtMB(i.photos)}</b></div>
+    <p class="sdnote" style="margin-top:12px">구글에 올라간 협업 도면과 사진은 휴대폰 사본을 지워도 다시 열 때 구글에서 받아요. 개인 도면, 아직 안 보낸 핀, 지금 열린 도면은 지우지 않아요.</p>
+    <button class="pwbtn" id="stFree" ${i.free+i.phFree?"":"disabled"}>${i.free+i.phFree?`협업 도면 사본 정리 (${fmtMB(i.free+i.phFree)} 확보)`:"정리할 사본이 없어요"}</button>
+    ${cloudOn()?"":`<p class="sdnote">로그인하면 협업 도면 사본을 정리할 수 있어요.</p>`}`;
+  const b=$("#stFree"); if(b) b.onclick=async()=>{
+    if(!confirm("구글에 올라간 협업 도면과 사진의 휴대폰 사본을 지울까요? 다시 열 때 인터넷으로 받아요.")) return;
+    b.disabled=true; b.textContent="정리하는 중…";
+    const j=await storeInfo();
+    for(const d of j.ds){ if(!j.canFree(d)) continue;
+      await dbDel("files",d.id); d.stale=true; await dbPut("drawings",d);
+      for(const p of await pinsOf(d.id)){ if(p.dirty) continue; let ch=false; [...(p.photos||[]),...(p.donePhotos||[])].forEach(x=>{ if(x.id&&x.data){ delete x.data; ch=true; } }); if(ch) await dbPut("pins",p); } }
+    toast("정리했어요",2500); openStore(); renderHome&&renderHome();
+  };
+}
+$("#storeBtn").addEventListener("click",openStore);
+/* 관리자: 현장 이름 */
+$("#siteBtn").addEventListener("click",()=>{
+  sdOpen("현장 이름",`<p class="sdnote">사진대지·조치 요청서 맨 위에 들어가요. 모든 사람에게 같이 적용돼요.</p><input class="inp" id="sdSite" maxlength="80" value="${esc(SITE)}"><button class="pwbtn" id="sdSave">저장</button>`);
+  $("#sdSave").onclick=async()=>{ const b=$("#sdSave"); b.disabled=true;
+    try{ const j=await api({action:"saveSettings",settings:{site:$("#sdSite").value}}); applySettings(j.settings); renderPrefs(); sdClose(); toast("현장 이름을 바꿨어요",2500); }
+    catch(e){ toast(/알 수 없는 요청/.test(e.message)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":"저장하지 못했습니다: "+e.message,4000); b.disabled=false; } };
+});
+/* 관리자: 현장 업체 목록 (업체 이름 + 기본 공종) */
+$("#vendBtn").addEventListener("click",()=>{
+  let rows=VENDORS.map(v=>[v[0],v[1]]);
+  const draw=()=>{ $("#sdBody").innerHTML=`<p class="sdnote">핀 창의 업체 버튼에 나오는 목록이에요. 공종은 업체를 고를 때 자동으로 채워져요. 모든 사람에게 같이 적용돼요.</p>
+    ${rows.map((r,i)=>`<div class="vrow"><input class="inp" data-i="${i}" data-k="0" placeholder="업체 이름" value="${esc(r[0])}"><input class="inp" data-i="${i}" data-k="1" placeholder="공종" value="${esc(r[1])}" style="max-width:34%"><button data-up="${i}" aria-label="위로">↑</button><button data-rm="${i}" aria-label="빼기">✕</button></div>`).join("")}
+    <button class="pwbtn sec2" id="vAdd">+ 업체 추가</button><button class="pwbtn" id="vSave">저장</button>`;
+    $("#sdBody").oninput=e=>{ const t=e.target; if(t.dataset.i!==undefined) rows[+t.dataset.i][+t.dataset.k]=t.value; };
+    $("#sdBody").onclick=async e=>{ const t=e.target;
+      if(t.dataset.rm!==undefined){ rows.splice(+t.dataset.rm,1); draw(); }
+      else if(t.dataset.up!==undefined){ const i=+t.dataset.up; if(i>0){ [rows[i-1],rows[i]]=[rows[i],rows[i-1]]; draw(); } }
+      else if(t.id==="vAdd"){ rows.push(["",""]); draw(); const ins=$("#sdBody").querySelectorAll('input[data-k="0"]'); ins[ins.length-1].focus(); }
+      else if(t.id==="vSave"){ t.disabled=true;
+        try{ const j=await api({action:"saveSettings",settings:{vendors:rows.map(r=>[r[0].trim(),r[1].trim()]).filter(r=>r[0])}}); applySettings(j.settings); sdClose(); toast("업체 목록을 저장했어요",2500); }
+        catch(err){ toast(/알 수 없는 요청/.test(err.message)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":"저장하지 못했습니다: "+err.message,4000); t.disabled=false; } } };
+  };
+  sdOpen("현장 업체 목록",""); draw();
+});
+/* 관리자: 사용자 관리 */
+$("#userBtn").addEventListener("click",async()=>{
+  sdOpen("사용자 관리","<p class='sdnote'>불러오는 중…</p>");
+  let users=[];
+  const draw=()=>{ $("#sdBody").innerHTML=`<p class="sdnote">가입한 사람 ${users.length}명. 비밀번호를 잊은 사람은 초기화하면 6자리 임시 비밀번호가 나와요. 그 사람에게 알려 주고, 로그인 뒤 ⚙️ 설정에서 바꾸게 해 주세요.</p>`+
+    users.map(u=>`<div class="urow2"><div class="un"><b>${esc(u.name)}${u.name===cloud.name?" (나)":""}</b><small>가입 ${u.created?fmtDate(u.created).slice(0,10):"-"} · 최근 로그인 ${u.lastLogin?fmtDate(u.lastLogin).slice(2,16):"-"}</small></div>
+      <button class="${u.admin?"on":""}" data-adm="${esc(u.name)}">${u.admin?"관리자":"일반"}</button><button data-rst="${esc(u.name)}">비밀번호 초기화</button></div>`).join(""); };
+  try{ users=(await api({action:"userList"})).users; draw(); }
+  catch(e){ $("#sdBody").innerHTML=`<p class="sdnote">${/알 수 없는 요청/.test(e.message)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":"불러오지 못했습니다: "+esc(e.message)}</p>`; return; }
+  $("#sdBody").onclick=async e=>{ const a=e.target.closest("[data-adm]"), r=e.target.closest("[data-rst]");
+    if(a){ const u=users.find(x=>x.name===a.dataset.adm); if(!u) return;
+      if(!confirm(u.admin?`${u.name}님을 일반 사용자로 바꿀까요?`:`${u.name}님을 관리자로 지정할까요? 관리자는 모든 핀을 고치고 지울 수 있어요.`)) return;
+      try{ users=(await api({action:"setAdmin",name:u.name,admin:!u.admin})).users; draw(); }catch(err){ toast("바꾸지 못했습니다: "+err.message,4000); } }
+    if(r){ if(!confirm(`${r.dataset.rst}님의 비밀번호를 초기화할까요? 지금 비밀번호로는 더 이상 로그인할 수 없어요.`)) return;
+      try{ const j=await api({action:"resetPw",name:r.dataset.rst}); 
+        if(r.dataset.rst===cloud.name){ cloud.pw=j.temp; saveCloud(); }
+        $("#sdBody").insertAdjacentHTML("afterbegin",`<p class="sdnote" style="background:#FCE4E7;color:var(--ink);padding:10px 12px;border-radius:12px"><b>${esc(r.dataset.rst)}</b>님 임시 비밀번호: <b style="font-size:18px;letter-spacing:2px">${j.temp}</b><br>이 번호를 알려 주세요. 이 창을 닫으면 다시 볼 수 없어요.</p>`); }
+      catch(err){ toast("초기화하지 못했습니다: "+err.message,4000); } }
+  };
+});
 let pwOk="";   // 확인을 마친 지금 비밀번호
 function pwDlg(open){
   $("#pwDlg").hidden=!open; ["#pwCur","#pwNew","#pwNew2"].forEach(x=>$(x).value=""); $("#pwMsg").textContent="";
@@ -1349,6 +1493,7 @@ async function syncDrawings(){
     setSync("wait","구글 확인 중…");
     const j=await api({action:"drawings"}), locals=await dbAll("drawings");
     setNotes(j.notes);
+    if(j.settings) applySettings(j.settings);
     const live=j.drawings.filter(d=>!d.deleted);
     for(const r of j.drawings){
       const l=locals.find(d=>d.id===r.id); if(!l) continue;
@@ -1710,14 +1855,22 @@ try{ const f=JSON.parse(localStorage.getItem("teamFilter")||"null"); if(Array.is
 const saveTeamFilter=()=>{ try{localStorage.setItem("teamFilter",JSON.stringify([...teamFilter])); localStorage.setItem("teamFilterKnown",JSON.stringify(TEAMS.map(x=>x[0])));}catch(e){} };
 /* ---------- 업체·공종 ----------
    핀에 vendor(업체)·work(공종)를 따로 둔다. 예전 핀은 trade("동우건설 골조")에서 나눠 읽는다. trade는 둘을 이어 계속 저장(예전 화면·PDF 호환) */
-const VENDORS=[["세모건설","토목"],["동우건설","골조"],["수우전기","전기"],["정진설비","설비"],["HK안전시스템","안전시설물"],["청오건설","방수"]];
+/* 공용 설정(관리자가 서버에 저장): 현장 이름·현장 업체 목록. 받아 둔 값을 휴대폰에도 넣어 둔다 */
+let SITE="온천제2공영아파트일원 가로주택정비사업";
+let VENDORS=[["세모건설","토목"],["동우건설","골조"],["수우전기","전기"],["정진설비","설비"],["HK안전시스템","안전시설물"],["청오건설","방수"]];
+try{ const o=JSON.parse(localStorage.getItem("pinsSettings")||"null"); if(o){ if(typeof o.site==="string") SITE=o.site; if(Array.isArray(o.vendors)) VENDORS=o.vendors; } }catch(e){}
+function applySettings(o){ if(!o) return; if(typeof o.site==="string") SITE=o.site; if(Array.isArray(o.vendors)) VENDORS=o.vendors;
+  try{ localStorage.setItem("pinsSettings",JSON.stringify({site:SITE,vendors:VENDORS})); }catch(e){} }
+/* 내 설정(이 휴대폰): 기본 팀·사진 화질·내보내기 기본값 */
+const myPref=(k,d)=>{ try{ const v=localStorage.getItem(k); return v===null?d:v; }catch(e){ return d; } };
+const setPref=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };
 function splitTrade(p){
   if(p.vendor!==undefined||p.work!==undefined) return [String(p.vendor||"").trim(),String(p.work||"").trim()];
   const t=String(p.trade||"").trim(); if(!t) return ["",""];
   const v=VENDORS.find(([n])=>t.startsWith(n)); if(v) return [v[0],t.slice(v[0].length).replace(/^[\s\-·/]+/,"").trim()];
   const i=t.indexOf(" "); return i>0?[t.slice(0,i),t.slice(i+1).trim()]:[t,""];
 }
-const vendorOf=p=>splitTrade(p)[0], workOf=p=>splitTrade(p)[1];
+const vendorOf=p=>{ const v=splitTrade(p)[0]; return v==="미분류"?"":v; }, workOf=p=>splitTrade(p)[1];
 const NOV="", NOW_="";   // 업체·공종이 비어 있는 핀의 필터 값
 const VF={v:null,w:null};   // null = 모두 보기, Set = 고른 것만
 const vfPass=p=>(!VF.v||VF.v.has(vendorOf(p)))&&(!VF.w||VF.w.has(workOf(p)));
@@ -2056,7 +2209,7 @@ function setGeom(p){
 }
 async function addPin(nx,ny,shape){
   const now=Date.now();
-  let team=""; try{ team=localStorage.getItem("lastTeam")||""; }catch(e){}
+  let team=myPref("myTeam","")||myPref("lastTeam","");   // 설정의 내 기본 팀 → 없으면 마지막에 쓴 팀
   const shownTeams=TEAMS.map(x=>x[0]).filter(t=>teamFilter.has(t));
   if(shownTeams.length===1) team=shownTeams[0]; else if(!TEAMS.some(x=>x[0]===team)) team=TEAMS[0][0];   // 한 팀만 보고 있으면 그 팀으로
   const no=nextNo(await pinsOf(V.drawing.id),team);
@@ -2256,7 +2409,7 @@ function setVW(p,v,w){ p.vendor=v; p.work=w; p.trade=[v,w].filter(Boolean).join(
 function renderVendorUI(p){
   const [v,w]=splitTrade(p), ed=canEdit(p), names=VENDORS.map(x=>x[0]).concat(knownVendors), custom=v&&!names.includes(v);
   const list=custom?names.concat([v]):names;
-  $("#pVendor").innerHTML=list.map(n=>`<button class="vchip${n===v&&!vendorTyping?" on":""}" data-vn="${esc(n)}" ${ed?"":"disabled"}>${esc(n)}</button>`).join("")
+  $("#pVendor").innerHTML=`<button class="vchip${!v&&!vendorTyping?" on":""}" data-vn="__none" ${ed?"":"disabled"}>미분류</button>`+list.map(n=>`<button class="vchip${n===v&&!vendorTyping?" on":""}" data-vn="${esc(n)}" ${ed?"":"disabled"}>${esc(n)}</button>`).join("")
     +(ed?`<button class="vchip add${vendorTyping?" on":""}" data-vn="__input">+ 직접 입력</button>`:"");
   $("#pVendorIn").hidden=!vendorTyping; if(vendorTyping) $("#pVendorIn").value=v;
   if(document.activeElement!==$("#pWork")) $("#pWork").value=w;
@@ -2266,6 +2419,7 @@ $("#pVendor").addEventListener("click",e=>{
   const [v,w]=splitTrade(p), n=b.dataset.vn;
   if(n==="__input"){ vendorTyping=!vendorTyping; renderVendorUI(p); if(vendorTyping) setTimeout(()=>$("#pVendorIn").focus(),50); return; }
   vendorTyping=false;
+  if(n==="__none"){ setVW(p,"",VENDORS.some(x=>x[0]===v&&x[1]===w)?"":w); renderVendorUI(p); return; }   // 미분류: 업체 비움(업체 기본 공종이면 함께 비움)
   if(n===v){ setVW(p,"",w); }   // 다시 누르면 선택 해제
   else { const pre=VENDORS.find(x=>x[0]===n), oldPre=VENDORS.find(x=>x[0]===v);
     setVW(p,n,(!w||(oldPre&&w===oldPre[1]))&&pre?pre[1]:w); }   // 공종이 비어 있으면 그 업체의 기본 공종
@@ -2277,7 +2431,7 @@ $("#pWork").addEventListener("input",e=>{ const p=selPin(); if(p&&canEdit(p)) se
 /* 업체·공종 필터 창 (여러 개 고르기) */
 function vfChips(kind,vals,cnt){
   const set=VF[kind];
-  return `<button class="vchip${!set?" on":""}" data-vfk="${kind}" data-vfv="__all">전체</button>`+vals.map(x=>`<button class="vchip${set&&set.has(x)?" on":""}" data-vfk="${kind}" data-vfv="${esc(x)}">${esc(x||(kind==="v"?"업체 없음":"공종 없음"))} <small>${cnt(x)}</small></button>`).join("");
+  return `<button class="vchip${!set?" on":""}" data-vfk="${kind}" data-vfv="__all">전체</button>`+vals.map(x=>`<button class="vchip${set&&set.has(x)?" on":""}" data-vfk="${kind}" data-vfv="${esc(x)}">${esc(x||(kind==="v"?"미분류":"공종 없음"))} <small>${cnt(x)}</small></button>`).join("");
 }
 function vfToggle(kind,val,vals){
   if(val==="__all"){ VF[kind]=null; return; }
@@ -2403,10 +2557,11 @@ $("#imgDel").addEventListener("click",async()=>{
 function loadImage(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();
   im.onload=()=>{URL.revokeObjectURL(u);res(im);}; im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("사진을 읽을 수 없습니다"));}; im.src=u;});}
 async function shrinkPhoto(file){   // 긴 변 1600px JPEG로 줄여 저장 (휴대폰 저장공간 절약)
-  const im=await loadImage(file), max=1600, s=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight));
+  const hq=myPref("photoQ","normal")==="high";   // 설정 › 사진 화질
+  const im=await loadImage(file), max=hq?2560:1600, s=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight));
   const c=document.createElement("canvas"); c.width=Math.round(im.naturalWidth*s); c.height=Math.round(im.naturalHeight*s);
   c.getContext("2d").drawImage(im,0,0,c.width,c.height);
-  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.82));
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",hq?0.9:0.82));
   return {type:"image/jpeg",data:await blob.arrayBuffer(),w:c.width,h:c.height};
 }
 $("#photoInput").addEventListener("change",async e=>{
@@ -2440,7 +2595,7 @@ function renderList(){
   const list=all.filter(passFilter).filter(p=>lFilter==="all"||(lFilter==="done")===(p.status==="done"));
   $("#lItems").innerHTML=list.length?list.map(p=>`<div class="li" data-id="${p.id}">
     <span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${pinLabel(p)}</span>
-    <div class="t"><div class="t1">${esc(vendorOf(p)||"업체 미입력")}${workOf(p)?` <span style="color:var(--sub);font-weight:500">· ${esc(workOf(p))}</span>`:""}</div><div class="t2">${esc(p.text||"(내용 없음)")}</div>
+    <div class="t"><div class="t1">${esc(vendorOf(p)||"미분류")}${workOf(p)?` <span style="color:var(--sub);font-weight:500">· ${esc(workOf(p))}</span>`:""}</div><div class="t2">${esc(p.text||"(내용 없음)")}</div>
     <div class="t3"><b style="color:${teamColor(p.team)}">${teamName(p.team)}</b> · ${pgLabel(V.drawing,p.page)?esc(pgLabel(V.drawing,p.page))+" · ":""}${p.shape?kindLabel(p)+" · ":""}${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}${p.photos.length?" · 사진 "+p.photos.length:""}${cmOf(p.id).length?` · <span class="cmc">💬 ${cmOf(p.id).length}</span>`:""}</div></div></div>`).join("")
     :`<div class="empty" style="padding:30px">핀이 없습니다</div>`;
 }
@@ -2609,7 +2764,7 @@ async function showExport(drawing,allPins){
   // 업체·공종도 고르기 (처음엔 도면에서 보고 있는 그대로)
   const [evs,ews]=vfVals(allPins), EV={v:VF.v?new Set(VF.v):null,w:VF.w?new Set(VF.w):null};
   const evPass=p=>(!EV.v||EV.v.has(vendorOf(p)))&&(!EV.w||EV.w.has(workOf(p)));
-  const evChips=(k,vals)=>`<button class="vchip${!EV[k]?" on":""}" data-vfk="${k}" data-vfv="__all">전체</button>`+vals.map(x=>`<button class="vchip${EV[k]&&EV[k].has(x)?" on":""}" data-vfk="${k}" data-vfv="${esc(x)}">${esc(x||(k==="v"?"업체 없음":"공종 없음"))}</button>`).join("");
+  const evChips=(k,vals)=>`<button class="vchip${!EV[k]?" on":""}" data-vfk="${k}" data-vfv="__all">전체</button>`+vals.map(x=>`<button class="vchip${EV[k]&&EV[k].has(x)?" on":""}" data-vfk="${k}" data-vfv="${esc(x)}">${esc(x||(k==="v"?"미분류":"공종 없음"))}</button>`).join("");
   const evToggle=(k,val,vals)=>{ if(val==="__all"){EV[k]=null;return;} if(!EV[k]) EV[k]=new Set([val]); else if(EV[k].has(val)){EV[k].delete(val); if(!EV[k].size) EV[k]=null;} else {EV[k].add(val); if(EV[k].size===vals.length) EV[k]=null;} };
   let allPh=false; try{ allPh=localStorage.getItem("expAllPhotos")==="1"; }catch(e){}
   let tmpl="internal"; try{ tmpl=localStorage.getItem("expTmpl")==="vendor"?"vendor":"internal"; }catch(e){}
@@ -2751,7 +2906,8 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
   doc.registerFontkit(fontkit);
   const kor=await doc.embedFont(fontBytes,{subset:true});
   const RED=rgb(0.89,0.098,0.216), GREEN=rgb(0.08,0.5,0.24), WHITE=rgb(1,1,1), INK=rgb(0.12,0.16,0.22), SUB=rgb(0.42,0.45,0.5), LINE=rgb(0.55,0.57,0.6), HEAD=rgb(0.94,0.95,0.96);
-  const tradeOf=p=>vendorOf(p)||"업체 미지정";
+  const tradeOf=p=>vendorOf(p)||"미분류";
+  const siteHead=pg=>{ if(!SITE) return; const st=wrap(SITE,8.5,W-2*M)[0], sw=kor.widthOfTextAtSize(st,8.5); pg.drawText(st,{x:(W-sw)/2,y:H-M+8,size:8.5,font:kor,color:SUB}); };   // 맨 위 현장 이름
   const pins=[...pinList].sort(VEN?(a,b)=>tradeOf(a).localeCompare(tradeOf(b),"ko")||pinCmp(a,b):pinCmp);
   const cOf=colorsOf(pins), pc=p=>{const [r,g,b]=hexRgb(cOf(p));return rgb(r/255,g/255,b/255);};
   for(const p of pins){ const all=[...p.photos,...(p.donePhotos||[])]; if(all.some(x=>!x.data)) progress&&progress(`${pinLabel(p)} 핀 사진 받는 중…`); for(const x of all) await ensurePhoto(p,x); }
@@ -2785,7 +2941,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
     const W=595.28,H=841.89,M=30, n=pins.length, nd=pins.filter(p=>p.status==="done").length, pct=x=>n?Math.round(x*100)+"%":"-";
     let pg=null, y=0, pno=0;
     const head=()=>{ pg=doc.addPage([W,H]); pno++; const t="하 자 관 리 현 황", tw=kor.widthOfTextAtSize(t,20);
-      pg.drawText(t,{x:(W-tw)/2,y:H-M-20,size:20,font:kor,color:INK});
+      pg.drawText(t,{x:(W-tw)/2,y:H-M-20,size:20,font:kor,color:INK}); siteHead(pg);
       pg.drawText(wrap(drawing.name,9,W-2*M-200)[0],{x:M,y:H-M-38,size:9,font:kor,color:SUB});
       const rt=`${teamsTxt?teamsTxt+"  ·  ":""}${fmtDate(Date.now()).slice(0,10)} 기준`; pg.drawText(rt,{x:W-M-kor.widthOfTextAtSize(rt,9),y:H-M-38,size:9,font:kor,color:SUB});
       pg.drawLine({start:{x:M,y:H-70},end:{x:W-M,y:H-70},thickness:1.2,color:INK}); y=H-84; };
@@ -2844,7 +3000,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
       progress&&progress(`사진대지 만드는 중… (${pno}/${total}쪽)`);
       page=doc.addPage([W,H]);
       const t=VEN?"하 자 조 치 요 청 서":"사 진 대 지", tw=kor.widthOfTextAtSize(t,20);
-      page.drawText(t,{x:(W-tw)/2,y:H-M-20,size:20,font:kor,color:INK});
+      page.drawText(t,{x:(W-tw)/2,y:H-M-20,size:20,font:kor,color:INK}); siteHead(page);
       if(VEN){
         const vt=`수신: ${tradeOf(p)}`; page.drawText(wrap(vt,11,W-2*M-200)[0],{x:M,y:H-M-36,size:11,font:kor,color:INK});
         const vl=pins.filter(q=>tradeOf(q)===tradeOf(p)), vo=vl.filter(q=>q.status!=="done").length;
@@ -3192,6 +3348,45 @@ async function inviteMenu(d){
 renderHome(); setSync("",""); renderMode(); renderNoteBadge();
 if(!readInvite()){ if(!cloudOn()) showGate(cloudSet()?2:1); else syncDrawings(); }
 window.addEventListener("hashchange",readInvite);
+/* 테스트 도면: ?demo=1 링크를 열면 이 휴대폰에 개인 도면 하나를 만든다 (5개 팀 × 핀 10개, 핀마다 사진 3장) */
+const DEMO_ID="demo-test";
+async function demoPhoto(team,label,i,color){
+  const c=document.createElement("canvas"); c.width=800; c.height=600; const g=c.getContext("2d");
+  const gr=g.createLinearGradient(0,0,800,600); gr.addColorStop(0,color); gr.addColorStop(1,"#2B2B28"); g.fillStyle=gr; g.fillRect(0,0,800,600);
+  g.strokeStyle="rgba(255,255,255,.18)"; g.lineWidth=2; for(let x=0;x<800;x+=80){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,600); g.stroke(); } for(let y=0;y<600;y+=80){ g.beginPath(); g.moveTo(0,y); g.lineTo(800,y); g.stroke(); }
+  g.fillStyle="#fff"; g.textAlign="center"; g.font="700 92px Pretendard, sans-serif"; g.fillText(label,400,290);
+  g.font="500 40px Pretendard, sans-serif"; g.fillText(`${teamName(team)} · 테스트 사진 ${i}`,400,370);
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.8));
+  return {k:uid(),type:"image/jpeg",data:await blob.arrayBuffer(),w:800,h:600};
+}
+async function makeDemo(){
+  const T_=[["공사",[["동우건설","골조"],["동우건설","철근"],["동우건설","거푸집"],["세모건설","토목"],["청오건설","방수"],["대한창호","창호"]],["벽체 철근 피복 부족","슬래브 거푸집 처짐 확인","타설 후 양생 상태 확인","방수층 들뜸","창호 실링 누락","전달: 내일 오전 타설 구간","도면 치수 불일치 확인 요청","개구부 위치 변경 전달","콘크리트 면 곰보","기둥 수직도 확인"]],
+    ["안전",[["HK안전시스템","안전시설물"],["동우건설","골조"],["세모건설","토목"]],["안전난간 미설치","개구부 덮개 고정 불량","추락방호망 처짐","통로 자재 적치","소화기 미비치","전달: 양중 작업 통제 구간","가설계단 손잡이 파손","작업발판 고정 불량","안전표지판 훼손","흙막이 상부 안전펜스 보강"]],
+    ["품질",[["동우건설","골조"],["청오건설","방수"],["동우건설","철근"]],["철근 이음 길이 확인","슬래브 두께 측정","방수 시험 결과 확인","콘크리트 시험체 채취","배근 간격 불량","전달: 검측 일정 변경","거푸집 박리제 도포 확인","줄눈 시공 불량","레미콘 반입 시간 기록","균열 폭 측정"]],
+    ["전기",[["수우전기","전기"],["수우전기","통신"]],["매립 배관 누락","전선관 연결 불량","분전반 위치 확인","접지선 미연결","전달: 내일 배선 작업","박스 위치 도면과 다름","가설 전기 누전 차단기 점검","통신 배관 막힘","조명 위치 변경 요청","케이블 트레이 고정 불량"]],
+    ["설비",[["정진설비","설비"],["정진설비","소방"],["정진설비","위생"]],["슬리브 위치 오류","배관 누수 흔적","소화 배관 지지 불량","덕트 경로 간섭","전달: 수압 시험 일정","드레인 구배 확인","위생기구 위치 변경","보온재 손상","스프링클러 헤드 위치 확인","배수 트랩 누락"]]];
+  const old=await dbGet("drawings",DEMO_ID); if(old) await removeLocalDrawing(DEMO_ID);
+  toast("테스트 도면을 만드는 중… (핀 50개 · 사진 150장)",120000);
+  const buf=await (await fetch("sample.pdf")).arrayBuffer(), now=Date.now(), me=myName()||"";
+  await dbPut("files",{id:DEMO_ID,data:buf});
+  await dbPut("drawings",{id:DEMO_ID,name:"테스트 도면 (핀 50개)",pages:1,created:now,opened:now,by:me,kind:"pdf",private:true});
+  let k=0;
+  for(const [team,vw,texts] of T_){
+    const color=teamColor(team);
+    for(let i=0;i<10;i++){ k++;
+      const [vendor,work]=vw[i%vw.length], done=i%3===2, t=now-(50-k)*3600e3;
+      const pin={id:uid(),drawingId:DEMO_ID,page:1,nx:+(0.12+Math.random()*0.76).toFixed(4),ny:+(0.15+Math.random()*0.7).toFixed(4),no:i+1,status:done?"done":"open",team,vendor,work,trade:vendor+" "+work,
+        text:texts[i],photos:[],donePhotos:[],by:me,created:t,updated:t};
+      for(let j=1;j<=3;j++) pin.photos.push(await demoPhoto(team,team.charAt(0)+(i+1),j,color));
+      if(done){ pin.doneBy=me; pin.doneAt=t+1800e3; }
+      await dbPut("pins",pin);
+    }
+    toast(`테스트 도면을 만드는 중… ${k}/50`,120000);
+  }
+  $("#toast").hidden=true; setPref("homeFilter","private"); await renderHome(); toast("개인 도면에 「테스트 도면 (핀 50개)」을 만들었어요",4000);
+}
+if(/[?&]demo=1/.test(location.search)){ try{history.replaceState(null,"",location.pathname+location.hash);}catch(e){}
+  setTimeout(()=>{ if(confirm("이 휴대폰 개인 도면에 테스트 도면(핀 50개, 사진 150장)을 만들까요?")) makeDemo().catch(e=>toast("만들지 못했습니다: "+e.message,4000)); },800); }
 if(/[?&]tour=1/.test(location.search)){ try{history.replaceState(null,"",location.pathname+location.hash);}catch(e){} if($("#gate").hidden) setTimeout(startTour,300); else tourAfterLogin=true; }   // 가이드의 "따라하기" 링크
 try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}   // 연결 정보·도면이 저절로 지워지지 않게 요청
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
