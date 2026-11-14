@@ -780,8 +780,8 @@ header #backBtn{color:#fff!important;background:none!important}
     <div class="lbl">내 설정 <small style="font-weight:500;color:var(--sub)">· 이 휴대폰에만 적용</small></div>
     <div class="setsub">내 기본 팀 <small>새 핀을 찍을 때 먼저 골라져요</small></div>
     <div class="vchips" id="setTeam"></div>
-    <div class="setsub">사진 화질</div>
-    <div class="seg" id="setPhoto"><button data-v="normal">보통 (용량 절약)</button><button data-v="high">고화질</button></div>
+    <div class="setsub">사진 화질 <small>사진 한 장 기준 저 약 0.2MB · 보통 약 0.6MB · 고 약 2MB</small></div>
+    <div class="seg" id="setPhoto"><button data-v="low">저화질</button><button data-v="normal">보통</button><button data-v="high">고화질</button></div>
     <div class="setsub">내보내기 기본 양식</div>
     <div class="seg" id="setTmpl"><button data-v="internal">내부 관리 현황</button><button data-v="vendor">협력업체 전달</button></div>
     <div class="setsub">사진대지에 넣을 사진</div>
@@ -844,7 +844,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.45";
+const APP_VER = "3.46";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -2652,12 +2652,12 @@ $("#imgDel").addEventListener("click",async()=>{
 });
 function loadImage(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();
   im.onload=()=>{URL.revokeObjectURL(u);res(im);}; im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("사진을 읽을 수 없습니다"));}; im.src=u;});}
-async function shrinkPhoto(file){   // 긴 변 1600px JPEG로 줄여 저장 (휴대폰 저장공간 절약)
-  const hq=myPref("photoQ","normal")==="high";   // 설정 › 사진 화질
-  const im=await loadImage(file), max=hq?2560:1600, s=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight));
+async function shrinkPhoto(file){   // 설정 화질대로 JPEG로 줄여 저장 (저 1024·보통 1600·고 2560px)
+  const pq=myPref("photoQ","normal"), Q={low:[1024,0.7],normal:[1600,0.82],high:[2560,0.9]}[pq]||[1600,0.82];   // 설정 › 사진 화질 (긴 변, 압축)
+  const im=await loadImage(file), max=Q[0], s=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight));
   const c=document.createElement("canvas"); c.width=Math.round(im.naturalWidth*s); c.height=Math.round(im.naturalHeight*s);
   c.getContext("2d").drawImage(im,0,0,c.width,c.height);
-  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",hq?0.9:0.82));
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",Q[1]));
   return {type:"image/jpeg",data:await blob.arrayBuffer(),w:c.width,h:c.height};
 }
 $("#photoInput").addEventListener("change",async e=>{
