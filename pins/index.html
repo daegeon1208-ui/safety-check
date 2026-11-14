@@ -796,7 +796,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.37";
+const APP_VER = "3.38";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1102,7 +1102,7 @@ async function renderHome(){
   if(!ds.length&&!rem.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF나 DWG를 고르세요.<br><button class="tourGo" data-tour>▶ 처음이세요? 연습 도면으로 따라하기</button></div>`;return;}
   // 협업 / 개인 탭 + 도면 이름 검색 (띄어쓰기·대소문자 무시)
   const q=($("#hq").value||"").replace(/\s+/g,"").toLowerCase(), hit=d=>!q||String(d.name||"").replace(/\s+/g,"").toLowerCase().includes(q);
-  const prv=d=>d.private||d.sample;   // 견본 도면은 개인 도면 탭에
+  const prv=d=>!!(d.private||d.sample);   // 견본 도면은 개인 도면 탭에
   const nPrv=ds.filter(prv).length, nTeam=ds.length-nPrv+rem.length;
   const flt=homeFilter()==="private"?"private":"team";
   const show=ds.filter(d=>(flt==="private")===prv(d)&&hit(d)), showRem=flt==="private"?[]:rem.filter(hit);
