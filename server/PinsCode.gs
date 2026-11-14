@@ -297,7 +297,7 @@ function pinOut_(o) {
 function pins_(drawingId) { return rows_('핀').list.filter(o => o.drawingId === drawingId).map(pinOut_); }
 function pinRow_(p) {
   const ph = x => { const o = { k: x.k, id: x.id, w: x.w, h: x.h }; if (x.rep) o.rep = true; return o; };
-  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '', team: p.team || '',
+  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '', team: p.team || '', vendor: p.vendor || '', work: p.work || '',
     photos: (p.photos || []).map(ph), donePhotos: (p.donePhotos || []).map(ph) };
   return Object.assign({}, p, { deleted: p.deleted ? 'true' : 'false', doneAt: p.doneAt || '', 'data(JSON)': JSON.stringify(extra) });
 }
