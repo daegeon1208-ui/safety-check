@@ -78,7 +78,13 @@ header{position:relative}
 #viewer .teambar{gap:4px}
 #viewer .teambar small{display:none}
 #viewer .teambar .tchip{padding:5px 7px;gap:4px}
-#viewer .workbar{padding-top:3px;padding-bottom:6px;gap:5px}
+#viewer .workbar{padding-top:3px;padding-bottom:5px;gap:5px}
+#fPanel.closed{display:none}
+#viewer .teambar .tchip.vf{display:none}   /* 세로 화면은 업체·공종 줄이 따로 있다 */
+.fhandle{display:flex;align-items:center;gap:8px;padding:4px 12px 7px;background:#F5F5F3;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--sub);flex:none;touch-action:none;cursor:pointer;position:relative}
+.fhandle span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.fhandle .grip{position:absolute;left:50%;bottom:3px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:#C9C9C4}
+.fhandle.closed{padding-top:7px;padding-bottom:10px}
 #viewer .workbar small{display:inline;font-weight:700;margin-right:2px}
 #viewer .workbar .tchip{padding:5px 10px}
 .workbar .tchip.on{background:var(--ink);color:#fff}
@@ -159,7 +165,9 @@ header{position:relative}
   .pgbar .pgmid small{display:none}
   #viewer .teambar{position:absolute;z-index:20;left:calc(env(safe-area-inset-left) + 8px);top:50%;transform:translateY(-30%);flex-direction:column;align-items:stretch;gap:8px;padding:0;background:none;border:0;overflow:visible;pointer-events:none}
   #viewer .teambar small{display:none}
-  #viewer .workbar{display:none!important}   /* 가로 화면은 업체·공종 ▾ 버튼으로 */
+  #viewer .workbar,.fhandle{display:none!important}   /* 가로 화면은 업체·공종 ▾ 버튼으로 */
+  #fPanel.closed{display:block}
+  #viewer .teambar .tchip.vf{display:inline-flex}
   #viewer .teambar .tchip{pointer-events:auto;padding:10px 12px;font-size:14px;background:rgba(255,255,255,.9);box-shadow:0 2px 8px rgba(0,0,0,.2)}
   #viewer .teambar .tchip.on{background:#fff}
   #viewer .teambar .tchip.vf.on{background:var(--accent)!important;color:#fff}
@@ -594,8 +602,12 @@ header #backBtn{color:#fff!important;background:none!important}
     <h1 id="vTitle" title="눌러서 도면 정보"></h1><span class="sync" id="syncTxt" hidden></span>
   </header>
   <div class="pgbar" id="pager" hidden><button id="prevPg" aria-label="이전 쪽">‹</button><button class="pgmid" id="pgMid"><b id="pgTxt"></b><small id="pgNum"></small></button><button id="nextPg" aria-label="다음 쪽">›</button></div>
-  <div class="teambar" id="teamBar"></div>
-  <div class="teambar workbar" id="workBar" hidden></div>
+  <div id="fPanel">
+    <div class="teambar" id="teamBar"></div>
+    <div class="teambar workbar" id="vendBar" hidden></div>
+    <div class="teambar workbar" id="workBar" hidden></div>
+  </div>
+  <div class="fhandle" id="fHandle"><span id="fSum"></span><i class="grip"></i></div>
   <div id="vp">
     <canvas id="base"></canvas>
     <canvas id="detail" hidden></canvas>
@@ -810,7 +822,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.42";
+const APP_VER = "3.43";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1910,15 +1922,39 @@ function renderTeamBar(){
   $("#teamBar").innerHTML=`<small>보기</small>`+teamChips(teamFilter,none)+`<button class="tchip vf${n?" on":""}" data-vf="1">업체·공종${n?` ${n}`:""} ▾</button>`;
   renderWorkBar();
 }
-/* 팀 아래 공종 줄: 이 도면 핀에 있는 공종을 바로 골라 보기 (여러 개 가능) */
-function renderWorkBar(){
-  const pins=V.pins.filter(p=>p.id!=="temp"&&!p.deleted), ws=vfVals(pins)[1];
-  $("#workBar").hidden=!ws.length||(ws.length===1&&ws[0]==="");
-  if($("#workBar").hidden) return;
-  $("#workBar").innerHTML=`<small>공종</small><button class="tchip all${VF.w?"":" on"}" data-wk="__all">전체</button>`+ws.map(w=>`<button class="tchip${VF.w&&VF.w.has(w)?" on":""}" data-wk="${esc(w)}">${esc(w||"미지정")} <span class="tcnt">${pins.filter(p=>workOf(p)===w).length}</span></button>`).join("");
+/* 팀 아래 업체 줄·공종 줄: 지금 보는 팀의 핀에 있는 업체·공종만 버튼으로 (여러 개 선택) */
+const teamPins=()=>V.pins.filter(p=>p.id!=="temp"&&!p.deleted&&teamFilter.has(p.team||""));
+function scopedVals(kind){
+  const pins=teamPins(), f=kind==="v"?vendorOf:workOf, vals=[...new Set(pins.map(f))].sort((a,b)=>(a===""?1:b===""?-1:a.localeCompare(b,"ko")));
+  if(VF[kind]){ [...VF[kind]].forEach(x=>{ if(!vals.includes(x)) VF[kind].delete(x); }); if(!VF[kind].size) VF[kind]=null; }   // 숨긴 팀에만 있던 선택은 푼다
+  return [vals,pins,f];
 }
-$("#workBar").addEventListener("click",e=>{ const b=e.target.closest("[data-wk]"); if(!b) return;
-  const pins=V.pins.filter(p=>p.id!=="temp"&&!p.deleted); vfToggle("w",b.dataset.wk,vfVals(pins)[1]); renderTeamBar(); drawPins(); if(!$("#listSheet").hidden) renderList(); });
+function renderWorkBar(){
+  [["v","#vendBar","업체","미분류"],["w","#workBar","공종","미지정"]].forEach(([k,id,lb,none])=>{
+    const [vals,pins,f]=scopedVals(k), bar=$(id);
+    bar.hidden=!vals.length||(vals.length===1&&vals[0]==="");
+    if(bar.hidden) return;
+    bar.innerHTML=`<small>${lb}</small><button class="tchip all${VF[k]?"":" on"}" data-fk="${k}" data-fv="__all">전체</button>`+vals.map(x=>`<button class="tchip${VF[k]&&VF[k].has(x)?" on":""}" data-fk="${k}" data-fv="${esc(x)}">${esc(x||none)} <span class="tcnt">${pins.filter(p=>f(p)===x).length}</span></button>`).join("");
+  });
+  // 접었을 때 보이는 요약
+  const tn=TEAMS.filter(t=>teamFilter.has(t[0])), sum=[tn.length===TEAMS.length?"모든 팀":tn.length?tn.map(t=>t[1].replace("팀","")).join("·"):"팀 없음",
+    VF.v?`업체 ${[...VF.v].map(x=>x||"미분류").join("·")}`:"모든 업체", VF.w?`공종 ${[...VF.w].map(x=>x||"미지정").join("·")}`:"모든 공종"];
+  $("#fSum").textContent=(fOpen()?"▲ 접기  ·  ":"▼ 보기  ·  ")+sum.join("  /  ")+`  (${V.pins.filter(p=>p.id!=="temp"&&!p.deleted&&passFilter(p)).length}개)`;
+}
+["#vendBar","#workBar"].forEach(id=>$(id).addEventListener("click",e=>{ const b=e.target.closest("[data-fk]"); if(!b) return;
+  const k=b.dataset.fk; vfToggle(k,b.dataset.fv,scopedVals(k)[0]); renderTeamBar(); drawPins(); if(!$("#listSheet").hidden) renderList(); }));
+/* 팀·업체·공종 줄 펼치기/접기: 손잡이를 아래로 밀면 펼침, 위로 밀면 접힘 (누르면 바뀜) */
+const fOpen=()=>myPref("filterOpen","1")==="1";
+function setFOpen(o){ setPref("filterOpen",o?"1":"0"); $("#fPanel").classList.toggle("closed",!o); $("#fHandle").classList.toggle("closed",!o); renderWorkBar(); if(V.page) requestAnimationFrame(()=>{ apply(); scheduleDetail(); }); }
+(()=>{ let y0=null, x0=0;
+  const st=e=>{ const t=e.touches[0]; y0=t.clientY; x0=t.clientX; };
+  const en=open=>e=>{ if(y0===null) return; const t=e.changedTouches[0], dy=t.clientY-y0, dx=t.clientX-x0; y0=null;
+    if(Math.abs(dy)>24&&Math.abs(dy)>Math.abs(dx)){ if(dy>0&&!fOpen()) setFOpen(true); else if(dy<0&&fOpen()) setFOpen(false); e.preventDefault&&e.cancelable&&e.preventDefault(); } };
+  $("#fHandle").addEventListener("touchstart",st,{passive:true}); $("#fHandle").addEventListener("touchend",en(),{passive:false});
+  $("#fPanel").addEventListener("touchstart",st,{passive:true}); $("#fPanel").addEventListener("touchend",en(),{passive:false});
+  $("#fHandle").addEventListener("click",()=>setFOpen(!fOpen()));
+})();
+setFOpen(fOpen());
 $("#teamBar").addEventListener("click",e=>{ if(e.target.closest("[data-vf]")){ openVf(); return; } const b=e.target.closest("[data-team]"); if(!b) return;
   toggleTeam(teamFilter,b.dataset.team); saveTeamFilter(); renderTeamBar(); drawPins(); });
 function colorsOf(pins){ return p=>teamColor(p.team); }
@@ -3148,7 +3184,7 @@ const TOUR=[
   {t:"#pPhotos",x:"<b>사진</b> 칸을 누르면 사진을 찍거나 앨범에서 고를 수 있어요. 연습에서는 건너뛰어도 돼요.",next:1},
   {t:"#pStatus",x:"조치가 끝나면 <b>조치완료</b>를 눌러요. 그러면 조치 후 사진 칸이 생기고 핀이 흐리게 ✓로 바뀌어요.",next:1},
   {t:()=>$("#pinSheet .ok"),x:"<b>저장하고 닫기</b>를 누르세요.",go:()=>!sheetOpen("#pinSheet")},
-  {t:"#teamBar",x:"위쪽 <b>팀 버튼</b>으로 보고 싶은 팀의 핀만 골라 볼 수 있어요. (여러 팀 가능) 아래 <b>공종</b> 줄로 공종별로 바로 거르고, 오른쪽 끝 <b>업체·공종</b>을 누르면 업체로도 거를 수 있어요.",next:1},
+  {t:"#teamBar",x:"위쪽 <b>팀 버튼</b>으로 보고 싶은 팀의 핀만 골라 볼 수 있어요. (여러 팀 가능) 아래 <b>업체</b>·<b>공종</b> 줄은 고른 팀의 핀에 있는 것만 나와요. 맨 아래 손잡이를 <b>위로 밀면 접히고, 아래로 밀면 펼쳐져요</b>.",next:1,pre:()=>{ if(!fOpen()) setFOpen(true); }},
   {t:"#listBtn",x:"<b>목록</b>을 누르세요.",go:()=>sheetOpen("#listSheet")},
   {t:"#listSheet",x:"찍은 핀이 모두 나와요. <b>미조치·조치완료</b>, 팀으로 거를 수 있고, 핀을 누르면 그 위치로 이동해요.",next:1,post:()=>closeSheets()},
   {t:"#expBtn",x:"<b>내보내기</b>를 누르세요.",go:()=>sheetOpen("#actSheet")||sheetOpen("#expSheet")},
