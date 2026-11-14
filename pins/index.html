@@ -796,7 +796,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.35";
+const APP_VER = "3.36";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1844,7 +1844,8 @@ const TEAMS=[["공사","공사팀","#2563EB"],["안전","안전팀","#EA580C"],[
 const teamColor=t=>(TEAMS.find(x=>x[0]===t)||[0,0,NO_TEAM])[2];
 /* 핀 이름 = 팀 글자 + 팀 안 번호 (공1, 안1 …). 번호는 도면 안에서 팀마다 따로 매긴다. 팀 없는 예전 핀은 번호만 */
 const pinLabel=p=>p?(p.team||"").charAt(0)+p.no:"";
-const pinCls=p=>{ const n=pinLabel(p).length; return n>=4?"l4":n===3?"l3":""; };
+const mapLabel=p=>p&&p.no!==undefined?String(p.no):"";   // 도면 위 핀은 숫자만 (팀은 색으로 구분, 3.36)
+const pinCls=p=>{ const n=mapLabel(p).length; return n>=4?"l4":n===3?"l3":""; };
 const teamIdx=t=>{ const i=TEAMS.findIndex(x=>x[0]===t); return i<0?99:i; };
 const pinCmp=(a,b)=>teamIdx(a.team)-teamIdx(b.team)||a.no-b.no;
 function nextNo(list,team,exceptId){   // 그 팀에서 비어 있는 가장 앞 번호 (지워진 번호부터 다시 쓴다)
@@ -1972,7 +1973,7 @@ function drawPins(){
   const list=visPins().filter(p=>p.page===V.pageNo).sort(pinCmp);
   pinLayer.innerHTML=list.map(p=>{
     const x=V.tx+p.nx*V.pw*V.k, y=V.ty+p.ny*V.ph*V.k;
-    return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p)?" drag":""}" style="left:${x}px;top:${y}px;--pc:${p.id==="temp"?"#E31937":colorOf(p)}"><span class="${pinCls(p)}">${pinLabel(p)}</span>${p.status==="done"?'<i class="ck">✓</i>':""}</div>`;
+    return `<div class="pin${p.status==="done"?" done":""}${V.sel===p.id?" sel":""}${(G&&G.type==="drag"&&G.pin===p)||(V.pending&&V.pending.pin===p)?" drag":""}" style="left:${x}px;top:${y}px;--pc:${p.id==="temp"?"#E31937":colorOf(p)}"><span class="${pinCls(p)}">${mapLabel(p)}</span>${p.status==="done"?'<i class="ck">✓</i>':""}</div>`;
   }).join("");
 }
 /* 확대했을 때 보이는 부분만 선명하게 다시 그린다 */
@@ -2322,7 +2323,7 @@ async function openPin(id){
   const p=V.pins.find(q=>q.id===id); if(!p) return;
   flushSave();   // 다른 핀 창이 열려 있었으면 그 내용부터 저장
   V.sel=id; drawPins();
-  $("#pBadge").textContent=pinLabel(p);
+  $("#pBadge").textContent=mapLabel(p);
   $("#pTitle").textContent=pinTitle(p);
   $("#pText").value=p.text||"";
   const ed=canEdit(p);
@@ -2352,10 +2353,10 @@ $("#pTeam").addEventListener("click",e=>{ const b=e.target.closest("button"), p=
   const before=pinLabel(p);
   p.team=b.dataset.v; try{localStorage.setItem("lastTeam",p.team);}catch(_){}
   p.no=nextNo([...V.pins],p.team,p.id);   // 팀이 바뀌면 그 팀의 번호로
-  $("#pBadge").textContent=pinLabel(p); $("#pTitle").textContent=pinTitle(p);
+  $("#pBadge").textContent=mapLabel(p); $("#pTitle").textContent=pinTitle(p);
   savePin(p); setTeamUI(p); drawPins(); renderTeamBar(); if(!$("#listSheet").hidden) renderList();
   if(before!==pinLabel(p)) toast(`${before} → ${pinLabel(p)}(으)로 바뀌었습니다`); });
-function pinTitle(p){ return `${pinLabel(p)} ${kindLabel(p)}`+(pgLabel(V.drawing,p.page)?` · ${pgLabel(V.drawing,p.page)}`:""); }
+function pinTitle(p){ return `${p.team?teamName(p.team)+" ":""}${p.no}번 ${kindLabel(p)}`+(pgLabel(V.drawing,p.page)?` · ${pgLabel(V.drawing,p.page)}`:""); }
 function setStatusUI(p){
   document.querySelectorAll("#pStatus button").forEach(b=>b.classList.toggle("on",b.dataset.v===(p.status||"open")));
   $("#pBadge").classList.toggle("done",p.status==="done"); $("#pBadge").style.background=p.status==="done"?"":teamColor(p.team);
@@ -2673,7 +2674,7 @@ async function openCapture(pts,keep){
       ctx.strokeStyle=`rgba(${col},${closed?.9:p.status==="done"?.5:.95})`; ctx.lineWidth=(closed?5:7)*unit; ctx.stroke(); ctx.setLineDash([]); }
     for(const p of visPins().sort(pinCmp)){ if(!withPins||p.page!==V.pageNo) continue;
       const [x,y]=P([p.nx,p.ny]); if(x<-2*r||y<-2*r||x>cv.width+2*r||y>cv.height+2*r) continue;
-      drawPinMark(ctx,x,y,r,pinLabel(p),colorOf(p),p.status==="done"); }
+      drawPinMark(ctx,x,y,r,mapLabel(p),colorOf(p),p.status==="done"); }
     CAP.base=cv;
     const now=new Date(); CAP.name=`${V.drawing.name}_캡처_${dayStr(now)}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.png`.replace(/[\\/:*?"<>|]/g,"_");
     const canShare=navigator.canShare&&navigator.canShare({files:[new File([new Blob(["x"])],"a.png",{type:"image/png"})]});
@@ -2929,6 +2930,11 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
   const cOf=colorsOf(pins), pc=p=>{const [r,g,b]=hexRgb(cOf(p));return rgb(r/255,g/255,b/255);};
   for(const p of pins){ const all=[...p.photos,...(p.donePhotos||[])]; if(all.some(x=>!x.data)) progress&&progress(`${pinLabel(p)} 핀 사진 받는 중…`); for(const x of all) await ensurePhoto(p,x); }
 
+  // PDF 좌표가 없는 핀(테스트 도면 등)은 화면 비율(nx,ny)로 계산
+  for(const p of pins){ if(Number.isFinite(p.px)&&Number.isFinite(p.py)) continue; const pg=doc.getPage(p.page-1); if(!pg) continue;
+    const b=pg.getCropBox?pg.getCropBox():{x:0,y:0,...pg.getSize()}, rot=((pg.getRotation().angle%360)+360)%360, nx=p.nx||0, ny=p.ny||0;
+    const [u,v]=rot===90?[ny,nx]:rot===180?[1-nx,ny]:rot===270?[1-ny,1-nx]:[nx,1-ny];
+    p.px=b.x+u*b.width; p.py=b.y+v*b.height; }
   // 1) 도면 위에 번호 핀·구역 (원본 도면은 그대로, 선명함 유지)
   for(const p of pins){
     const pg=doc.getPage(p.page-1); if(!pg) continue;
@@ -2947,7 +2953,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
     pg.drawCircle({x:p.px,y:p.py,size:r,color:col,opacity:dn?0.55:1,borderColor:WHITE,borderWidth:r*0.18});
     if(dn){ const a=rot*Math.PI/180, bx=r*0.8, by=r*0.8;   // 완료: 오른쪽 위 초록 점
       pg.drawCircle({x:p.px+bx*Math.cos(a)-by*Math.sin(a),y:p.py+bx*Math.sin(a)+by*Math.cos(a),size:r*0.42,color:GREEN,borderColor:WHITE,borderWidth:r*0.1}); }
-    const s=pinLabel(p), fz=Math.min(fs,r*1.6/Math.max(0.01,kor.widthOfTextAtSize(s,1))), tw=kor.widthOfTextAtSize(s,fz), a=rot*Math.PI/180;
+    const s=mapLabel(p), fz=Math.min(fs,r*1.6/Math.max(0.01,kor.widthOfTextAtSize(s,1))), tw=kor.widthOfTextAtSize(s,fz), a=rot*Math.PI/180;
     const ox=-tw/2, oy=-fz*0.36;
     pg.drawText(s,{x:p.px+ox*Math.cos(a)-oy*Math.sin(a),y:p.py+ox*Math.sin(a)+oy*Math.cos(a),size:fz,font:kor,color:WHITE,rotate:degrees(rot)});
   }
