@@ -432,7 +432,7 @@ header #backBtn{color:#fff!important;background:none!important}
 .teambar,.pgbar{background:#F5F5F3}
 .tchip{border-radius:999px}
 .sheet{border-radius:24px 24px 0 0;box-shadow:inset 0 5px 0 #8E8E88,0 -8px 30px rgba(0,0,0,.18)}
-.seg{background:#E4E4E1!important}.seg,.seg button{border-radius:999px}
+.seg{background:#E4E4E1!important}.seg,.seg button,.exp .seg button{border-radius:999px}.seg{padding:4px}
 .exp a,.exp button{border-radius:14px}
 .exp [data-v="share"],.row2 .ok,.tourGo{background:var(--accent)}
 .alist{background:#fff;border:0;box-shadow:0 0 0 1px var(--line)}
@@ -638,6 +638,7 @@ header #backBtn{color:#fff!important;background:none!important}
 <div class="sheet" id="listSheet" hidden>
   <div class="sh"><h2 id="lTitle">핀 목록</h2><button class="x" data-close>✕</button></div>
   <div class="sb">
+    <div class="seg" id="lMode" hidden style="margin-bottom:10px"><button data-v="pins" class="a on">핀</button><button data-v="cm" class="a">댓글</button></div>
     <div class="tchips" id="lTeams"></div>
     <div class="lpages" id="lPages"></div>
     <div class="seg" id="lFilter"><button data-v="all" class="a on">전체</button><button data-v="open" class="o">미조치</button><button data-v="done" class="d">조치완료</button></div>
@@ -795,7 +796,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.34";
+const APP_VER = "3.35";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -904,7 +905,7 @@ function sdOpen(title,html){ $("#sdTitle").textContent=title; $("#sdBody").inner
 function sdClose(){ $("#setDlg").hidden=true; $("#sdBody").innerHTML=""; }
 $("#sdX").addEventListener("click",sdClose);
 $("#setDlg").addEventListener("click",e=>{ if(e.target.id==="setDlg") sdClose(); });
-const fmtMB=b=>b>=1048576?(b/1048576).toFixed(b>=104857600?0:1)+"MB":Math.max(1,Math.round(b/1024))+"KB";
+const fmtMB=b=>b>=1048576?(b/1048576).toFixed(b>=104857600?0:1)+"MB"+(b>=1073741824?` (${(b/1073741824).toFixed(b>=10737418240?0:1)}GB)`:""):Math.max(1,Math.round(b/1024))+"KB";   // 1GB 넘으면 (10GB) 같이
 /* 저장 공간: 도면 파일·사진 크기, 구글에 올라간 사본만 지워 공간 확보(필요할 때 다시 받음) */
 async function storeInfo(){
   const ds=await dbAll("drawings"), fs=await dbAll("files"), ps=await dbAll("pins");
@@ -1101,9 +1102,10 @@ async function renderHome(){
   if(!ds.length&&!rem.length){box.innerHTML=`<div class="empty">아직 불러온 도면이 없습니다.<br>아래 <b>도면 불러오기</b>를 눌러<br>휴대폰에 받은 도면 PDF나 DWG를 고르세요.<br><button class="tourGo" data-tour>▶ 처음이세요? 연습 도면으로 따라하기</button></div>`;return;}
   // 협업 / 개인 탭 + 도면 이름 검색 (띄어쓰기·대소문자 무시)
   const q=($("#hq").value||"").replace(/\s+/g,"").toLowerCase(), hit=d=>!q||String(d.name||"").replace(/\s+/g,"").toLowerCase().includes(q);
-  const nPrv=ds.filter(d=>d.private).length, nTeam=ds.length-nPrv+rem.length;
+  const prv=d=>d.private||d.sample;   // 견본 도면은 개인 도면 탭에
+  const nPrv=ds.filter(prv).length, nTeam=ds.length-nPrv+rem.length;
   const flt=homeFilter()==="private"?"private":"team";
-  const show=ds.filter(d=>(flt==="private")===!!d.private&&hit(d)), showRem=flt==="private"?[]:rem.filter(hit);
+  const show=ds.filter(d=>(flt==="private")===prv(d)&&hit(d)), showRem=flt==="private"?[]:rem.filter(hit);
   $("#hTabs").innerHTML=[["team","협업 도면",nTeam],["private","개인 도면",nPrv]].map(([v,t,n])=>`<button data-hf="${v}"${flt===v?' class="on"':""}>${t} ${n}</button>`).join("");
   box.innerHTML=(!show.length&&!showRem.length?`<div class="empty">${q?`「${esc($("#hq").value.trim())}」(이)가 들어간 ${flt==="private"?"개인":"협업"} 도면이 없습니다.`:flt==="private"?"개인 도면이 없습니다.<br>도면 ⋯ 메뉴에서 개인 도면으로 바꾸거나, 불러올 때 개인으로 고를 수 있어요.":"협업 도면이 없습니다."}</div>`:"")
   +show.map(d=>{
@@ -2584,8 +2586,21 @@ $("#delPin").addEventListener("click",async()=>{
 });
 
 /* ---------- 핀 목록 ---------- */
-let lFilter="all";
+let lFilter="all", lMode="pins";
+function renderCmList(){
+  const all=(V.cm||[]).filter(c=>V.pins.some(p=>p.id===c.pinId&&!p.deleted)).sort((a,b)=>b.created-a.created);
+  $("#lTitle").textContent=`댓글 목록 (${all.length})`;
+  $("#lItems").innerHTML=all.length?all.map(c=>{ const p=V.pins.find(q=>q.id===c.pinId);
+    return `<div class="li" data-id="${p.id}"><span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${pinLabel(p)}</span>
+    <div class="t"><div class="t1">${esc(c.by)} <span style="color:var(--sub);font-weight:500;font-size:13px">${fmtDate(c.created)}</span></div><div class="t2" style="white-space:normal">💬 ${esc(c.text)}</div>
+    <div class="t3">${esc(vendorOf(p)||"미분류")} · ${esc(p.text||"(내용 없음)")}</div></div></div>`; }).join("")
+    :`<div class="empty" style="padding:30px">아직 댓글이 없어요</div>`;
+}
 function renderList(){
+  const cmTab=cmOn(); $("#lMode").hidden=!cmTab; if(!cmTab) lMode="pins";
+  document.querySelectorAll("#lMode button").forEach(b=>{ b.classList.toggle("on",b.dataset.v===lMode); if(b.dataset.v==="cm") b.textContent=`댓글 ${(V.cm||[]).filter(c=>V.pins.some(p=>p.id===c.pinId&&!p.deleted)).length}`; });
+  ["#lTeams","#lPages","#lFilter"].forEach(x=>$(x).hidden=lMode==="cm");
+  if(lMode==="cm"){ renderCmList(); return; }
   const all=[...V.pins].sort(pinCmp);
   const o=all.filter(p=>p.status!=="done").length;
   $("#lTitle").textContent=`핀 목록 (전체 ${all.length} · 미조치 ${o} · 완료 ${all.length-o})`;
@@ -2603,6 +2618,7 @@ function renderList(){
 $("#listBtn").addEventListener("click",()=>{renderList();openSheet("#listSheet");});
 $("#lTeams").addEventListener("click",e=>{ const b=e.target.closest("[data-team]"); if(!b) return;
   toggleTeam(teamFilter,b.dataset.team); saveTeamFilter(); renderTeamBar(); drawPins(); renderList(); });
+$("#lMode").addEventListener("click",e=>{const b=e.target.closest("button");if(b){lMode=b.dataset.v;renderList();}});
 $("#lFilter").addEventListener("click",e=>{const b=e.target.closest("button");if(b){lFilter=b.dataset.v;renderList();}});
 $("#lItems").addEventListener("click",async e=>{
   const it=e.target.closest(".li"); if(!it) return;
@@ -2773,7 +2789,7 @@ async function showExport(drawing,allPins){
     const draw=()=>{ const l=allPins.filter(p=>sel.has(p.team||"")&&evPass(p)), n=l.length, blocks=l.reduce((a,p)=>a+(allPh?photoRows(p):1),0);
       body.innerHTML=`<div class="lbl">사진대지 양식</div>
         <div class="seg" id="expTm"><button data-v="internal" class="${tmpl==="internal"?"on":""}">내부 관리 현황</button><button data-v="vendor" class="${tmpl==="vendor"?"on":""}">협력업체 전달</button></div>
-        <p style="font-size:13px;color:var(--sub);margin-top:6px">${tmpl==="vendor"?"「하자 조치 요청서」: 업체별로 쪽을 나누고, 조치 전 사진만 넣고(조치 후 칸 없음), 우리 쪽 이름·팀은 빼고, 쪽마다 조치 예정일·확인 서명 칸을 넣어요.":"맨 앞에 전체·팀별·업체별·공종별 미조치/완료 개수와 조치율, 핀 목록 표를 넣고 그 뒤에 사진대지가 나와요."}</p>
+        <p style="font-size:13px;color:var(--sub);margin-top:6px">${tmpl==="vendor"?"「하자 조치 요청서」: 업체별로 쪽을 나누고, 조치 전 사진만 넣어요(조치 후 칸 없음). 업체 이름만 적고 공종·팀·등록한 사람·등록 날짜는 빼요.":"맨 앞에 전체·팀별·업체별·공종별 미조치/완료 개수와 조치율, 핀 목록 표를 넣고 그 뒤에 사진대지가 나와요."}</p>
         <div class="lbl">넣을 팀 (여러 팀 고를 수 있음)</div><div class="tchips" id="expTeams">${teamChips(sel,none)}</div>
         <div class="lbl">넣을 업체</div><div class="vchips" id="expV">${evChips("v",evs)}</div>
         <div class="lbl">넣을 공종</div><div class="vchips" id="expW">${evChips("w",ews)}</div>
@@ -2976,7 +2992,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
 
   // 2) 사진대지 (A4 세로, 한 쪽에 핀 2개. 핀마다 대표 사진 하나씩: 조치 전 | 조치 후, 아래에 내용 | 위치도)
   const fulls=await pageImages(drawing,pins,progress);
-  const W=595.28,H=841.89,M=30, TOP=78, PER=2, GAP=14, FOOT=VEN?40:0;
+  const W=595.28,H=841.89,M=30, TOP=78, PER=2, GAP=14, FOOT=0;
   const bh=(H-TOP-M-FOOT-GAP*(PER-1))/PER;
   const wrap=(t,size,maxW)=>{const out=[];String(t||"").split(/\n/).forEach(par=>{let line="";
     for(const ch of par){ if(kor.widthOfTextAtSize(line+ch,size)>maxW&&line){out.push(line);line=ch.trimStart();} else line+=ch; }
@@ -3007,11 +3023,6 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
         const vl=pins.filter(q=>tradeOf(q)===tradeOf(p)), vo=vl.filter(q=>q.status!=="done").length;
         const rt=`${drawing.name.length>26?drawing.name.slice(0,25)+"…":drawing.name}  ·  ${fmtDate(Date.now()).slice(0,10)}  ·  요청 ${vl.length}건 (미조치 ${vo})  ·  ${pno}/${total}`;
         page.drawText(rt,{x:W-M-kor.widthOfTextAtSize(rt,8.5),y:H-M-36,size:8.5,font:kor,color:SUB});
-        // 아래: 조치 확인 칸
-        const fy=M, fh=FOOT-8; page.drawRectangle({x:M,y:fy,width:W-2*M,height:fh,borderColor:LINE,borderWidth:0.8});
-        const cells=[["조치 예정일",0.3],["조치 확인 (업체)",0.35],["확인 (현장)",0.35]]; let cx=M;
-        cells.forEach(([lb,f],k)=>{ const cw=(W-2*M)*f; if(k) page.drawLine({start:{x:cx,y:fy},end:{x:cx,y:fy+fh},thickness:0.6,color:LINE});
-          page.drawText(lb,{x:cx+6,y:fy+fh-11,size:8,font:kor,color:SUB}); if(k) page.drawText("(서명)",{x:cx+cw-30,y:fy+6,size:8,font:kor,color:SUB}); cx+=cw; });
       }else{
         page.drawText(wrap(drawing.name,9,W-2*M-220)[0],{x:M,y:H-M-38,size:9,font:kor,color:SUB});
         const rt=`${teamsTxt?teamsTxt+"  ·  ":""}${fmtDate(Date.now()).slice(0,10)}  ·  핀 ${pins.length} (미조치 ${o} / 완료 ${pins.length-o})  ·  ${pno}/${total}`;
@@ -3031,7 +3042,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
     page.drawText(st,{x:xl+32,y:yy-HH/2-3.8,size:10.5,font:kor,color:col});
     const meta=[p.team&&!VEN?teamName(p.team):"",p.shape?kindLabel(p):"",pgLabel(drawing,p.page)||""].filter(Boolean).join("  ·  ");
     if(meta) page.drawText(meta,{x:xl+32+stw+10,y:yy-HH/2-3.5,size:9.5,font:kor,color:SUB});
-    const tr=wrap(p.trade||"",10,CW*0.42)[0]; if(tr) page.drawText(tr,{x:xr-8-kor.widthOfTextAtSize(tr,10),y:yy-HH/2-3.6,size:10,font:kor,color:INK});
+    const tr=wrap(VEN?tradeOf(p):(p.trade||""),10,CW*0.42)[0];   // 요청서는 업체만 if(tr) page.drawText(tr,{x:xr-8-kor.widthOfTextAtSize(tr,10),y:yy-HH/2-3.6,size:10,font:kor,color:INK});
     yy-=HH;
     // 사진 줄: 조치 전 | 조치 후 (대표 사진 하나씩)
     const PH=bh*0.56, hw=VEN?CW:CW/2;   // 협력업체용은 조치 전 사진만 (조치 후 칸 없음)
@@ -3050,13 +3061,13 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
     // 아래 줄: 왼쪽 내용·등록·완료, 오른쪽 위치도
     const BH=yy-bot, LX=xl, LWID=CW*0.56, RX=xl+LWID;
     page.drawLine({start:{x:RX,y:yy},end:{x:RX,y:bot},thickness:0.6,color:LINE});
-    const tw2=LWID-16, l1=`등록 ${fmtDate(p.created)}${p.by&&!VEN?"  "+p.by:""}`, l2=done&&p.doneAt?`완료 ${fmtDate(p.doneAt)}${p.doneBy&&!VEN?"  "+p.doneBy:""}`:"";
+    const tw2=LWID-16, l1=VEN?"":`등록 ${fmtDate(p.created)}${p.by?"  "+p.by:""}`, l2=done&&p.doneAt?`완료 ${fmtDate(p.doneAt)}${p.doneBy&&!VEN?"  "+p.doneBy:""}`:"";
     page.drawText("내용",{x:LX+8,y:yy-14,size:8.5,font:kor,color:SUB});
-    const footH=l2?30:17, maxL=Math.max(1,Math.floor((BH-22-footH)/13.5)); let ls=wrap(p.text||"-",10,tw2);
+    const footH=l1&&l2?30:l1||l2?17:0, maxL=Math.max(1,Math.floor((BH-22-footH)/13.5)); let ls=wrap(p.text||"-",10,tw2);
     if(ls.length>maxL){ ls=ls.slice(0,maxL); ls[maxL-1]=ls[maxL-1].slice(0,-1)+"…"; }
     ls.forEach((l,j)=>page.drawText(l,{x:LX+8,y:yy-29-j*13.5,size:10,font:kor,color:INK}));
-    page.drawLine({start:{x:LX+8,y:bot+footH+4},end:{x:RX-8,y:bot+footH+4},thickness:0.4,color:LINE});
-    page.drawText(wrap(l1,8.5,tw2)[0],{x:LX+8,y:bot+(l2?19:8),size:8.5,font:kor,color:INK});
+    if(footH) page.drawLine({start:{x:LX+8,y:bot+footH+4},end:{x:RX-8,y:bot+footH+4},thickness:0.4,color:LINE});
+    if(l1) page.drawText(wrap(l1,8.5,tw2)[0],{x:LX+8,y:bot+(l2?19:8),size:8.5,font:kor,color:INK});
     if(l2) page.drawText(wrap(l2,8.5,tw2)[0],{x:LX+8,y:bot+7,size:8.5,font:kor,color:GREEN});
     const full=fulls[p.page];
     if(full){
@@ -3082,7 +3093,7 @@ const T={i:-1,flag:false,timer:null,busy:false,pinId:null};
 const vis=sel=>{const e=typeof sel==="function"?sel():$(sel); return e&&!e.hidden&&e.getClientRects().length?e:null;};   // fixed(아래 창)도 보이면 잡는다
 const sheetOpen=id=>!$(id).hidden;
 const TOUR=[
-  {t:()=>$('.dcard[data-id="sample"]'),x:"<b>견본 도면</b>을 눌러 열어 보세요.",go:()=>!$("#viewer").hidden&&V.drawing&&V.drawing.id===TOUR_ID&&V.page},
+  {t:()=>$('.dcard[data-id="sample"]'),x:"연습은 <b>개인 도면</b> 탭의 <b>견본 도면</b>으로 해요. 견본 도면을 눌러 열어 보세요.",go:()=>!$("#viewer").hidden&&V.drawing&&V.drawing.id===TOUR_ID&&V.page},
   {t:"#vp",x:"도면을 <b>두 손가락으로 벌리면 확대</b>, <b>한 손가락으로 끌면 이동</b>해요. 한 번 해 보고 다음을 누르세요.",next:1},
   {t:"#addBtn",x:"가운데 빨간 <b>핀 버튼</b>을 누르세요. 핀 찍기가 시작돼요.",go:()=>V.mode==="add"},
   {t:"#modeBar",x:"핀 모양은 <b>점·사각형·다각형·스케치</b>에서 고를 수 있어요. 지금은 <b>점</b>으로 해 볼게요.",next:1,pre:()=>{ if(!V.pending&&(V.mode!=="add"||V.addKind!=="point")) setMode("add","point"); }},
@@ -3093,7 +3104,7 @@ const TOUR=[
   {t:"#pPhotos",x:"<b>사진</b> 칸을 누르면 사진을 찍거나 앨범에서 고를 수 있어요. 연습에서는 건너뛰어도 돼요.",next:1},
   {t:"#pStatus",x:"조치가 끝나면 <b>조치완료</b>를 눌러요. 그러면 조치 후 사진 칸이 생기고 핀이 흐리게 ✓로 바뀌어요.",next:1},
   {t:()=>$("#pinSheet .ok"),x:"<b>저장하고 닫기</b>를 누르세요.",go:()=>!sheetOpen("#pinSheet")},
-  {t:"#teamBar",x:"위쪽 <b>팀 버튼</b>으로 보고 싶은 팀의 핀만 골라 볼 수 있어요. (여러 팀 가능)",next:1},
+  {t:"#teamBar",x:"위쪽 <b>팀 버튼</b>으로 보고 싶은 팀의 핀만 골라 볼 수 있어요. (여러 팀 가능) 오른쪽 끝 <b>업체·공종</b>을 누르면 업체나 공종으로도 거를 수 있어요.",next:1},
   {t:"#listBtn",x:"<b>목록</b>을 누르세요.",go:()=>sheetOpen("#listSheet")},
   {t:"#listSheet",x:"찍은 핀이 모두 나와요. <b>미조치·조치완료</b>, 팀으로 거를 수 있고, 핀을 누르면 그 위치로 이동해요.",next:1,post:()=>closeSheets()},
   {t:"#expBtn",x:"<b>내보내기</b>를 누르세요.",go:()=>sheetOpen("#actSheet")||sheetOpen("#expSheet")},
@@ -3102,12 +3113,19 @@ const TOUR=[
   {t:"#backBtn",x:"<b>‹ 목록</b>을 눌러 도면 목록으로 돌아가세요.",go:()=>!$("#home").hidden},
   {t:"#cloudBtn",x:"이 버튼은 <b>구글 공유</b> 연결 상태예요. 로그인하면 <b>공유 중</b>으로 바뀌고, 협업 도면을 여러 사람이 함께 봐요. 눌러서 로그아웃할 수도 있어요.",next:1,post:()=>closeSheets()},
   {t:"#importBtn",x:"이제 실제 도면을 쓰려면 <b>도면 불러오기</b>로 카톡·파일 앱에 받은 PDF나 DWG를 고르면 돼요.",next:1,pre:()=>closeSheets()},
+  {t:"#hTabs",x:"<b>협업 도면</b>은 구글에 올라가서 함께 쓰는 사람 모두가 같은 도면·핀·사진·댓글을 봐요. (로그인 필요)<br><b>개인 도면</b>은 내 휴대폰에만 저장돼서 나만 보고, 인터넷이 없어도 써요. 도면 <b>⋯</b> 메뉴에서 서로 바꿀 수 있어요.",next:1,pre:()=>{ closeSheets(); tourHome(); renderHome(); }},
+  {t:()=>$('[data-more="sample"]'),x:"도면 오른쪽 <b>⋯</b>를 누르면 <b>도면 설정</b>이 나와요. 눌러 보세요.",go:()=>sheetOpen("#actSheet"),pre:()=>closeSheets()},
+  {t:"#actSheet",x:"<b>도면 설정</b>이에요. <b>공유하기</b>(PDF 보내기) · <b>도면 정보</b>(참가자·최근 변경) · <b>이름 바꾸기</b> · <b>쪽 편집</b> · <b>도면 복사</b> · <b>삭제</b>. 협업 도면에는 <b>개인 도면으로 바꾸기 · 협업 요청 · 비밀번호 걸기</b>도 있어요.",next:1,post:()=>closeSheets()},
+  {t:"#noteBtn",x:"🔔 <b>알림</b>: 내 핀이 조치완료됐을 때, 협업 요청을 받았을 때, 핀에 <b>댓글</b>이 달렸을 때 와요. 알림을 누르면 그 핀으로 바로 가요. 댓글은 협업 도면의 핀 창 아래에서 남겨요.",next:1,pre:()=>closeSheets()},
+  {t:"#helpBtn",x:"⚙️ <b>설정</b>: 내 기본 팀, 사진 화질, 내보내기 기본 양식, 저장 공간 정리, 비밀번호 변경이 있어요. <b>따라하기</b>와 <b>사진 가이드</b>도 여기서 다시 볼 수 있어요.",next:1},
   {t:null,x:"다 됐어요! 👏<br>연습한 <b>견본 도면</b>은 지울까요? 남겨 두면 언제든 다시 연습할 수 있어요.",end:1}
 ];
+function tourHome(){ setPref("homeFilter","private"); $("#hq").value=""; $("#hqX").hidden=true; }   // 견본 도면이 있는 개인 도면 탭으로
 async function startTour(){
   closeSheets();
   try{ await ensureSample(); }catch(e){ toast("연습 도면을 불러오지 못했습니다: "+e.message,3000); return; }
   if(!$("#viewer").hidden) $("#backBtn").click();
+  tourHome();
   await renderHome(); $("#home").scrollTop=0; window.scrollTo(0,0);
   $("#tour").hidden=false; tourStep(0);
   clearInterval(T.timer); T.timer=setInterval(tourTick,150);
@@ -3143,7 +3161,7 @@ async function tourBack(){
   try{
     const pinIdx=i>=6&&i<=10, home=i===0||i>=18;
     if(!(pinIdx&&sheetOpen("#pinSheet"))) closeSheets();
-    if(home){ if(!$("#viewer").hidden) $("#backBtn").click(); await renderHome(); }
+    if(home){ if(!$("#viewer").hidden) $("#backBtn").click(); if(i===0) tourHome(); await renderHome(); }
     else if($("#viewer").hidden||!V.drawing||V.drawing.id!==TOUR_ID){ await openDrawing(TOUR_ID); for(let k=0;k<40&&!(V.page&&$("#vLoading").hidden);k++) await sleep(100); }
     if(!home){
       if(i<=2&&(V.mode!=="view"||V.pending)) setMode("view");
