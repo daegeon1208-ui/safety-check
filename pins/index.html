@@ -631,6 +631,25 @@ body.lbOn #gStep1::after,body.lbOn #gStep2::after,body.lbOn #gStep3::after{top:-
 body.lbOn .screen[data-lb]::after{top:auto;bottom:calc(env(safe-area-inset-bottom) + 4px);left:6px;transform:none}
 body.lbOn #cntDock::after{top:auto;bottom:100%;margin-bottom:3px}
 body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-top) + 6px)}
+/* 3.55 */
+.dcard .favb{flex:none;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:none;margin-right:-4px}
+.dcard .favb svg{width:21px;height:21px;fill:none;stroke:#B9B8B2;stroke-width:1.8;stroke-linejoin:round}
+.dcard .favb.on svg{fill:#F5B70A;stroke:#E0A400}
+.dcard.fav{border-left-color:#F5B70A}
+.photos .phd{grid-column:1/-1;font-size:12.5px;font-weight:700;color:var(--sub);margin:4px 0 -2px;padding-top:4px;border-top:1px dashed var(--line)}
+.photos .phd:first-child{border-top:0;padding-top:0;margin-top:0}
+.photos .add small{font-size:11px;color:#9A9A94}
+.photos .add b{line-height:1.1}
+#pinSheet.drop{outline:3px dashed #E31937;outline-offset:-6px}
+.lmove{margin-top:14px;width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--soft);font-weight:700;font-size:15px}
+.mvlist{max-height:40vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:4px 8px}
+.mvrow{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.mvrow:last-child{border-bottom:0}
+.mvrow input{width:20px;height:20px;flex:none;accent-color:#E31937}
+.mvrow .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mvrow.off{opacity:.5}
+.ichip2{font-size:13px;font-weight:700;color:#E31937;background:#FCE4E7;border-radius:999px;padding:4px 12px}
+#sdBody select.inp{width:100%}
 </style>
 </head>
 <body>
@@ -747,7 +766,8 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
     <textarea class="inp" id="pText" placeholder="하자·이슈 내용을 적어 주세요"></textarea>
     <div class="lbl">사진 (조치 전)</div>
     <div class="photos" id="pPhotos"></div>
-    <input type="file" id="photoInput" accept="image/*" multiple hidden>
+    <input type="file" id="photoInput" accept="image/*,.heic,.heif" multiple hidden>
+    <input type="file" id="camInput" accept="image/*" capture="environment" hidden>
     <div id="pCmBox" hidden>
       <div class="lbl">댓글 <span id="pCmN"></span></div>
       <div id="pCmList"></div>
@@ -768,6 +788,7 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
     <div class="lpages" id="lPages"></div>
     <div class="seg" id="lFilter"><button data-v="all" class="a on">전체</button><button data-v="open" class="o">미조치</button><button data-v="done" class="d">조치완료</button></div>
     <div id="lItems" style="margin-top:6px"></div>
+    <button class="sec lmove" id="lMove" hidden>핀을 다른 쪽으로 옮기기</button>
   </div>
 </div>
 
@@ -923,7 +944,7 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
 
 <script>
 "use strict";
-const APP_VER = "3.54";
+const APP_VER = "3.55";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -961,6 +982,18 @@ try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}c
 
 /* ---------- pdf.js ---------- */
 let pdfjsReady=null;
+/* PDF에 미리 들어 있는 쪽 이름: 페이지 라벨(예: A-101)이 있으면 그것, 없으면 책갈피(목차) 제목 */
+async function pdfPageNames(pdf){
+  const n=pdf.numPages, out=new Array(n).fill(""), clip=x=>String(x||"").replace(/\s+/g," ").trim().slice(0,40);
+  try{ const lb=await pdf.getPageLabels(); if(lb) lb.forEach((x,i)=>{ if(i<n&&x&&String(x).trim()!==String(i+1)) out[i]=clip(x); }); }catch(e){}
+  if(out.some(Boolean)) return out;
+  try{ const ol=await pdf.getOutline()||[];
+    const walk=async items=>{ for(const it of items){ let dest=it.dest; if(typeof dest==="string") dest=await pdf.getDestination(dest);
+      if(Array.isArray(dest)&&dest[0]!=null){ const i=typeof dest[0]==="number"?dest[0]:await pdf.getPageIndex(dest[0]); if(i>=0&&i<n&&!out[i]) out[i]=clip(it.title); }
+      if(it.items&&it.items.length) await walk(it.items); } };
+    await walk(ol); }catch(e){}
+  return out.some(Boolean)?out:[];
+}
 function loadPdfjs(){
   if(!pdfjsReady) pdfjsReady=loadScript("../lib/pdfjs.min.js").then(()=>{pdfjsLib.GlobalWorkerOptions.workerSrc="../lib/pdfjs.worker.min.js";});
   return pdfjsReady;
@@ -1038,8 +1071,35 @@ $("#lbList").addEventListener("click",()=>{
   rows.forEach(r=>{ const k=r[0]; if(k!==cur){ cur=k; h+=`<div class="lbl">${k} · ${g[k]||""}</div>`; } h+=`<div class="setrow"><span>${esc(r.slice(r.indexOf(" ")+1))}</span><b>${esc(r.split(" ")[0])}</b></div>`; });
   sdOpen("화면 분류표",h);
 });
+/* 핀 다른 쪽으로 옮기기: 도면이 바뀌어 쪽이 달라졌을 때. 고른 핀(일부·전체)의 쪽만 바꾸고 도면 안 위치는 그대로 */
+function openMovePins(){
+  const d=V.drawing, pins=()=>V.pins.filter(p=>p.id!=="temp"&&!p.deleted);
+  let from=V.pageNo; const sel=new Set();
+  const opt=(n,cur,cnt)=>`<option value="${n}"${n===cur?" selected":""}>${esc(pgLabel(d,n)||n+"쪽")}${cnt!=null?` (핀 ${cnt})`:""}</option>`;
+  const draw=()=>{
+    const here=pins().filter(p=>p.page===from).sort(pinCmp), ok=here.filter(canEdit);
+    [...sel].forEach(id=>{ if(!ok.some(p=>p.id===id)) sel.delete(id); });
+    let to=+($("#mvTo")&&$("#mvTo").value)||0; if(!to||to===from) to=from<d.pages?from+1:from-1;
+    $("#sdBody").innerHTML=`<p class="sdnote">도면이 바뀌어 쪽 순서가 달라졌을 때 써요. 고른 핀을 다른 쪽의 <b>같은 자리</b>로 옮겨요. 옮긴 뒤 위치가 다르면 핀 창의 '위치 옮기기'로 맞춰 주세요.</p>
+      <div class="lbl">어느 쪽에서</div><select class="inp" id="mvFrom">${Array.from({length:d.pages},(_,i)=>opt(i+1,from,pins().filter(p=>p.page===i+1).length)).join("")}</select>
+      <div class="lbl" style="display:flex;justify-content:space-between;align-items:center">옮길 핀 ${sel.size}/${here.length}${ok.length?`<button class="ichip2" id="mvAll">${sel.size===ok.length?"모두 풀기":"전체 선택"}</button>`:""}</div>
+      <div class="mvlist">${here.map(p=>`<label class="mvrow${canEdit(p)?"":" off"}"><input type="checkbox" data-id="${p.id}"${sel.has(p.id)?" checked":""}${canEdit(p)?"":" disabled"}><span class="badge" style="background:${teamColor(p.team)}">${pinLabel(p)}</span><span class="t">${esc(vendorOf(p)||"미분류")} · ${esc((p.text||"(내용 없음)").slice(0,40))}${canEdit(p)?"":" <small>· 다른 사람 핀</small>"}</span></label>`).join("")||`<p class="sdnote">이 쪽에는 핀이 없어요.</p>`}</div>
+      <div class="lbl">어느 쪽으로</div><select class="inp" id="mvTo">${Array.from({length:d.pages},(_,i)=>i+1).filter(n=>n!==from).map(n=>opt(n,to)).join("")}</select>
+      <button class="pwbtn" id="mvGo"${sel.size?"":" disabled"}>핀 ${sel.size}개 옮기기</button>`;
+  };
+  sdOpen("핀 다른 쪽으로 옮기기",""); draw();
+  $("#sdBody").onchange=e=>{ if(e.target.id==="mvFrom"){ from=+e.target.value; sel.clear(); draw(); } else if(e.target.dataset.id){ if(e.target.checked) sel.add(e.target.dataset.id); else sel.delete(e.target.dataset.id); draw(); } };
+  $("#sdBody").onclick=async e=>{
+    if(e.target.id==="mvAll"){ const ok=pins().filter(p=>p.page===from&&canEdit(p)); if(sel.size===ok.length) sel.clear(); else ok.forEach(p=>sel.add(p.id)); draw(); return; }
+    if(e.target.id==="mvGo"&&sel.size){ const to=+$("#mvTo").value; if(!to) return; e.target.disabled=true;
+      for(const p of pins()) if(sel.has(p.id)){ p.page=to; await savePin(p); }
+      const n=sel.size; $("#setDlg").hidden=true; drawPins(); if(!$("#listSheet").hidden) renderList(); updatePager&&updatePager();
+      toast(`핀 ${n}개를 ${pgLabel(d,to)||to+"쪽"}(으)로 옮겼어요`,3000); }
+  };
+}
+$("#lMove").addEventListener("click",openMovePins);
 /* 설정 팝업 */
-const SD_LB={"저장 공간":"E2-1","현장 이름":"E2-2","현장 업체 목록":"E2-3","사용자 관리":"E2-4","화면 분류표":"E2-5"};
+const SD_LB={"저장 공간":"E2-1","현장 이름":"E2-2","현장 업체 목록":"E2-3","사용자 관리":"E2-4","화면 분류표":"E2-5","핀 다른 쪽으로 옮기기":"C3-1"};
 function sdOpen(title,html){ $("#setDlg").dataset.lb=(SD_LB[title]||"E2")+" "+title; $("#sdTitle").textContent=title; $("#sdBody").innerHTML=html; $("#setDlg").hidden=false; }
 function sdClose(){ $("#setDlg").hidden=true; $("#sdBody").innerHTML=""; }
 $("#sdX").addEventListener("click",sdClose);
@@ -1244,19 +1304,22 @@ async function renderHome(){
   const prv=d=>!!(d.private||d.sample);   // 견본 도면은 개인 도면 탭에
   const nPrv=ds.filter(prv).length, nTeam=ds.length-nPrv+rem.length;
   const flt=homeFilter()==="private"?"private":"team";
-  const show=ds.filter(d=>(flt==="private")===prv(d)&&hit(d)), showRem=flt==="private"?[]:rem.filter(hit);
+  const fv=favSet(), show=ds.filter(d=>(flt==="private")===prv(d)&&hit(d)).sort((a,b)=>fv.has(b.id)-fv.has(a.id)), showRem=flt==="private"?[]:rem.filter(hit);
   $("#hTabs").innerHTML=[["private","개인 도면",nPrv],["team","협업 도면",nTeam]].map(([v,t,n])=>`<button data-hf="${v}"${flt===v?' class="on"':""}>${t} ${n}</button>`).join("");
   box.innerHTML=(!show.length&&!showRem.length?`<div class="empty">${q?`「${esc($("#hq").value.trim())}」(이)가 들어간 ${flt==="private"?"개인":"협업"} 도면이 없습니다.`:flt==="private"?"개인 도면이 없습니다.<br>도면 ⋯ 메뉴에서 개인 도면으로 바꾸거나, 불러올 때 개인으로 고를 수 있어요.":"협업 도면이 없습니다."}</div>`:"")
   +show.map(d=>{
     const mine=ps.filter(p=>p.drawingId===d.id&&!p.deleted), o=mine.filter(p=>p.status!=="done").length, dn=mine.length-o;
     const np=new Set([...mine.map(p=>p.by),...mine.filter(p=>p.status==="done").map(p=>p.doneBy)].filter(Boolean)).size;
-    return `<div class="dcard" data-id="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${lockIcon(d)}${d.private?'<span class="ftype prv">개인</span>':""}${esc(d.name)}</div>
+    return `<div class="dcard${fv.has(d.id)?" fav":""}" data-id="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${lockIcon(d)}${d.private?'<span class="ftype prv">개인</span>':""}${esc(d.name)}</div>
       <div class="sm"><span class="cnt o">미조치 ${o}</span><span class="cnt d">완료 ${dn}</span> ${d.pages}쪽 · ${d.sample?"연습용 · 공유 안 됨":fmtDate(d.created).slice(0,10)}${d.private?" · 나만 보기":d.cloud&&cloudOn()?" · 공유":""}${np&&!d.private?` · 참가 ${np}명`:""}</div></div>
-      <button class="more" data-more="${d.id}">⋯</button></div>`;}).join("")
+      <button class="favb${fv.has(d.id)?" on":""}" data-fav="${d.id}" aria-label="${fv.has(d.id)?"즐겨찾기 풀기":"즐겨찾기"}" aria-pressed="${fv.has(d.id)}"><svg viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg></button><button class="more" data-more="${d.id}">⋯</button></div>`;}).join("")
   +showRem.map(d=>`<div class="dcard remote" data-remote="${d.id}"><div class="meta"><div class="nm">${ftIcon(d)}${lockIcon(d)}${esc(d.name)}</div>
       <div class="sm"><span class="cnt o">미조치 ${d.open||0}</span><span class="cnt d">완료 ${d.done||0}</span> ${d.pages}쪽${d.by?" · "+esc(d.by):""}${(d.parts||[]).length?` · 참가 ${d.parts.length}명`:""}</div>
       <div class="sm" style="color:var(--accent);font-weight:600">공유 도면 · 눌러서 받기</div></div></div>`).join("");
 }
+/* 즐겨찾기: 이 휴대폰에만 저장. 즐겨찾기한 도면은 목록 맨 위 */
+function favSet(){ try{ return new Set(JSON.parse(localStorage.getItem("favDrawings")||"[]")); }catch(e){ return new Set(); } }
+function toggleFav(id){ const f=favSet(); if(f.has(id)) f.delete(id); else f.add(id); try{ localStorage.setItem("favDrawings",JSON.stringify([...f])); }catch(e){} return f.has(id); }
 function homeFilter(){ try{ return localStorage.getItem("homeFilter")||"all"; }catch(e){ return "all"; } }
 async function removeLocalDrawing(id){
   for(const p of await pinsOf(id)) await dbDel("pins",p.id);
@@ -1267,6 +1330,8 @@ $("#hq").addEventListener("input",()=>{ $("#hqX").hidden=!$("#hq").value; render
 $("#hq").addEventListener("keydown",e=>{ if(e.key==="Enter") e.target.blur(); });
 $("#hqX").addEventListener("click",()=>{ $("#hq").value=""; $("#hqX").hidden=true; renderHome(); });
 $("#dlist").addEventListener("click",async e=>{
+  const fb=e.target.closest("[data-fav]");
+  if(fb){ e.stopPropagation(); const on=toggleFav(fb.dataset.fav); await renderHome(); toast(on?"즐겨찾기했어요. 목록 맨 위에 고정돼요":"즐겨찾기를 풀었어요",2000); return; }
   const more=e.target.closest("[data-more]");
   if(more){
     const d=await dbGet("drawings",more.dataset.more), shared=cloudOn()&&d.cloud;
@@ -1277,18 +1342,20 @@ $("#dlist").addEventListener("click",async e=>{
       ["share","공유하기","핀 표시 도면 + 사진대지 PDF","share"],
       ["info","도면 정보","올린 사람 · 참여자 · 최근 변경","info"],
       ["-"],
-      ["rename","이름 바꾸기","","edit"],
+      ...(canEditD(d)?[["rename","이름 바꾸기","","edit"],
       ["pages","쪽 편집","쪽 이름 · 다른 PDF 합치기 · 빼기","pages"],
-      ["copy","도면 복사","핀·사진까지 또는 도면만","copy"],
+      ["copy","도면 복사","핀·사진까지 또는 도면만","copy"]]:[]),
       ...(d.sample?[]:d.private?[["toTeam","협업 도면으로 바꾸기","공유 서버에 올려 함께 쓰는 사람과 핀 공유","people"]]
         :[["toPrivate","개인 도면으로 바꾸기",shared?(lockMine(d)?"공유에서 내리거나 · 개인 사본 만들기":"내 휴대폰에만 개인 사본 만들기"):"공유 서버에 올리지 않고 나만 쓰기","lock"]]),
       ...(shared&&lockMine(d)?[["invite","협업 요청 보내기","받은 사람은 비밀번호 없이 열 수 있음","people"]]:[]),
       ...(canLock?[["lock",d.locked?"비밀번호 바꾸기·풀기":"비밀번호 걸기",d.locked?"🔒 걸려 있음 · 올린 사람과 관리자는 그냥 열림":"알려 준 사람만 열 수 있게","lock"]]:[]),
-      ["-"],
-      ["delete","삭제",shared?"도면과 핀 모두 · 함께 쓰는 사람 모두에게서":"도면과 핀 모두 · 되돌릴 수 없음","trash"]],
+      ...(canEditD(d)?[["-"],
+      ["delete","삭제",shared?"도면과 핀 모두 · 함께 쓰는 사람 모두에게서":"도면과 핀 모두 · 되돌릴 수 없음","trash"]]:[]),
+      ...(!canEditD(d)?[["-"],["noedit","이름 바꾸기·쪽 편집·복사·삭제",`올린 사람(${d.by||"-"})과 관리자만 할 수 있어요`,"lock"]]:[])],
       {sub:`${d.pages}쪽 · 미조치 ${mo} · 완료 ${mp.length-mo}${shared?" · 공유":""}${d.locked?" · 🔒 비밀번호":""}`});
     try{
-      if(act==="info"){ showInfo(d); }
+      if(act==="noedit"){ toast(NOEDIT,3000); }
+      else if(act==="info"){ showInfo(d); }
       else if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted)); }
       else if(act==="rename"){ if(await renameDrawing(d)) renderHome(); }
       else if(act==="pages"){ editPages(d); }
@@ -1368,8 +1435,10 @@ $("#pdfInput").addEventListener("change",async e=>{
     const pdf=await pdfjsLib.getDocument({data:buf.slice(0)}).promise;
     const id=uid(), now=Date.now();
     await dbPut("files",{id,data:buf});
-    await dbPut("drawings",{id,name:src.name,pages:pdf.numPages,created:now,opened:now,by:myName()||"",kind:src.dwg?"dwg":"pdf",private:priv||undefined});
+    const pn=await pdfPageNames(pdf);
+    await dbPut("drawings",{id,name:src.name,pages:pdf.numPages,pageNames:pn,created:now,opened:now,by:myName()||"",kind:src.dwg?"dwg":"pdf",private:priv||undefined});
     pdf.destroy();
+    if(pn.some(Boolean)) setTimeout(()=>toast(`PDF에 있던 쪽 이름 ${pn.filter(Boolean).length}개를 넣었어요`,3000),1500);
     $("#toast").hidden=true;
     openDrawing(id);
   }catch(err){console.error(err);toast((src&&!src.dwg||!/\.dwg$/i.test(f.name)?"PDF를 열 수 없습니다: ":"DWG를 열 수 없습니다: ")+err.message,5000);}
@@ -1377,6 +1446,7 @@ $("#pdfInput").addEventListener("change",async e=>{
 
 /* 도면 복사: 같은 PDF로 새 도면을 만든다. 핀·사진까지 복사할지 고른다 */
 async function copyDrawing(d){
+  if(!canEditD(d)){ toast(NOEDIT,3000); return; }
   if(cloudOn()&&d.cloud&&d.stale){ toast("먼저 도면을 열어 바뀐 도면을 받아 주세요",3000); return; }
   const how=await chooseAction(`「${d.name}」 복사`,[["pins","도면 + 핀·사진까지 복사","지금 찍힌 핀과 사진을 그대로","layers"],["only","도면만 복사","핀 없이 빈 도면으로","doc"]]); if(!how) return;
   const nm=prompt("새 도면 이름",d.name+" (복사)"); if(!nm||!nm.trim()) return;
@@ -1442,10 +1512,10 @@ async function showInfo(d){
   const rows=Object.values(ppl).sort((a,b)=>(b.made+b.done)-(a.made+a.done));
   const shared=cloudOn()&&d.cloud;
   $("#infoBody").innerHTML=`
-    <div class="kv"><b>도면 이름</b><span>${esc(d.name)}<button class="ibtn" id="infoRename">이름 바꾸기</button></span></div>
+    <div class="kv"><b>도면 이름</b><span>${esc(d.name)}${canEditD(d)?`<button class="ibtn" id="infoRename">이름 바꾸기</button>`:""}</span></div>
     <div class="kv"><b>올린 사람</b><span>${esc(d.by||(shared?"-":"이 휴대폰"))}</span></div>
     <div class="kv"><b>올린 시각</b><span>${fmtDate(d.created)}</span></div>
-    <div class="kv"><b>쪽수</b><span>${d.pages}쪽<button class="ibtn" id="infoPages">쪽 이름·편집</button></span></div>
+    <div class="kv"><b>쪽수</b><span>${d.pages}쪽${canEditD(d)?`<button class="ibtn" id="infoPages">쪽 이름·편집</button>`:""}</span></div>
     <div class="kv"><b>공유</b><span>${shared?"공유 중":"이 휴대폰에만 저장"}</span></div>
     ${d.locked?`<div class="kv"><b>비밀번호</b><span>🔒 걸려 있음${lockMine(d)?`<button class="ibtn" id="infoLock">바꾸기·풀기</button>`:""}</span></div>`:shared&&lockMine(d)?`<div class="kv"><b>비밀번호</b><span>없음<button class="ibtn" id="infoLock">걸기</button></span></div>`:""}
     <div class="kv"><b>핀</b><span>전체 ${pins.length} · 미조치 ${o} · 완료 ${pins.length-o}${zones?` · 구역 ${zones}`:""}</span></div>
@@ -1457,14 +1527,15 @@ async function showInfo(d){
     ${pins.some(p=>!p.team)?`<div class="who"><i style="background:${NO_TEAM}"></i>팀 없음<small>핀 ${pins.filter(p=>!p.team).length}개</small></div>`:""}
     ${d.pages>1?`<div class="lbl">쪽별 핀</div>${pageCounts(d,pins).map(([n,nm,c,oc])=>`<div class="who"><i style="background:#9CA3AF;border-radius:3px"></i>${esc(nm)}<small>핀 ${c}개 · 미조치 ${oc}</small></div>`).join("")||`<p style="color:var(--sub)">아직 찍은 핀이 없습니다</p>`}`:""}
     <p style="color:var(--sub);font-size:13px;margin-top:10px">핀 색은 팀별(공사 파랑 · 안전 주황 · 품질 보라 · 전기 노랑 · 설비 청록)입니다. 조치완료 핀은 흐리게 ✓ 표시, 완료 구역은 점선입니다.</p>`;
-  $("#infoPages").onclick=()=>editPages(d);
+  if($("#infoPages")) $("#infoPages").onclick=()=>editPages(d);
   if($("#infoLock")) $("#infoLock").onclick=async()=>{ closeSheets(); await lockMenu(d); };
-  $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").innerHTML=ftIcon(d)+lockIcon(d)+esc(d.name)+" ⓘ";} showInfo(d); renderHome(); } };
+  if($("#infoRename")) $("#infoRename").onclick=async()=>{ if(await renameDrawing(d)){ if(V.drawing&&V.drawing.id===d.id){V.drawing.name=d.name;$("#vTitle").innerHTML=ftIcon(d)+lockIcon(d)+esc(d.name)+" ⓘ";} showInfo(d); renderHome(); } };
   openSheet("#infoSheet");
 }
 
 /* 도면 이름 바꾸기 (목록 ⋯ 메뉴, 도면 정보) */
 async function renameDrawing(d){
+  if(!canEditD(d)){ toast(NOEDIT,3000); return false; }
   const nm=prompt("도면 이름",d.name); if(!nm||!nm.trim()||nm.trim()===d.name) return false;
   if(cloudOn()&&d.cloud){ try{ await api({action:"renameDrawing",id:d.id,name:nm.trim()}); }catch(err){ toast("서버에 반영하지 못했습니다: "+err.message,4000); return false; } }
   d.name=nm.trim(); await dbPut("drawings",d); toast("이름을 바꿨습니다"); return true;
@@ -1528,7 +1599,10 @@ function saveLockPws(){
   const s=JSON.stringify(lockPws);
   try{ if(cloud.remember){ localStorage.setItem("pinsLockPw",s); sessionStorage.removeItem("pinsLockPw"); } else { sessionStorage.setItem("pinsLockPw",s); localStorage.removeItem("pinsLockPw"); } }catch(e){}
 }
-const lockMine=d=>cloudOn()&&(isAdmin()||(!!d.by&&d.by===myName()));   // 올린 사람·관리자는 비밀번호 없이 연다
+const lockMine=d=>cloudOn()&&(isAdmin()||(!!d.by&&d.by===myName()));
+/* 협업 도면의 이름 바꾸기·쪽 편집·복사·삭제는 올린 사람과 관리자만 (개인·연습 도면은 누구나) */
+const canEditD=d=>!!(d&&(d.sample||d.private||!d.cloud||lockMine(d)));
+const NOEDIT="협업 도면은 올린 사람과 관리자만 바꿀 수 있어요";   // 올린 사람·관리자는 비밀번호 없이 연다
 const lockFree=d=>lockMine(d)||(cloudOn()&&(d.members||[]).includes(myName()));   // 협업 요청을 수락한 사람도
 const lockIcon=d=>d.locked?`<span class="lk">🔒</span>`:"";
 /* 비밀번호 창. twice면 두 번 넣어 맞춰 본다(새로 걸 때). 취소하면 null */
@@ -1629,6 +1703,7 @@ async function uploadDrawing(d){
   setSync("wait","도면 올리는 중…");
   await api({action:"uploadDrawing",drawing:{id:d.id,name:d.name,pages:d.pages,created:d.created,kind:d.kind||""},data:bufToB64(f.data),by:d.by||myName()});
   d.cloud=true; if(!d.by) d.by=myName(); await dbPut("drawings",d);
+  if((d.pageNames||[]).some(Boolean)){ try{ await api({action:"setPageNames",id:d.id,names:d.pageNames}); }catch(e){} }   // 쪽 이름도 함께
   for(const p of await pinsOf(d.id)){ p.dirty=true; if(!p.by)p.by=myName(); [...p.photos,...(p.donePhotos||[])].forEach(x=>{if(!x.k)x.k=uid();}); await dbPut("pins",p); }   // 이전에 찍은 핀도 함께 올린다
 }
 let homeSyncing=false;
@@ -1790,12 +1865,14 @@ $("#cOff").addEventListener("click",()=>{
 // PE.items: [{src:0(원본)|1..(더한 PDF), n:그 PDF의 쪽 번호}], PE.srcs: [{name,data,pdf}]
 let PE=null;
 async function editPages(d){
+  if(!canEditD(d)){ toast(NOEDIT,3000); return; }
   if(cloudOn()&&d.cloud&&d.stale){ toast("먼저 도면을 열어 바뀐 도면을 받아 주세요",3000); return; }
   const f=await dbGet("files",d.id); if(!f){ toast("도면 파일이 없습니다"); return; }
   await loadPdfjs();
   const pdf=await pdfjsLib.getDocument({data:f.data.slice(0)}).promise;
   const pins=(await pinsOf(d.id)).filter(p=>!p.deleted);
-  PE={d,srcs:[{name:"원본",data:f.data,pdf}],items:Array.from({length:pdf.numPages},(_,i)=>({src:0,n:i+1,name:pgName(d,i+1),pins:pins.filter(p=>p.page===i+1).length})),thumbs:{},changed:false,named:false};
+  const auto=(d.pageNames||[]).some(x=>String(x||"").trim())?[]:await pdfPageNames(pdf);   // 쪽 이름이 하나도 없으면 PDF에 있던 이름을 채워 둔다
+  PE={d,srcs:[{name:"원본",data:f.data,pdf}],items:Array.from({length:pdf.numPages},(_,i)=>({src:0,n:i+1,name:pgName(d,i+1)||auto[i]||"",pins:pins.filter(p=>p.page===i+1).length})),thumbs:{},changed:false,named:auto.some(Boolean)};
   $("#pgTitle").textContent=`쪽 편집 · ${d.name}`; $("#pgMsg").textContent="";
   renderPages(); openSheet("#pageSheet");
   onSheetClose=()=>{ if(PE){ PE.srcs.forEach(s=>s.pdf.destroy()); PE=null; } };
@@ -1846,7 +1923,8 @@ $("#pgAddInput").addEventListener("change",async e=>{
     try{ const src=await fileToPdf(f,t=>toast(`${f.name}: ${t}`,120000)), data=src.data, pdf=await pdfjsLib.getDocument({data:data.slice(0)}).promise;
       if(src.dwg) $("#toast").hidden=true;
       PE.srcs.push({name:src.name,data,pdf});
-      for(let n=1;n<=pdf.numPages;n++) PE.items.push({src:PE.srcs.length-1,n,name:"",pins:0});
+      const an=await pdfPageNames(pdf);
+      for(let n=1;n<=pdf.numPages;n++) PE.items.push({src:PE.srcs.length-1,n,name:an[n-1]||"",pins:0});
       PE.changed=true;
     }catch(err){ console.error(err); toast(`${f.name}: 열 수 없습니다 (${err.message})`,4000); }
   }
@@ -2545,8 +2623,12 @@ function renderPhotos(p){
   if(!p.donePhotos) p.donePhotos=[];
   const one=(list,box,canAdd,addId,label)=>{
     const rep=p[list].length>1?(p[list].find(x=>x.rep)||p[list][0]):null;   // 사진대지에 들어갈 대표 사진
-    $(box).innerHTML=p[list].map((ph,i)=>`<div class="ph" data-i="${i}">${ph.data?`<img src="${photoUrl(ph)}" alt="">`:`<div class="phw">받는 중…</div>`}${ph===rep?'<span class="star">★ 대표</span>':""}</div>`).join("")
-      +(canAdd?`<button class="add" id="${addId}"><b>＋</b>${label}</button>`:"");
+    const day=ph=>{ const t=ph.at||(list==="donePhotos"?p.doneAt:p.created)||0, d=new Date(t); return t?`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} (${"일월화수목금토"[d.getDay()]})`:""; };
+    const groups=[]; p[list].forEach((ph,i)=>{ const k=day(ph); let g=groups.find(x=>x.k===k); if(!g){ g={k,t:ph.at||(list==="donePhotos"?p.doneAt:p.created)||0,items:[]}; groups.push(g); } g.items.push([ph,i]); });
+    groups.sort((a,b)=>a.t-b.t);
+    const dated=groups.length>1||p[list].some(ph=>ph.at);   // 날짜가 둘 이상이거나 날짜가 있는 사진이면 날짜별로 나눠 보여 준다
+    $(box).innerHTML=groups.map(g=>(dated&&g.k?`<div class="phd">${g.k} · ${g.items.length}장</div>`:"")+g.items.map(([ph,i])=>`<div class="ph" data-i="${i}">${ph.data?`<img src="${photoUrl(ph)}" alt="">`:`<div class="phw">받는 중…</div>`}${ph===rep?'<span class="star">★ 대표</span>':""}</div>`).join("")).join("")
+      +(canAdd?(TOUCH?`<button class="add" id="${addId}" data-src="cam"><b>📷</b>촬영</button><button class="add" id="${addId}A" data-src="album"><b>🖼</b>앨범</button>`:`<button class="add" id="${addId}"><b>＋</b>${label}<small>또는 끌어 놓기</small></button>`):"");
     p[list].forEach((ph,i)=>{ if(ph.data) return;
       ensurePhoto(p,ph).then(ok=>{ const el=document.querySelector(`${box} .ph[data-i="${i}"]`);
         if(el&&V.sel===p.id) el.innerHTML=ok?`<img src="${photoUrl(ph)}" alt="">`:`<div class="phw">사진을 받지 못함</div>`; }); });
@@ -2656,7 +2738,8 @@ $("#pStatus").addEventListener("click",e=>{
 });
 let photoTarget="photos";
 function photoBoxClick(list,addId){ return e=>{
-  if(e.target.closest("#"+addId)){ photoTarget=list; $("#photoInput").click(); return; }
+  const ad=e.target.closest(`#${addId},#${addId}A`);
+  if(ad){ photoTarget=list; (ad.dataset.src==="cam"?$("#camInput"):$("#photoInput")).click(); return; }
   const ph=e.target.closest(".ph"); if(!ph) return;
   const p=selPin(), i=+ph.dataset.i; if(!p[list][i].data) return;
   showImg(list,i);
@@ -2781,14 +2864,33 @@ async function shrinkPhoto(file){   // 설정 화질대로 JPEG로 줄여 저장
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",Q[1]));
   return {type:"image/jpeg",data:await blob.arrayBuffer(),w:c.width,h:c.height};
 }
-$("#photoInput").addEventListener("change",async e=>{
-  const files=[...e.target.files]; e.target.value=""; const p=selPin(); if(!p||!files.length) return;
-  toast("사진 넣는 중…",30000);
-  const list=photoTarget; if(!p[list]) p[list]=[];
-  try{ for(const f of files) p[list].push({k:uid(),...await shrinkPhoto(f)});
-    await savePin(p); renderPhotos(p); $("#toast").hidden=true;
-  }catch(err){toast(err.message,3000);}
-});
+const TOUCH=matchMedia("(pointer:coarse)").matches;   // 휴대폰·태블릿: 촬영·앨범 두 버튼, 컴퓨터: 사진 추가 + 끌어 놓기
+const isHeic=f=>/hei[cf]$/i.test(f.type||"")||/\.hei[cf]$/i.test(f.name||"");
+async function heicToJpeg(f){ if(!window.heic2any) await loadScript("../lib/heic2any.min.js"); const b=await heic2any({blob:f,toType:"image/jpeg",quality:0.9}); return Array.isArray(b)?b[0]:b; }
+async function addPhotoFiles(files,list){
+  const p=selPin(); files=[...files].filter(f=>/^image\//.test(f.type||"")||isHeic(f)); if(!p||!files.length) return;
+  if(!(list==="photos"?canEdit(p):canDonePhoto(p))){ toast("이 핀에는 사진을 넣을 수 없어요",2500); return; }
+  toast(files.length>1?`사진 ${files.length}장 넣는 중…`:"사진 넣는 중…",60000);
+  if(!p[list]) p[list]=[]; let bad=0;
+  for(const f of files){
+    try{ let src=f; try{ await loadImage(f); }catch(e){ if(isHeic(f)){ toast("아이폰 사진(HEIC)을 바꾸는 중…",60000); src=await heicToJpeg(f); } else throw e; }
+      const at=Math.min(Date.now(),f.lastModified||Date.now());   // 사진 날짜: 찍은(파일) 날짜, 없으면 지금
+      p[list].push({k:uid(),at,...await shrinkPhoto(src)}); }
+    catch(err){ console.error(err); bad++; }
+  }
+  await savePin(p); renderPhotos(p); $("#toast").hidden=true;
+  if(bad) toast(`사진 ${bad}장은 읽지 못했어요. JPG·PNG 사진으로 다시 넣어 주세요`,4000);
+}
+["#photoInput","#camInput"].forEach(id=>$(id).addEventListener("change",async e=>{ const files=[...e.target.files]; e.target.value=""; await addPhotoFiles(files,photoTarget); }));
+/* 컴퓨터: 사진 파일을 핀 창에 끌어 놓거나, 복사한 사진을 붙여 넣기 (조치완료 사진 칸에 놓으면 완료 사진) */
+(()=>{ const sh=$("#pinSheet");
+  const tgt=e=>e.target.closest&&e.target.closest("#pDoneBox")&&!$("#pDoneBox").hidden?"donePhotos":"photos";
+  sh.addEventListener("dragover",e=>{ if([...(e.dataTransfer&&e.dataTransfer.types||[])].includes("Files")){ e.preventDefault(); sh.classList.add("drop"); } });
+  sh.addEventListener("dragleave",e=>{ if(!sh.contains(e.relatedTarget)) sh.classList.remove("drop"); });
+  sh.addEventListener("drop",e=>{ e.preventDefault(); sh.classList.remove("drop"); if(e.dataTransfer&&e.dataTransfer.files.length) addPhotoFiles(e.dataTransfer.files,tgt(e)); });
+  document.addEventListener("paste",e=>{ if(sh.hidden||/^(INPUT|TEXTAREA)$/.test(document.activeElement&&document.activeElement.tagName)) return;
+    const fs=[...(e.clipboardData&&e.clipboardData.files||[])]; if(fs.length){ e.preventDefault(); addPhotoFiles(fs,"photos"); } });
+})();
 $("#moveBtn").addEventListener("click",()=>{
   const p=selPin(); onSheetClose=null; flushSave(); closeSheets(); V.sel=null; freeUrls(); if(p) startMove(p);
 });
@@ -2811,6 +2913,7 @@ function renderCmList(){
     :`<div class="empty" style="padding:30px">아직 댓글이 없어요</div>`;
 }
 function renderList(){
+  $("#lMove").hidden=!(V.drawing&&V.drawing.pages>1&&V.pins.some(p=>p.id!=="temp"&&!p.deleted&&canEdit(p)));
   const cmTab=cmOn(); $("#lMode").hidden=!cmTab; if(!cmTab) lMode="pins";
   document.querySelectorAll("#lMode button").forEach(b=>{ b.classList.toggle("on",b.dataset.v===lMode); if(b.dataset.v==="cm") b.textContent=`댓글 ${(V.cm||[]).filter(c=>V.pins.some(p=>p.id===c.pinId&&!p.deleted)).length}`; });
   ["#lTeams","#lPages","#lFilter"].forEach(x=>$(x).hidden=lMode==="cm");

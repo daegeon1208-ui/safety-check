@@ -65,10 +65,10 @@ function doPost(e) {
         case 'tourAll': return out_({ ok: true, sent: tourAll_(me) });
         case 'delNotes': delNotes_(me, req.ids); return out_({ ok: true, notes: notes_(me) });
         case 'respond': return out_({ ok: true, note: respond_(req.noteId, !!req.accept, me) });
-        case 'renameDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
-        case 'deleteDrawing': gate_(req.id, me, req); return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
-        case 'replaceDrawingFile': gate_(req.id, me, req); return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names) });
-        case 'setPageNames': gate_(req.id, me, req); return out_({ ok: true, drawing: setPageNames_(req.id, req.names) });
+        case 'renameDrawing': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
+        case 'deleteDrawing': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
+        case 'replaceDrawingFile': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names) });
+        case 'setPageNames': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: setPageNames_(req.id, req.names) });
         case 'setKind': gate_(req.id, me, req); return out_({ ok: true, drawing: setKind_(req.id, req.kind, me) });
         case 'unlock': gate_(req.id, me, req); return out_({ ok: true });
         case 'setLock': return out_({ ok: true, drawing: setLock_(req.id, req.lockNew, me) });
@@ -226,6 +226,12 @@ function drawingOut_(o) {
 /* 협업 요청을 수락한 사람(members): 잠긴 도면도 비밀번호 없이 연다. 공유 도면은 누구에게나 보인다 */
 function isMember_(o, me) { return names_(o.members).indexOf(me.name) >= 0; }
 /* 도면 비밀번호: 잠긴 도면은 올린 사람·관리자가 아니면 req.lockPw 가 맞아야 통과 */
+/* 협업 도면의 이름·쪽 편집·파일 교체·삭제는 올린 사람과 관리자만 */
+function owner_(id, me) {
+  const o = rows_('도면').list.find(x => x.id === id);
+  if (!o || me.admin || !o.by || o.by === me.name) return;
+  throw new Error('도면을 올린 사람과 관리자만 바꿀 수 있어요');
+}
 function gate_(id, me, req) {
   if (!id) return;
   const o = rows_('도면').list.find(x => x.id === id);
@@ -338,7 +344,7 @@ function pinOut_(o) {
 }
 function pins_(drawingId) { return rows_('핀').list.filter(o => o.drawingId === drawingId).map(pinOut_); }
 function pinRow_(p) {
-  const ph = x => { const o = { k: x.k, id: x.id, w: x.w, h: x.h }; if (x.rep) o.rep = true; return o; };
+  const ph = x => { const o = { k: x.k, id: x.id, w: x.w, h: x.h }; if (x.rep) o.rep = true; if (x.at) o.at = x.at; return o; };   // at: 사진 날짜
   const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '', team: p.team || '', vendor: p.vendor || '', work: p.work || '',
     photos: (p.photos || []).map(ph), donePhotos: (p.donePhotos || []).map(ph) };
   return Object.assign({}, p, { deleted: p.deleted ? 'true' : 'false', doneAt: p.doneAt || '', 'data(JSON)': JSON.stringify(extra) });
