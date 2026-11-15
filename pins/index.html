@@ -566,6 +566,26 @@ header #backBtn{color:#fff!important;background:none!important}
 .invsel{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
 .exp button.ichip{display:inline-block;width:auto;margin:0;padding:6px 12px;border-radius:999px;background:var(--accent);color:#fff;font-size:14px;font-weight:700}
 .invtip{font-size:13.5px;color:var(--sub);margin:6px 2px}
+/* 핀 호출·문의 */
+.pcall{display:block;width:100%;margin-top:10px;padding:11px;border-radius:12px;background:var(--chip);color:var(--ink);font-weight:700;font-size:14.5px}
+#setDlg button.urow{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:12px 14px;border-radius:12px;background:var(--soft);border:1px solid var(--line);color:var(--ink);text-align:left;font-weight:600;font-size:15px}
+#setDlg button.urow i{width:22px;height:22px;border-radius:6px;border:2px solid #B8C2D0;flex:none;display:grid;place-items:center;font-style:normal;font-size:14px;color:#fff}
+#setDlg button.urow.on{border-color:var(--accent);background:var(--card)}
+#setDlg button.urow.on i{background:var(--accent);border-color:var(--accent)}
+#setDlg button.ichip{padding:6px 12px;border-radius:999px;background:var(--accent);color:#fff;font-size:14px;font-weight:700}
+.fbi{padding:12px 0;border-bottom:1px solid var(--line)}
+.fbh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+.fbh small{color:var(--sub);flex:1}
+.fbk{font-weight:800;font-size:13px}
+.fbst{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--redSoft,#FCE4E7);color:#C8102E}
+.fbst.ok{background:#E3F2E8;color:#1E7B3C}
+.fbi p{margin:6px 0 0;font-size:14.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.fbr{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--soft);font-size:14px;line-height:1.5;white-space:pre-wrap}
+.fbr small{display:block;color:var(--sub);font-size:12px;margin-bottom:2px}
+.fbrf{display:flex;gap:6px;margin-top:8px;align-items:flex-end}
+.fbrf .inp{margin:0;flex:1;min-width:0;padding:9px 10px;font-size:15px}
+.fbrf button{flex:none;padding:10px 14px;border-radius:10px;background:var(--accent);color:#fff;font-weight:700}
+.fbrf button:disabled{opacity:.55}
 .ni.welcome{background:#FDE8EC;font-size:18px}
 .setrow{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line);font-size:15px}
 .setrow b{font-weight:700}
@@ -779,6 +799,7 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
       <div class="lbl">댓글 <span id="pCmN"></span></div>
       <div id="pCmList"></div>
       <div class="cmform"><textarea class="inp" id="pCmIn" rows="1" maxlength="1000" placeholder="댓글을 남겨 주세요"></textarea><button id="pCmGo">등록</button></div>
+      <button class="sec pcall" id="pCall">📣 이 핀 봐 달라고 호출하기</button>
     </div>
     <div class="dates" id="pDates"></div>
     <div class="row2"><button id="moveBtn">위치 옮기기</button><button class="del" id="delPin">삭제</button></div>
@@ -895,6 +916,8 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
     <button class="sec" id="storeBtn">휴대폰 저장 공간 보기 · 정리</button>
     <div class="lbl">현장</div>
     <div class="setrow"><span>현장 이름</span><b id="siteTxt" style="text-align:right;max-width:65%;word-break:keep-all"></b></div>
+    <div class="lbl">문의·개선사항</div>
+    <button class="sec" id="fbOpen">앱 문의·개선사항 보내기</button>
     <div class="lbl">계정</div>
     <div id="pwBox">
       <p class="pwoff" id="pwOff" hidden>로그인한 뒤에 바꿀 수 있어요.</p>
@@ -909,6 +932,7 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
       <button id="demoBtn" class="sec">테스트 도면 만들기 (개인 도면 · 핀 50개)</button>
       <label class="sw" style="margin-top:12px"><input type="checkbox" id="lbSw"><span></span>화면마다 분류 라벨 보기</label>
       <button id="lbList" class="sec">화면 분류표 보기</button>
+      <button id="fbAdm" class="sec">받은 문의·개선사항</button>
     </div>
   </div>
 </div>
@@ -951,7 +975,7 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
 
 <script>
 "use strict";
-const APP_VER = "3.56";
+const APP_VER = "3.57";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1106,7 +1130,7 @@ function openMovePins(){
 }
 $("#lMove").addEventListener("click",openMovePins);
 /* 설정 팝업 */
-const SD_LB={"저장 공간":"E2-1","현장 이름":"E2-2","현장 업체 목록":"E2-3","사용자 관리":"E2-4","화면 분류표":"E2-5","핀 다른 쪽으로 옮기기":"C3-1"};
+const SD_LB={"저장 공간":"E2-1","현장 이름":"E2-2","현장 업체 목록":"E2-3","사용자 관리":"E2-4","화면 분류표":"E2-5","핀 다른 쪽으로 옮기기":"C3-1","핀 호출":"C2-1","문의·개선사항":"E2-6","받은 문의·개선사항":"E2-7"};
 function sdOpen(title,html){ $("#setDlg").dataset.lb=(SD_LB[title]||"E2")+" "+title; $("#sdTitle").textContent=title; $("#sdBody").innerHTML=html; $("#setDlg").hidden=false; }
 function sdClose(){ $("#setDlg").hidden=true; $("#sdBody").innerHTML=""; }
 $("#sdX").addEventListener("click",sdClose);
@@ -3686,6 +3710,12 @@ function noteHtml(n){ {
       ${n.gone?'<span class="nst">삭제된 도면</span>':n.state==="pending"?`<div class="nbt"><button class="yes" data-ans="1" data-id="${n.id}">수락</button><button data-ans="0" data-id="${n.id}">거절</button></div>`:`<span class="nst">${n.state==="accepted"?"✓ 수락함":"거절함"}</span>`}</div></div>`;
     if(n.type==="comment"){ const [lb,...rest]=String(n.text||"").split("\n");
       return `<div class="nt${n.read?"":" unread"}"${n.gone?"":` data-go="${n.drawingId}" data-pin="${esc(n.pinId)}"`}><div class="ni invite">💬</div><div class="nx"><b>${esc(n.from)}</b>님이 ${dn} <b>${esc(lb)}</b> 핀에 댓글을 남겼어요.<br><span style="color:var(--sub)">“${esc(rest.join(" "))}”</span>${t}</div></div>`; }
+    if(n.type==="call"){ const [lb,...rest]=String(n.text||"").split("\n");
+      return `<div class="nt${n.read?"":" unread"}"${n.gone?"":` data-go="${n.drawingId}" data-pin="${esc(n.pinId)}"`}><div class="ni invite">📣</div><div class="nx"><b>${esc(n.from)}</b>님이 ${dn} <b>${esc(lb)}</b> 핀을 봐 달라고 호출했어요.${rest.join("").trim()?`<br><span style="color:var(--sub)">“${esc(rest.join(" "))}”</span>`:""}${t}</div></div>`; }
+    if(n.type==="feedback"){ const [k,...rest]=String(n.text||"").split("\n");
+      return `<div class="nt${n.read?"":" unread"}" data-fbadm="1"><div class="ni invite">✉️</div><div class="nx"><b>${esc(n.from)}</b>님이 ${esc(k)} 사항을 보냈어요. 눌러서 읽고 답장하세요.<br><span style="color:var(--sub)">“${esc(rest.join(" "))}”</span>${t}</div></div>`; }
+    if(n.type==="reply"){ const [q,...rest]=String(n.text||"").split("\n");
+      return `<div class="nt${n.read?"":" unread"}" data-fbmy="1"><div class="ni invite">↩️</div><div class="nx"><b>${esc(n.from)}</b>님이 내 문의 “${esc(q)}”에 답장했어요.<br><span style="color:var(--sub)">${esc(rest.join(" "))}</span>${t}</div></div>`; }
     return `<div class="nt${n.read?"":" unread"}"${n.gone?"":` data-go="${n.drawingId}" data-pin="${esc(n.pinId)}"`}><div class="ni done">✓</div><div class="nx"><b>${esc(n.from)}</b>님이 ${dn} <b>${esc(n.text)}</b> 핀을 조치완료로 바꿨어요.${t}</div></div>`;
   }
 }
@@ -3719,6 +3749,8 @@ $("#noteBody").addEventListener("click",async e=>{
     }catch(err){ toast("처리하지 못했습니다: "+err.message,4000); renderNotes(); }
     return;
   }
+  if(e.target.closest("[data-fbadm]")){ closeSheets(); fbAdmin(); return; }
+  if(e.target.closest("[data-fbmy]")){ closeSheets(); fbMine(); return; }
   const g=e.target.closest("[data-go]"); if(!g) return;
   const id=g.dataset.go, pinId=g.dataset.pin;
   closeSheets();
@@ -3730,6 +3762,88 @@ $("#noteBody").addEventListener("click",async e=>{
   if(p.page!==V.pageNo) await showPage(p.page);
   openPin(p.id);
 });
+
+/* ---------- 핀 호출: 고른 사람에게 '이 핀 좀 봐 주세요' 알림 ---------- */
+const OLD_SRV=m=>/알 수 없는 요청/.test(m)?"서버가 아직 예전 코드예요. 몇 분 뒤에 다시 해 주세요.":m;
+$("#pCall").addEventListener("click",async()=>{
+  const p=selPin(); if(!p||!cmOn()) return;
+  flushSave();
+  sdOpen("핀 호출","<p class='sdnote'>사용자 목록을 불러오는 중…</p>");
+  let users=[];
+  try{ users=((await api({action:"users"})).users||[]).filter(u=>u!==myName()); }
+  catch(err){ $("#sdBody").innerHTML=`<p class="sdnote">사용자 목록을 받지 못했습니다: ${esc(err.message)}</p>`; return; }
+  const sel=new Set(), lb=pinLabel(p);
+  $("#sdBody").innerHTML=`<p class="sdnote"><b>${esc(lb)}</b> 핀을 봐 달라고 알림을 보내요. 받은 사람이 알림을 누르면 이 핀이 바로 열려요.</p>
+    <div class="hsearch inv"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="callQ" type="search" placeholder="이름 검색 (예: 신상우)" autocomplete="off" enterkeyhint="search"></div>
+    <div class="invsel" id="callSel"></div><div class="ulist" id="callList"></div>
+    <div class="lbl">전할 말</div>
+    <textarea class="inp" id="callMsg" rows="2" maxlength="300">이 핀 확인 부탁드려요</textarea>
+    <button class="pwbtn" id="callGo" disabled>호출 보내기</button>`;
+  const draw=()=>{
+    const q=$("#callQ").value.replace(/\s+/g,"");
+    $("#callSel").innerHTML=[...sel].map(u=>`<button class="ichip" data-rm="${esc(u)}">${esc(u)} ✕</button>`).join("");
+    const hits=q?users.filter(u=>u.replace(/\s+/g,"").includes(q)):[];
+    $("#callList").innerHTML=!q?`<p class="invtip">이름을 한 글자 이상 넣으면 찾아 드려요.</p>`
+      :!hits.length?`<p class="invtip">「${esc(q)}」(이)라는 사용자가 없어요.</p>`
+      :hits.map(u=>`<button class="urow${sel.has(u)?" on":""}" data-u="${esc(u)}"><i>${sel.has(u)?"✓":""}</i>${esc(u)}</button>`).join("");
+    $("#callGo").disabled=!sel.size; $("#callGo").textContent=sel.size?`${sel.size}명에게 호출 보내기`:"호출 보내기";
+  };
+  $("#callQ").addEventListener("input",draw); draw();
+  $("#sdBody").onclick=async e=>{
+    const rm=e.target.closest("[data-rm]"); if(rm){ sel.delete(rm.dataset.rm); draw(); return; }
+    const u=e.target.closest("[data-u]"); if(u){ const n=u.dataset.u; sel.has(n)?sel.delete(n):sel.add(n); $("#callQ").value=""; draw(); return; }
+    if(e.target.id!=="callGo") return;
+    e.target.disabled=true; e.target.textContent="보내는 중…";
+    try{ const j=await api({action:"callPin",drawingId:V.drawing.id,pinId:p.id,label:lb,text:$("#callMsg").value.trim(),to:[...sel]});
+      $("#setDlg").hidden=true; toast(`${j.sent||sel.size}명에게 호출을 보냈어요`,3000); }
+    catch(err){ toast("보내지 못했습니다: "+OLD_SRV(err.message),4000); draw(); }
+  };
+});
+
+/* ---------- 문의·개선사항 (누구나 보내고, 관리자는 읽고 답장) ---------- */
+const FB_K={문의:"❓ 문의",개선:"💡 개선",오류:"⚠️ 오류"};
+const fbItem=(f,adm)=>`<div class="fbi"><div class="fbh"><span class="fbk">${FB_K[f.kind]||esc(f.kind)}</span>${adm?`<b>${esc(f.from)}</b>`:""}<small>${fmtDate(f.created)}</small>${f.reply?'<span class="fbst ok">답장함</span>':'<span class="fbst">대기</span>'}</div>
+  <p>${esc(f.text)}</p>${f.reply?`<div class="fbr"><small>${esc(f.repliedBy)} · ${fmtDate(f.repliedAt)}</small>${esc(f.reply)}</div>`:""}
+  ${adm?`<div class="fbrf"><textarea class="inp" rows="1" maxlength="2000" data-rin="${f.id}" placeholder="${f.reply?"답장 고쳐 보내기":"답장 쓰기"}"></textarea><button data-rgo="${f.id}">보내기</button></div>`:""}</div>`;
+async function fbMine(){
+  if(!cloudOn()){ toast("서버에 연결되어 있을 때 보낼 수 있어요",3000); return; }
+  let kind="문의", list=null;
+  sdOpen("문의·개선사항",`<p class="sdnote">앱을 쓰다 궁금한 점, 바뀌었으면 하는 점, 오류를 적어 주세요. 관리자가 읽고 답장하면 알림으로 알려 드려요.</p>
+    <div class="seg" id="fbKind"><button data-v="문의" class="a on">문의</button><button data-v="개선" class="a">개선 요청</button><button data-v="오류" class="a">오류 신고</button></div>
+    <textarea class="inp" id="fbText" rows="4" maxlength="2000" style="margin-top:10px" placeholder="예: 핀 목록에서 업체별로 묶어 보고 싶어요"></textarea>
+    <button class="pwbtn" id="fbGo">보내기</button>
+    <div class="lbl">내가 보낸 문의</div><div id="fbMy"><p class="sdnote">불러오는 중…</p></div>`);
+  const drawMy=()=>{ $("#fbMy").innerHTML=!list?`<p class="sdnote">불러오지 못했어요.</p>`:!list.length?`<p class="sdnote">아직 보낸 문의가 없어요.</p>`:list.map(f=>fbItem(f,false)).join(""); };
+  $("#sdBody").onclick=async e=>{
+    const k=e.target.closest("#fbKind [data-v]"); if(k){ kind=k.dataset.v; document.querySelectorAll("#fbKind button").forEach(b=>b.classList.toggle("on",b===k)); return; }
+    if(e.target.id!=="fbGo") return;
+    const text=$("#fbText").value.trim(); if(!text){ toast("내용을 적어 주세요"); return; }
+    e.target.disabled=true; e.target.textContent="보내는 중…";
+    try{ list=(await api({action:"feedback",kind,text})).list; $("#fbText").value=""; drawMy(); toast("보냈어요. 답장이 오면 알림으로 알려 드려요",3000); }
+    catch(err){ toast("보내지 못했습니다: "+OLD_SRV(err.message),4000); }
+    e.target.disabled=false; e.target.textContent="보내기";
+  };
+  try{ list=(await api({action:"myFeedback"})).list; }catch(err){ list=null; }
+  if($("#fbMy")) drawMy();
+}
+async function fbAdmin(){
+  if(!cloudOn()||!isAdmin()) return;
+  let list=null;
+  sdOpen("받은 문의·개선사항","<p class='sdnote'>불러오는 중…</p>");
+  const draw=()=>{ const wait=list.filter(f=>!f.reply).length;
+    $("#sdBody").innerHTML=`<p class="sdnote">모두 ${list.length}건 · 답장 대기 ${wait}건. 답장을 보내면 보낸 사람에게 알림이 가요.</p>`+(list.length?list.map(f=>fbItem(f,true)).join(""):`<p class="sdnote">아직 받은 문의가 없어요.</p>`); };
+  try{ list=(await api({action:"feedbackList"})).list; draw(); }
+  catch(err){ $("#sdBody").innerHTML=`<p class="sdnote">불러오지 못했습니다: ${esc(OLD_SRV(err.message))}</p>`; return; }
+  $("#sdBody").onclick=async e=>{
+    const b=e.target.closest("[data-rgo]"); if(!b) return;
+    const ta=document.querySelector(`[data-rin="${CSS.escape(b.dataset.rgo)}"]`), text=ta.value.trim(); if(!text){ toast("답장 내용을 적어 주세요"); return; }
+    b.disabled=true; b.textContent="…";
+    try{ list=(await api({action:"feedbackReply",id:b.dataset.rgo,text})).list; draw(); toast("답장을 보냈어요",2500); }
+    catch(err){ toast("보내지 못했습니다: "+OLD_SRV(err.message),4000); b.disabled=false; b.textContent="보내기"; }
+  };
+}
+$("#fbOpen").addEventListener("click",fbMine);
+$("#fbAdm").addEventListener("click",fbAdmin);
 
 /* ---------- 협업 요청 보내기 (올린 사람·관리자) ---------- */
 async function inviteMenu(d){
