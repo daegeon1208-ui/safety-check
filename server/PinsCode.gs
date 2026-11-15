@@ -34,6 +34,7 @@ const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted'
 const N_COLS = ['id', 'to', 'type', 'from', 'drawingId', 'pinId', 'text', 'created', 'read', 'state'];
 const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
 const C_COLS = ['id', 'drawingId', 'pinId', 'by', 'text', 'created', 'deleted', 'edited'];
+const F_COLS = ['id', 'from', 'kind', 'text', 'created', 'state', 'reply', 'repliedAt', 'repliedBy'];   // 문의·개선사항
 const P_COLS = ['id', 'drawingId', 'no', 'page', 'status', 'trade', 'text', 'by', 'editor', 'created', 'updated', 'doneAt', 'deleted', 'data(JSON)'];
 
 function doGet() { return out_({ ok: true, app: 'drawing-pins', time: Date.now() }); }
@@ -63,6 +64,11 @@ function doPost(e) {
         case 'changePw': changePw_(me, req.newPw); return out_({ ok: true });
         case 'readNotes': readNotes_(me); return out_({ ok: true });
         case 'tourAll': return out_({ ok: true, sent: tourAll_(me) });
+        case 'callPin': gate_(req.drawingId, me, req); return out_({ ok: true, sent: callPin_(req, me) });
+        case 'feedback': return out_({ ok: true, list: addFeedback_(req.kind, req.text, me) });
+        case 'myFeedback': return out_({ ok: true, list: feedbacks_(me, false) });
+        case 'feedbackList': return out_({ ok: true, list: feedbacks_(me, true) });
+        case 'feedbackReply': return out_({ ok: true, list: replyFeedback_(req.id, req.text, me) });
         case 'delNotes': delNotes_(me, req.ids); return out_({ ok: true, notes: notes_(me) });
         case 'respond': return out_({ ok: true, note: respond_(req.noteId, !!req.accept, me) });
         case 'renameDrawing': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: patchDrawing_(req.id, { name: req.name }) });
@@ -108,6 +114,10 @@ function ss_() {
   if (!ss.getSheetByName('댓글')) {   // 핀 댓글
     const c = ss.insertSheet('댓글');
     c.getRange(1, 1, 1, C_COLS.length).setValues([C_COLS]); c.setFrozenRows(1);
+  }
+  if (!ss.getSheetByName('문의')) {   // 문의·개선사항
+    const f = ss.insertSheet('문의');
+    f.getRange(1, 1, 1, F_COLS.length).setValues([F_COLS]); f.setFrozenRows(1);
   }
   if (!ss.getSheetByName('사용자')) {   // 예전 버전에서 만든 시트에는 '사용자' 시트가 없다
     const u = ss.insertSheet('사용자');
@@ -491,6 +501,40 @@ function editComment_(id, text, me, req) {
   if (String(sh.getRange(1, C_COLS.length, 1, 1).getValues()[0][0]) !== 'edited') sh.getRange(1, C_COLS.length, 1, 1).setValues([['edited']]);   // 예전 시트에 열 이름 추가
   if (c.text !== text) { c.text = text; c.edited = Date.now(); writeRow_(sh, C_COLS, c._row, c); }
   return comments_(c.drawingId);
+}
+/* 핀 호출: 고른 사람에게 '이 핀 좀 봐 주세요' 알림 (알림을 누르면 그 핀이 열린다) */
+function callPin_(req, me) {
+  const users = users_({ admin: true }), msg = String(req.text || '').trim().slice(0, 300), lb = String(req.label || '').slice(0, 40);
+  let sent = 0;
+  (req.to || []).map(x => String(x || '').trim()).forEach(name => {
+    if (!name || name === me.name || users.indexOf(name) < 0) return;
+    addNote_({ to: name, type: 'call', from: me.name, drawingId: req.drawingId, pinId: req.pinId || '', text: lb + '\n' + msg }); sent++;
+  });
+  return sent;
+}
+/* 문의·개선사항: 누구나 보내고, 관리자는 읽고 답장(답장은 보낸 사람에게 알림) */
+function fbOut_(f) { return { id: f.id, from: f.from, kind: f.kind || '', text: String(f.text || ''), created: +f.created || 0, state: f.state || '', reply: String(f.reply || ''), repliedAt: +f.repliedAt || 0, repliedBy: f.repliedBy || '' }; }
+function feedbacks_(me, all) {
+  if (all && !me.admin) throw new Error('관리자만 볼 수 있습니다');
+  return rows_('문의').list.filter(f => all || f.from === me.name).map(fbOut_).sort((a, b) => b.created - a.created).slice(0, 200);
+}
+function addFeedback_(kind, text, me) {
+  text = String(text || '').trim().slice(0, 2000); if (!text) throw new Error('내용을 적어 주세요');
+  kind = ['문의', '개선', '오류'].indexOf(kind) >= 0 ? kind : '문의';
+  const { sh } = rows_('문의');
+  writeRow_(sh, F_COLS, 0, { id: Utilities.getUuid(), from: me.name, kind: kind, text: text, created: Date.now(), state: 'new', reply: '', repliedAt: '', repliedBy: '' });
+  const short = text.length > 60 ? text.slice(0, 60) + '…' : text;
+  rows_('사용자').list.filter(u => userOut_(u).admin && String(u.name).trim() !== me.name).forEach(u => addNote_({ to: String(u.name).trim(), type: 'feedback', from: me.name, text: kind + '\n' + short }));
+  return feedbacks_(me, false);
+}
+function replyFeedback_(id, text, me) {
+  if (!me.admin) throw new Error('관리자만 답장할 수 있습니다');
+  text = String(text || '').trim().slice(0, 2000); if (!text) throw new Error('답장 내용을 적어 주세요');
+  const { sh, list } = rows_('문의'), f = list.find(x => x.id === id); if (!f) throw new Error('문의를 찾을 수 없습니다');
+  f.reply = text; f.repliedAt = Date.now(); f.repliedBy = me.name; f.state = 'answered'; writeRow_(sh, F_COLS, f._row, f);
+  const short = text.length > 80 ? text.slice(0, 80) + '…' : text, q = String(f.text || ''), qs = q.length > 30 ? q.slice(0, 30) + '…' : q;
+  if (f.from !== me.name) addNote_({ to: f.from, type: 'reply', from: me.name, text: qs + '\n' + short });
+  return feedbacks_(me, true);
 }
 /* 관리자: 가입한 모든 사람에게 '연습 도면 따라하기' 알림 */
 function tourAll_(me) {
