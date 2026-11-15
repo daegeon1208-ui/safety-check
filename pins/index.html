@@ -975,7 +975,7 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
 
 <script>
 "use strict";
-const APP_VER = "3.57";
+const APP_VER = "3.58";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -3483,11 +3483,11 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl,per)
 /* ---------- 따라하기: 연습 도면에서 실제 버튼을 눌러 보며 배우기 ---------- */
 const TOUR_ID="sample";
 async function ensureSample(){
-  const SV=2, old=await dbGet("drawings",TOUR_ID);   // SV: 견본 도면 판 (2 = 3.51 공동주택 기준층 평면도)
+  const SV=3, old=await dbGet("drawings",TOUR_ID);   // SV: 견본 도면 판 (3 = 3.58 평면도 + 구조평면도 2쪽)
   if(old&&old.sampleVer===SV&&await dbGet("files",TOUR_ID)) return;
   const buf=await (await fetch("sample.pdf")).arrayBuffer(), now=Date.now();
   await dbPut("files",{id:TOUR_ID,data:buf});
-  await dbPut("drawings",{...(old||{}),id:TOUR_ID,name:"견본 도면 (연습용)",pages:1,created:old?old.created:now,opened:old?old.opened:now+1e9,by:"",kind:"pdf",sample:true,sampleVer:SV,ver:String(now)});   // 맨 위에 오게
+  await dbPut("drawings",{...(old||{}),id:TOUR_ID,name:"견본 도면 (연습용)",pages:2,pageNames:["A-301 기준층 평면도","S-301 기준층 구조평면도"],created:old?old.created:now,opened:old?old.opened:now+1e9,by:"",kind:"pdf",sample:true,sampleVer:SV,ver:String(now)});   // 맨 위에 오게
 }
 const T={i:-1,flag:false,timer:null,busy:false,pinId:null};
 const vis=sel=>{const e=typeof sel==="function"?sel():$(sel); return e&&!e.hidden&&e.getClientRects().length?e:null;};   // fixed(아래 창)도 보이면 잡는다
