@@ -650,6 +650,13 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
 .mvrow.off{opacity:.5}
 .ichip2{font-size:13px;font-weight:700;color:#E31937;background:#FCE4E7;border-radius:999px;padding:4px 12px}
 #sdBody select.inp{width:100%}
+/* 3.56 내보내기 */
+.tmgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tmgrid button{padding:10px 6px;border-radius:12px;background:var(--soft);font-weight:700;font-size:14px;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.25}
+.tmgrid button small{font-size:11px;font-weight:600;color:var(--sub)}
+.tmgrid button.on{background:#3A3A37;color:#fff}.tmgrid button.on small{color:#D9D8D3}
+#expPer button{font-size:13px;padding-left:2px;padding-right:2px}
+.perrow{display:flex;align-items:center;gap:6px;margin-top:8px}.perrow .inp{flex:1;min-width:0;padding:8px 10px}
 </style>
 </head>
 <body>
@@ -880,8 +887,8 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
     <div class="vchips" id="setTeam"></div>
     <div class="setsub">사진 화질 <small>사진 한 장 기준 저 약 0.2MB · 보통 약 0.6MB · 고 약 2MB</small></div>
     <div class="seg" id="setPhoto"><button data-v="low">저화질</button><button data-v="normal">보통</button><button data-v="high">고화질</button></div>
-    <div class="setsub">내보내기 기본 양식</div>
-    <div class="seg" id="setTmpl"><button data-v="internal">내부 관리 현황</button><button data-v="vendor">협력업체 전달</button></div>
+    <div class="setsub">내보내기 기본 양식 <small>한 팀만 보고 있으면 그 팀 양식(공사 하자조치요청서 · 품질 균열관리 · 안전 순회점검)</small></div>
+    <div class="tmgrid" id="setTmpl"><button data-v="internal">내부 관리 현황</button><button data-v="vendor">하자조치요청서</button><button data-v="crack">균열관리사진대지</button><button data-v="patrol">현장순회점검 보고서</button></div>
     <div class="setsub">사진대지에 넣을 사진</div>
     <div class="seg" id="setPh"><button data-v="0">대표 사진만</button><button data-v="1">사진 전부</button></div>
     <div class="setsub">저장 공간</div>
@@ -944,7 +951,7 @@ body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-to
 
 <script>
 "use strict";
-const APP_VER = "3.55";
+const APP_VER = "3.56";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -1053,7 +1060,7 @@ function renderPrefs(){
   const mt=myPref("myTeam","");
   $("#setTeam").innerHTML=`<button class="vchip${mt?"":" on"}" data-mt="">마지막에 쓴 팀</button>`+TEAMS.map(([v,n,c])=>`<button class="vchip${mt===v?" on":""}" data-mt="${v}" style="${mt===v?`background:${c}`:""}">${n}</button>`).join("");
   const seg=(id,val)=>document.querySelectorAll(id+" button").forEach(b=>b.classList.toggle("on",b.dataset.v===val));
-  seg("#setPhoto",myPref("photoQ","normal")); seg("#setTmpl",myPref("expTmpl","internal")==="vendor"?"vendor":"internal"); seg("#setPh",myPref("expAllPhotos","0")==="1"?"1":"0");
+  seg("#setPhoto",myPref("photoQ","normal")); seg("#setTmpl",["vendor","crack","patrol"].includes(myPref("expTmpl",""))?myPref("expTmpl",""):"internal"); seg("#setPh",myPref("expAllPhotos","0")==="1"?"1":"0");
   $("#siteTxt").textContent=SITE||"(없음)";
 }
 $("#setTeam").addEventListener("click",e=>{ const b=e.target.closest("[data-mt]"); if(!b) return; setPref("myTeam",b.dataset.mt); renderPrefs(); });
@@ -1356,7 +1363,7 @@ $("#dlist").addEventListener("click",async e=>{
     try{
       if(act==="noedit"){ toast(NOEDIT,3000); }
       else if(act==="info"){ showInfo(d); }
-      else if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted)); }
+      else if(act==="share"){ showExport(d,(await pinsOf(d.id)).filter(p=>!p.deleted),true); }
       else if(act==="rename"){ if(await renameDrawing(d)) renderHome(); }
       else if(act==="pages"){ editPages(d); }
       else if(act==="copy"){ await copyDrawing(d); }
@@ -3088,34 +3095,53 @@ $("#expBtn").addEventListener("click",async()=>{
   if(v==="cap") setMode("capture"); else if(v==="pdf") showExport(V.drawing,V.pins);
 });
 /* 핀 표시 도면 + 사진대지 PDF를 만들어 보내기·저장 창을 띄운다 (도면 화면 내보내기, 목록 ⋯ 공유하기 공용) */
-async function showExport(drawing,allPins){
+/* 사진대지 양식: 팀마다 쓰는 서식 */
+const TMPLS=[["internal","내부 관리 현황","사진대지"],["vendor","하자조치요청서","조치요청서"],["crack","균열관리사진대지","균열관리사진대지"],["patrol","현장순회점검 보고서","순회점검보고서"]];
+const TEAM_TMPL={공사:"vendor",품질:"crack",안전:"patrol"};
+async function showExport(drawing,allPins,fromHome){
   const body=$("#expBody");
   openSheet("#expSheet");
   allPins=allPins.filter(p=>p.id!=="temp"&&!p.deleted);
   if(!allPins.length){body.innerHTML=`<p>아직 찍은 핀이 없습니다.</p>`;return;}
   // 1) 어느 팀 것을 낼지 고르기 (처음엔 지금 보고 있는 팀)
-  const sel=new Set([...teamFilter]), none=allPins.some(p=>!p.team);
+  const sel=fromHome?new Set(TEAMS.map(t=>t[0]).concat([""])):new Set([...teamFilter]), none=allPins.some(p=>!p.team);   // 도면 화면에서 열면 지금 고른 팀·업체·공종 그대로, 목록에서 열면 전체
   // 업체·공종도 고르기 (처음엔 도면에서 보고 있는 그대로)
-  const [evs,ews]=vfVals(allPins), EV={v:VF.v?new Set(VF.v):null,w:VF.w?new Set(VF.w):null};
+  const [evs]=vfVals(allPins), EV={v:!fromHome&&VF.v?new Set(VF.v):null,w:!fromHome&&VF.w?new Set(VF.w):null};
+  let ews=[]; const scopeW=()=>{ ews=vfVals(allPins.filter(p=>!EV.v||EV.v.has(vendorOf(p))))[1]; if(EV.w){ [...EV.w].forEach(x=>{ if(!ews.includes(x)) EV.w.delete(x); }); if(!EV.w.size) EV.w=null; } };   // 공종은 고른 업체의 공종만
+  scopeW();
+  // 기간: 핀을 등록한 날짜로 거르기
+  const day0=t=>{ const d=new Date(t); d.setHours(0,0,0,0); return d.getTime(); }, ymd=t=>{ const d=new Date(t); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+  let per="all", pFrom=ymd(Math.min(...allPins.map(p=>p.created||Date.now()))), pTo=ymd(Date.now());
+  const range=()=>{ const now=Date.now(); if(per==="today") return [day0(now),now+1];
+    if(per==="week") return [day0(now)-6*864e5,now+1]; if(per==="month"){ const d=new Date(now); return [new Date(d.getFullYear(),d.getMonth(),1).getTime(),now+1]; }
+    if(per==="custom"){ const a=new Date(pFrom+"T00:00").getTime(), b=new Date(pTo+"T00:00").getTime()+864e5; return [isNaN(a)?0:a,isNaN(b)?Infinity:b]; } return [0,Infinity]; };
+  const inPer=p=>{ const [a,b]=range(), t=p.created||0; return t>=a&&t<b; };
+  const perTxt=()=>{ if(per==="all") return ""; const [a,b]=range(), f=t=>fmtDate(t).slice(2,10); return `등록 ${f(a)}~${f(Math.min(b-1,Date.now()))}`; };
   const evPass=p=>(!EV.v||EV.v.has(vendorOf(p)))&&(!EV.w||EV.w.has(workOf(p)));
   const evChips=(k,vals)=>`<button class="vchip${!EV[k]?" on":""}" data-vfk="${k}" data-vfv="__all">전체</button>`+vals.map(x=>`<button class="vchip${EV[k]&&EV[k].has(x)?" on":""}" data-vfk="${k}" data-vfv="${esc(x)}">${esc(x||(k==="v"?"미분류":"공종 없음"))}</button>`).join("");
   const evToggle=(k,val,vals)=>{ if(val==="__all"){EV[k]=null;return;} if(!EV[k]) EV[k]=new Set([val]); else if(EV[k].has(val)){EV[k].delete(val); if(!EV[k].size) EV[k]=null;} else {EV[k].add(val); if(EV[k].size===vals.length) EV[k]=null;} };
   let allPh=false; try{ allPh=localStorage.getItem("expAllPhotos")==="1"; }catch(e){}
-  let tmpl="internal"; try{ tmpl=localStorage.getItem("expTmpl")==="vendor"?"vendor":"internal"; }catch(e){}
+  let tmpl="internal"; try{ const t=localStorage.getItem("expTmpl"); if(TMPLS.some(x=>x[0]===t)) tmpl=t; }catch(e){}
+  { const ts=[...sel].filter(Boolean); if(ts.length===1&&TEAM_TMPL[ts[0]]&&!fromHome) tmpl=TEAM_TMPL[ts[0]]; }   // 한 팀만 보고 있으면 그 팀 서식
   const pick=()=>new Promise(res=>{
-    const draw=()=>{ const l=allPins.filter(p=>sel.has(p.team||"")&&evPass(p)), n=l.length, blocks=l.reduce((a,p)=>a+(allPh?photoRows(p):1),0);
+    const draw=()=>{ const l=allPins.filter(p=>sel.has(p.team||"")&&evPass(p)&&inPer(p)), n=l.length, blocks=l.reduce((a,p)=>a+(allPh?photoRows(p):1),0);
       body.innerHTML=`<div class="lbl">사진대지 양식</div>
-        <div class="seg" id="expTm"><button data-v="internal" class="${tmpl==="internal"?"on":""}">내부 관리 현황</button><button data-v="vendor" class="${tmpl==="vendor"?"on":""}">협력업체 전달</button></div>
-        <p style="font-size:13px;color:var(--sub);margin-top:6px">${tmpl==="vendor"?"「하자 조치 요청서」: 업체별로 쪽을 나누고, 조치 전 사진만 넣어요(조치 후 칸 없음). 업체 이름만 적고 공종·팀·등록한 사람·등록 날짜는 빼요.":"맨 앞에 전체·팀별·업체별·공종별 미조치/완료 개수와 조치율, 핀 목록 표를 넣고 그 뒤에 사진대지가 나와요."}</p>
+        <div class="tmgrid" id="expTm">${TMPLS.map(([v,t])=>`<button data-v="${v}" class="${tmpl===v?"on":""}">${t}${Object.keys(TEAM_TMPL).find(k=>TEAM_TMPL[k]===v)?`<small>${Object.keys(TEAM_TMPL).find(k=>TEAM_TMPL[k]===v)}팀</small>`:""}</button>`).join("")}</div>
+        <p style="font-size:13px;color:var(--sub);margin-top:6px">${tmpl==="crack"?"「균열관리사진대지」: 맨 앞에 균열 관리 대장(번호·위치·내용·발생일·보수일), 핀마다 발생 사진 | 보수 후 사진과 폭·길이·보수 방법 적는 칸.":tmpl==="patrol"?"「현장순회점검 보고서」: 맨 앞에 점검 개요·결재란·지적사항 표, 핀마다 지적 사진 | 조치 사진과 지적 내용·조치 결과.":tmpl==="vendor"?"「하자 조치 요청서」: 업체별로 쪽을 나누고, 조치 전 사진만 넣어요(조치 후 칸 없음). 업체 이름만 적고 공종·팀·등록한 사람·등록 날짜는 빼요.":"맨 앞에 전체·팀별·업체별·공종별 미조치/완료 개수와 조치율, 핀 목록 표를 넣고 그 뒤에 사진대지가 나와요."}</p>
         <div class="lbl">넣을 팀 (여러 팀 고를 수 있음)</div><div class="tchips" id="expTeams">${teamChips(sel,none)}</div>
         <div class="lbl">넣을 업체</div><div class="vchips" id="expV">${evChips("v",evs)}</div>
-        <div class="lbl">넣을 공종</div><div class="vchips" id="expW">${evChips("w",ews)}</div>
+        <div class="lbl">넣을 공종 <small style="font-weight:500;color:var(--sub)">· 고른 업체의 공종만</small></div><div class="vchips" id="expW">${evChips("w",ews)}</div>
+        <div class="lbl">기간 <small style="font-weight:500;color:var(--sub)">· 핀을 등록한 날짜</small></div>
+        <div class="seg" id="expPer">${[["all","전체"],["today","오늘"],["week","최근 7일"],["month","이번 달"],["custom","직접"]].map(([v,t])=>`<button data-v="${v}" class="${per===v?"on":""}">${t}</button>`).join("")}</div>
+        ${per==="custom"?`<div class="perrow"><input type="date" class="inp" id="expFrom" value="${pFrom}"><span>~</span><input type="date" class="inp" id="expTo" value="${pTo}"></div>`:""}
         <div class="lbl">사진대지에 넣을 사진</div>
         <div class="seg" id="expPh"><button data-v="rep" class="${allPh?"":"on"}">대표 사진만</button><button data-v="all" class="${allPh?"on":""}">사진 전부</button></div>
         <p style="font-size:13px;color:var(--sub);margin-top:6px">${allPh?"핀마다 조치 전·후 사진을 한 칸에 한 장씩 짝지어 모두 넣습니다(대표 사진이 먼저).":"핀마다 조치 전·후 대표 사진 한 장씩, 핀 하나에 한 칸입니다."}</p>
         <p>핀 ${n}개 · 사진대지 ${blocks}칸 (${Math.ceil(blocks/2)}쪽) · 핀 표시 도면 + 사진대지 (A4 한 장에 2칸)</p><button id="expPv" class="sec" ${n?"":"disabled"}>미리보기</button><button id="expGo" ${n?"":"disabled"}>PDF 만들기</button>`;
       $("#expTeams").onclick=e=>{ const b=e.target.closest("[data-team]"); if(!b) return; toggleTeam(sel,b.dataset.team); draw(); };
-      $("#expV").onclick=$("#expW").onclick=e=>{ const b=e.target.closest("[data-vfk]"); if(!b) return; const k=b.dataset.vfk; evToggle(k,b.dataset.vfv,k==="v"?evs:ews); draw(); };
+      $("#expV").onclick=$("#expW").onclick=e=>{ const b=e.target.closest("[data-vfk]"); if(!b) return; const k=b.dataset.vfk; evToggle(k,b.dataset.vfv,k==="v"?evs:ews); scopeW(); draw(); };
+      $("#expPer").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; per=b.dataset.v; draw(); };
+      if($("#expFrom")) $("#expFrom").onchange=$("#expTo").onchange=()=>{ pFrom=$("#expFrom").value; pTo=$("#expTo").value; draw(); };
       $("#expPh").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; allPh=b.dataset.v==="all"; try{localStorage.setItem("expAllPhotos",allPh?"1":"0");}catch(_){} draw(); };
       $("#expTm").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; tmpl=b.dataset.v; try{localStorage.setItem("expTmpl",tmpl);}catch(_){} draw(); };
       $("#expPv").onclick=()=>res("pv");
@@ -3127,13 +3153,13 @@ async function showExport(drawing,allPins){
     for(;;){
       const act=await pick();
       if($("#expSheet").hidden) return;   // 창을 닫았으면 그만
-      const key=[...sel].sort().join(",")+"|"+allPh+"|"+tmpl+"|"+[...(EV.v||[])].join(",")+"|"+[...(EV.w||[])].join(",");
-      pinList=allPins.filter(p=>sel.has(p.team||"")&&evPass(p));
+      const key=[...sel].sort().join(",")+"|"+allPh+"|"+tmpl+"|"+[...(EV.v||[])].join(",")+"|"+[...(EV.w||[])].join(",")+"|"+range().join(",");
+      pinList=allPins.filter(p=>sel.has(p.team||"")&&evPass(p)&&inPer(p));
       teamsTxt=TEAMS.filter(t=>sel.has(t[0])).map(t=>t[1]).join("·")||"팀 없음";
       if(!bytes||bytes.key!==key){
         msg(act==="pv"?"미리보기를 만드는 중…":"핀이 표시된 도면과 사진대지를 PDF로 만드는 중…");
         const allSel=TEAMS.every(t=>sel.has(t[0]))&&(!none||sel.has(""));
-        bytes=await buildExport(drawing,pinList,msg,allSel?"":teamsTxt,allPh,tmpl); bytes.key=key;
+        bytes=await buildExport(drawing,pinList,msg,[allSel?"":teamsTxt,perTxt()].filter(Boolean).join(" · "),allPh,tmpl,range()); bytes.key=key;
       }
       if(act==="go") break;
       if(await showPreview(bytes)) break;   // 미리보기에서 "이대로 PDF 만들기"
@@ -3150,7 +3176,7 @@ async function showExport(drawing,allPins){
     const o=pinList.filter(p=>p.status!=="done").length;
     const canShare=navigator.canShare&&navigator.canShare({files:[new File([bytes],"a.pdf",{type:"application/pdf"})]});
     body.innerHTML=`<p>${esc(teamsTxt)} · 핀 ${pinList.length}개 (미조치 ${o} · 완료 ${pinList.length-o}) · 도면 + 사진대지</p>
-      <div class="lbl">파일 이름</div><input class="inp" id="expName" autocomplete="off" value="${esc(`${drawing.name}_${tmpl==="vendor"?"조치요청서":"사진대지"}_${dayStr(Date.now())}`)}">`
+      <div class="lbl">파일 이름</div><input class="inp" id="expName" autocomplete="off" value="${esc(`${drawing.name}_${(TMPLS.find(x=>x[0]===tmpl)||TMPLS[0])[2]}_${dayStr(Date.now())}`)}">`
       +(canShare?`<button id="expShare">보내기 (카톡·메일·파일에 저장)</button>`:"")
       +`<a id="expOpen" class="${canShare?"sec":""}" target="_blank">PDF 열기·저장</a>`;
     makeFile();
@@ -3229,8 +3255,8 @@ async function locCrop(full,pin,pins,aspect){
 /* 사진대지: 사진 전부 넣기면 조치 전·후 사진을 대표 사진부터 한 칸에 한 장씩 짝짓는다 */
 const photoOrder=list=>{ const l=(list||[]).slice(), i=l.findIndex(x=>x.rep); if(i>0) l.unshift(l.splice(i,1)[0]); return l; };
 const photoRows=p=>Math.max(1,(p.photos||[]).length,(p.donePhotos||[]).length);
-async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
-  const VEN=tmpl==="vendor";   // 협력업체 전달용: 업체별로 묶고, 우리 쪽 이름·팀은 빼고, 쪽마다 조치 확인(서명) 칸
+async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl,per){
+  const VEN=tmpl==="vendor", CRK=tmpl==="crack", PAT=tmpl==="patrol";   // 협력업체 전달용: 업체별로 묶고, 우리 쪽 이름·팀은 빼고, 쪽마다 조치 확인(서명) 칸
   if(!pdfLibReady) pdfLibReady=Promise.all([loadScript("../lib/pdf-lib.min.js"),loadScript("../lib/fontkit.umd.min.js")]);
   await pdfLibReady;
   if(!fontBytes) fontBytes=await fetch("../fonts/KoPubDotum-Medium.ttf").then(r=>{if(!r.ok)throw new Error("글꼴을 받지 못했습니다");return r.arrayBuffer();});
@@ -3279,7 +3305,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
     progress&&progress("관리 현황 표 만드는 중…");
     const W=595.28,H=841.89,M=30, n=pins.length, nd=pins.filter(p=>p.status==="done").length, pct=x=>n?Math.round(x*100)+"%":"-";
     let pg=null, y=0, pno=0;
-    const head=()=>{ pg=doc.addPage([W,H]); pno++; const t="하 자 관 리 현 황", tw=kor.widthOfTextAtSize(t,20);
+    const head=()=>{ pg=doc.addPage([W,H]); pno++; const t=CRK?"균 열 관 리 대 장":PAT?"현 장 순 회 점 검 보 고 서":"하 자 관 리 현 황", tw=kor.widthOfTextAtSize(t,20);
       pg.drawText(t,{x:(W-tw)/2,y:H-M-20,size:20,font:kor,color:INK}); siteHead(pg);
       pg.drawText(wrap(drawing.name,9,W-2*M-200)[0],{x:M,y:H-M-38,size:9,font:kor,color:SUB});
       const rt=`${teamsTxt?teamsTxt+"  ·  ":""}${fmtDate(Date.now()).slice(0,10)} 기준`; pg.drawText(rt,{x:W-M-kor.widthOfTextAtSize(rt,9),y:H-M-38,size:9,font:kor,color:SUB});
@@ -3296,14 +3322,38 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
       y-=14;
     };
     head();
+    if(PAT){   // 점검 개요 + 결재란
+      const fd=t=>fmtDate(t).slice(0,10), ts=pins.map(p=>p.created||0).filter(Boolean);
+      const when=per&&per[0]>0?`${fd(per[0])} ~ ${fd(Math.min(per[1]-1,Date.now()))}`:ts.length?`${fd(Math.min(...ts))} ~ ${fd(Math.max(...ts))}`:fd(Date.now());
+      const info=[["점검 기간",when],["점검 구역",drawing.name],["점검자",[...new Set(pins.map(p=>p.by).filter(Boolean))].join(", ")||myName()||"-"],["작성일",fd(Date.now())]];
+      const aw=3*58, ax=W-M-aw, rh=20;
+      info.forEach(([k,v],i)=>{ const yy=y-i*rh; pg.drawRectangle({x:M,y:yy-rh,width:ax-M-12,height:rh,borderColor:LINE,borderWidth:0.6}); pg.drawRectangle({x:M,y:yy-rh,width:70,height:rh,color:HEAD,borderColor:LINE,borderWidth:0.6});
+        pg.drawText(k,{x:M+8,y:yy-rh+6.5,size:8.5,font:kor,color:SUB}); pg.drawText(wrap(v,9,ax-M-100)[0]||"",{x:M+78,y:yy-rh+6.5,size:9,font:kor,color:INK}); });
+      ["작성","검토","승인"].forEach((t,i)=>{ const x=ax+i*58; pg.drawRectangle({x,y:y-18,width:58,height:18,color:HEAD,borderColor:LINE,borderWidth:0.6}); pg.drawRectangle({x,y:y-80,width:58,height:62,borderColor:LINE,borderWidth:0.6});
+        pg.drawText(t,{x:x+(58-kor.widthOfTextAtSize(t,9))/2,y:y-13,size:9,font:kor,color:SUB}); });
+      y-=96;
+    }
     // 큰 숫자 4칸
-    const box=[["전체",n,INK],["미조치",n-nd,RED],["조치완료",nd,GREEN],["조치율",pct(nd/Math.max(1,n)),INK]], bw=(W-2*M-30)/4;
+    const box=CRK?[["균열",n,INK],["미보수",n-nd,RED],["보수완료",nd,GREEN],["보수율",pct(nd/Math.max(1,n)),INK]]:PAT?[["지적",n,INK],["미조치",n-nd,RED],["조치완료",nd,GREEN],["조치율",pct(nd/Math.max(1,n)),INK]]:[["전체",n,INK],["미조치",n-nd,RED],["조치완료",nd,GREEN],["조치율",pct(nd/Math.max(1,n)),INK]], bw=(W-2*M-30)/4;
     box.forEach(([l,v,c],k)=>{ const x=M+k*(bw+10); pg.drawRectangle({x,y:y-54,width:bw,height:54,borderColor:LINE,borderWidth:0.8});
       pg.drawText(l,{x:x+10,y:y-16,size:9,font:kor,color:SUB}); const vs=String(v); pg.drawText(vs,{x:x+bw-10-kor.widthOfTextAtSize(vs,20),y:y-44,size:20,font:kor,color:c}); });
     y-=72;
     const grp=(key)=>{ const m=new Map(); pins.forEach(p=>{ const k=key(p); const r=m.get(k)||{k,n:0,d:0}; r.n++; if(p.status==="done") r.d++; m.set(k,r); }); return [...m.values()]; };
     const rowOf=r=>[r.k,r.n,{t:r.n-r.d,c:r.n-r.d?RED:INK},{t:r.d,c:GREEN},r.n?Math.round(r.d/r.n*100)+"%":"-"];
     const C5=[["구분",0.4,"l"],["전체",0.15],["미조치",0.15],["조치완료",0.15],["조치율",0.15]];
+    const where=p=>pgLabel(drawing,p.page)||"-", fd=t=>t?fmtDate(t).slice(2,10):"-";
+    if(CRK){
+      table("균열 목록",[["번호",0.07],["위치",0.12],["업체·공종",0.15,"l"],["균열 내용",0.3,"l"],["폭(mm)",0.08],["발생일",0.1],["보수일",0.1],["상태",0.08]],
+        pins.map(p=>[pinLabel(p),where(p),p.trade||"-",(p.text||"-").replace(/\n/g," "),"",fd(p.created),p.status==="done"?fd(p.doneAt):"",{t:p.status==="done"?"보수":"미보수",c:p.status==="done"?GREEN:RED}]));
+      table("업체별 현황",C5,grp(tradeOf).sort((a,b)=>(b.n-b.d)-(a.n-a.d)).map(rowOf));
+      return;
+    }
+    if(PAT){
+      table("지적 사항",[["번호",0.07],["위치",0.12],["업체",0.14,"l"],["지적 내용",0.33,"l"],["지적일",0.1],["조치 결과",0.14],["확인",0.1]],
+        pins.map(p=>[pinLabel(p),where(p),tradeOf(p),(p.text||"-").replace(/\n/g," "),fd(p.created),{t:p.status==="done"?"조치완료 "+fd(p.doneAt):"미조치",c:p.status==="done"?GREEN:RED},""]));
+      table("업체별 현황",C5,grp(tradeOf).sort((a,b)=>(b.n-b.d)-(a.n-a.d)).map(rowOf));
+      return;
+    }
     table("팀별 현황",C5,grp(p=>p.team?teamName(p.team):"팀 없음").map(rowOf));
     table("업체별 현황",C5,grp(tradeOf).sort((a,b)=>(b.n-b.d)-(a.n-a.d)).map(rowOf));
     table("공종별 현황",C5,grp(p=>workOf(p)||"공종 미지정").sort((a,b)=>(b.n-b.d)-(a.n-a.d)).map(rowOf));
@@ -3338,7 +3388,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
     if(slot===0||!page||Math.floor(slots[ci-1]/PER)+1!==pno){
       progress&&progress(`사진대지 만드는 중… (${pno}/${total}쪽)`);
       page=doc.addPage([W,H]);
-      const t=VEN?"하 자 조 치 요 청 서":"사 진 대 지", tw=kor.widthOfTextAtSize(t,20);
+      const t=VEN?"하 자 조 치 요 청 서":CRK?"균 열 관 리 사 진 대 지":PAT?"순 회 점 검 사 진 대 지":"사 진 대 지", tw=kor.widthOfTextAtSize(t,20);
       page.drawText(t,{x:(W-tw)/2,y:H-M-20,size:20,font:kor,color:INK}); siteHead(page);
       if(VEN){
         const vt=`수신: ${tradeOf(p)}`; page.drawText(wrap(vt,11,W-2*M-200)[0],{x:M,y:H-M-36,size:11,font:kor,color:INK});
@@ -3360,7 +3410,7 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
     page.drawLine({start:{x:xl,y:yy-HH},end:{x:xr,y:yy-HH},thickness:0.6,color:LINE});
     page.drawCircle({x:xl+16,y:yy-HH/2,size:9,color:pcol});
     { const sn=pinLabel(p), fs=Math.min(9,15/Math.max(0.01,kor.widthOfTextAtSize(sn,1))); page.drawText(sn,{x:xl+16-kor.widthOfTextAtSize(sn,fs)/2,y:yy-HH/2-fs*0.36,size:fs,font:kor,color:WHITE}); }
-    const st=(done?"조치완료":"미조치")+(R.n>1?`  (사진 ${R.i+1}/${R.n})`:""), stw=kor.widthOfTextAtSize(st,10.5);
+    const st=(CRK?(done?"보수완료":"미보수"):(done?"조치완료":"미조치"))+(R.n>1?`  (사진 ${R.i+1}/${R.n})`:""), stw=kor.widthOfTextAtSize(st,10.5);
     page.drawText(st,{x:xl+32,y:yy-HH/2-3.8,size:10.5,font:kor,color:col});
     const meta=[p.team&&!VEN?teamName(p.team):"",p.shape?kindLabel(p):"",pgLabel(drawing,p.page)||""].filter(Boolean).join("  ·  ");
     if(meta) page.drawText(meta,{x:xl+32+stw+10,y:yy-HH/2-3.5,size:9.5,font:kor,color:SUB});
@@ -3375,8 +3425,8 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
         page.drawImage(img,{x:bx+pad+(bw-w)/2,y:yy-PH+pad+(bhh-h)/2,width:w,height:h}); }
       else page.drawText(empty,{x:bx+(hw-kor.widthOfTextAtSize(empty,10.5))/2,y:yy-PH/2-8,size:10.5,font:kor,color:SUB});
     };
-    await putPhoto(R.b,xl,"조치 전",SUB,"사진 없음");
-    if(!VEN){ await putPhoto(R.a,xl+hw,"조치 후",GREEN,done?"사진 없음":"미조치");
+    await putPhoto(R.b,xl,CRK?"발생 사진":PAT?"지적 사진":"조치 전",SUB,"사진 없음");
+    if(!VEN){ await putPhoto(R.a,xl+hw,CRK?"보수 후":PAT?"조치 사진":"조치 후",GREEN,done?"사진 없음":CRK?"미보수":"미조치");
       page.drawLine({start:{x:xl+hw,y:yy},end:{x:xl+hw,y:yy-PH},thickness:0.6,color:LINE}); }
     page.drawLine({start:{x:xl,y:yy-PH},end:{x:xr,y:yy-PH},thickness:0.6,color:LINE});
     yy-=PH;
@@ -3384,8 +3434,11 @@ async function buildExport(drawing,pinList,progress,teamsTxt,allPhotos,tmpl){
     const BH=yy-bot, LX=xl, LWID=CW*0.56, RX=xl+LWID;
     page.drawLine({start:{x:RX,y:yy},end:{x:RX,y:bot},thickness:0.6,color:LINE});
     const tw2=LWID-16, l1=VEN?"":`등록 ${fmtDate(p.created)}${p.by?"  "+p.by:""}`, l2=done&&p.doneAt?`완료 ${fmtDate(p.doneAt)}${p.doneBy&&!VEN?"  "+p.doneBy:""}`:"";
-    page.drawText("내용",{x:LX+8,y:yy-14,size:8.5,font:kor,color:SUB});
-    const footH=l1&&l2?30:l1||l2?17:0, maxL=Math.max(1,Math.floor((BH-22-footH)/13.5)); let ls=wrap(p.text||"-",10,tw2);
+    page.drawText(CRK?"균열 내용":PAT?"지적 내용":"내용",{x:LX+8,y:yy-14,size:8.5,font:kor,color:SUB});
+    const fill=CRK?"폭 ______ mm   길이 ______ m   보수 ____________":PAT?"조치 기한 ________   확인 ________":"";   // 손으로 적는 칸
+    const fillH=fill?17:0;
+    if(fill){ page.drawText(fill,{x:LX+8,y:bot+(l1&&l2?30:l1||l2?17:0)+10,size:8.5,font:kor,color:INK}); }
+    const footH=(l1&&l2?30:l1||l2?17:0)+fillH, maxL=Math.max(1,Math.floor((BH-22-footH)/13.5)); let ls=wrap(p.text||"-",10,tw2);
     if(ls.length>maxL){ ls=ls.slice(0,maxL); ls[maxL-1]=ls[maxL-1].slice(0,-1)+"…"; }
     ls.forEach((l,j)=>page.drawText(l,{x:LX+8,y:yy-29-j*13.5,size:10,font:kor,color:INK}));
     if(footH) page.drawLine({start:{x:LX+8,y:bot+footH+4},end:{x:RX-8,y:bot+footH+4},thickness:0.4,color:LINE});
