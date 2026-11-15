@@ -475,7 +475,7 @@ header #backBtn{color:#fff!important;background:none!important}
 .toolbar .dock button:active{background:rgba(255,255,255,.12)!important}
 .toolbar .dock button.on{background:#E31937!important}
 .toolbar .dock button.on i{display:none}
-.toolbar .dock button#addBtn{width:60px;height:60px;justify-self:center;border:0;border-radius:50%;background:#E31937!important;box-shadow:none!important}
+.toolbar .dock button#addBtn{width:60px;height:60px;justify-self:center;border:0;border-radius:50%;background:#E31937!important;box-shadow:0 3px 7px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.22),inset 0 -3px 0 rgba(0,0,0,.16)!important}
 .toolbar .dock button#addBtn svg{width:30px;height:30px}
 @media (orientation:landscape) and (max-height:600px){
   .toolbar .dock{grid-template-columns:84px;grid-template-rows:auto;justify-items:center;gap:6px;padding:6px;border-radius:30px}
@@ -591,12 +591,52 @@ header #backBtn{color:#fff!important;background:none!important}
   #gate .gtop p{margin:0 0 0 4px;font-size:13px;padding-left:12px;border-left:1px solid rgba(255,255,255,.4)}
   #gate .gcard{grid-column:1;grid-row:2;max-height:none;overflow:visible;margin:0;width:100%;max-width:400px;padding:10px 16px}
 }
+/* 3.54 */
+#gate .gcard>.goff{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);width:100%;text-decoration:none;color:var(--sub)}
+#gate .gcard>.goff b{color:#3A3A37;text-decoration:underline}
+#gate .gcard>.goff.hl{color:#E31937}#gate .gcard>.goff.hl b{color:#E31937}
+#gate .glink b{color:#E31937}
+#gate .lbl small{font-weight:500;color:var(--sub)}
+#jTeam{margin:2px 0 4px}
+/* 연결 상태: 글자 대신 동그라미 (초록 = 연결 확인, 노랑 = 연결 중·보내는 중, 빨강 = 연결 안 됨) */
+header .cloud.dot{padding-left:12px;padding-right:12px}
+header .cloud.dot span{display:none}
+header .cloud.dot i{width:13px;height:13px;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+header .cloud[data-state="err"]:not(.dot) i{background:#E31937}
+.sync{display:inline-grid;place-items:center;width:28px;height:28px;flex:none;cursor:pointer}
+.sync i{width:12px;height:12px;border-radius:50%;background:#9CA3AF;box-shadow:0 0 0 2px rgba(255,255,255,.3)}
+.sync[data-state="on"] i{background:#4ADE80}.sync[data-state="wait"] i{background:#FBBF24}.sync[data-state="err"] i{background:#E31937}
+/* 핀 개수 독 */
+.cntdock{position:absolute;left:50%;bottom:calc(100% - 4px);transform:translateX(-50%);background:rgba(58,58,55,.92);color:#E9E8E4;font-size:12.5px;font-weight:600;padding:5px 14px;border-radius:999px;white-space:nowrap;pointer-events:none;box-shadow:0 3px 10px rgba(0,0,0,.2);display:flex;gap:6px;align-items:center}
+.cntdock b{color:#fff;font-weight:800;font-variant-numeric:tabular-nums}
+.cntdock span{color:#8E8E88}
+.cntdock:empty{display:none}
+@media (orientation:landscape) and (max-height:600px){
+  .cntdock{position:static;transform:none;flex-direction:column;gap:0;padding:6px 8px;border-radius:14px;font-size:11.5px;line-height:1.35;text-align:center}
+  .cntdock span{display:none}
+}
+/* 핀 목록: 조치완료도 팀 색깔, 오른쪽 아래에 초록 체크 */
+.li .badge.done{position:relative;overflow:visible}
+.li .badge.done::after{content:"✓";position:absolute;right:-6px;bottom:-6px;width:16px;height:16px;border-radius:50%;background:var(--done);color:#fff;font-size:10px;font-weight:900;line-height:16px;text-align:center;box-shadow:0 0 0 2px #fff}
+/* 가로 시작 화면: 아이콘·문구와 카드를 한 덩어리로 화면 가운데 */
+@media (orientation:landscape) and (max-height:540px){
+  #gate:not([hidden]){grid-template-rows:1fr auto auto 1fr}
+  #gate .gtop{grid-row:2;align-self:end;padding:0 0 12px}
+  #gate .gcard{grid-row:3}
+}
+/* 화면 분류 라벨 (관리자) */
+body.lbOn [data-lb]::after{content:attr(data-lb);position:absolute;top:3px;left:50%;transform:translateX(-50%);z-index:2147483000;background:#6D28D9;color:#fff;font:700 10.5px/1.2 -apple-system,sans-serif;padding:3px 7px;border-radius:7px;pointer-events:none;white-space:nowrap;opacity:.92;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+body.lbOn #gStep1,body.lbOn #gStep2,body.lbOn #gStep3{position:relative}
+body.lbOn #gStep1::after,body.lbOn #gStep2::after,body.lbOn #gStep3::after{top:-14px;left:auto;right:0;transform:none}
+body.lbOn .screen[data-lb]::after{top:auto;bottom:calc(env(safe-area-inset-bottom) + 4px);left:6px;transform:none}
+body.lbOn #cntDock::after{top:auto;bottom:100%;margin-bottom:3px}
+body.lbOn #setDlg::after,body.lbOn #pwDlg::after{top:calc(env(safe-area-inset-top) + 6px)}
 </style>
 </head>
 <body>
 
 <!-- 도면 목록 -->
-<section id="home" class="screen">
+<section id="home" class="screen" data-lb="B1 도면 목록">
   <header><h1><span class="hlogo"><img src="icon-192.png" alt=""></span>핀톡</h1><button class="hbtn mode" id="modeBtn" hidden></button><button class="hbtn cloud" id="cloudBtn"><i></i><span id="cloudTxt">공유</span></button><button class="hbtn ico" id="noteBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg><b class="nbadge" id="noteCnt" hidden></b></button><button class="hbtn ico" id="helpBtn" aria-label="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5"/><circle cx="12" cy="12" r="6.3"/></svg></button></header>
   <div class="asuser" id="asUserBar" hidden><span id="asUserTxt"></span> <button id="asUserOff">관리자로 돌아가기</button></div>
   <div class="htop" id="hTop"><div class="hsearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input id="hq" type="search" placeholder="도면 이름으로 찾기" autocomplete="off" enterkeyhint="search"><button id="hqX" aria-label="지우기" hidden>✕</button></div><div class="hfilter" id="hTabs"></div></div>
@@ -611,7 +651,7 @@ header #backBtn{color:#fff!important;background:none!important}
   <div class="gtop"><div class="gmark"><img src="icon-192.png" alt="핀톡"></div>
     <h1>핀톡</h1><p>이슈·하자·전달사항을 그 자리에 콕</p></div>
   <div class="gcard">
-    <div id="gStep1">
+    <div id="gStep1" data-lb="A1 서버 연결">
       <div class="gstep"><b>1</b> 서버 연결 <span>2 로그인</span></div>
       <label class="lbl" for="gUrl">서버 주소</label>
       <input class="inp" id="gUrl" placeholder="관리자에게 받은 서버 주소" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -621,25 +661,41 @@ header #backBtn{color:#fff!important;background:none!important}
       <button class="gbtn" id="gNext">다음</button>
       <p class="gtip">관리자가 보낸 자동 연결 링크를 열면 서버 주소와 PIN이 저절로 들어가요.</p>
     </div>
-    <div id="gStep2" hidden>
+    <div id="gStep2" hidden data-lb="A2 로그인">
       <div class="gstep"><span>1 서버 연결</span> <b>2</b> 로그인</div>
       <label class="lbl" for="gName">이름</label>
       <input class="inp" id="gName" autocomplete="username" placeholder="예: 김대건">
       <label class="lbl" for="gPw">비밀번호</label>
-      <input class="inp" id="gPw" type="password" autocomplete="current-password" placeholder="4자 이상 · 처음이면 이 비밀번호로 등록">
+      <input class="inp" id="gPw" type="password" autocomplete="current-password" placeholder="4자 이상">
       <label class="sw" style="margin-top:12px"><input type="checkbox" id="gRemember" checked><span></span>비밀번호 기억하기</label>
       <p class="gtip" id="gTip2" hidden style="margin:10px 0 0">자동 연결 링크로 서버가 연결됐어요. 이름과 비밀번호를 넣어 주세요.</p>
       <p class="gmsg" id="gMsg2"></p>
       <button class="gbtn" id="gLogin">로그인</button>
+      <button class="glink" id="gJoin">처음이세요? <b>회원가입</b></button>
       <button class="glink" id="gBack">서버 연결 정보 바꾸기</button>
     </div>
+    <div id="gStep3" data-lb="A3 회원가입" hidden>
+      <div class="gstep"><span>1 서버 연결</span> <b>2</b> 회원가입</div>
+      <label class="lbl" for="jName">이름 <small>· 현장에서 부르는 실명</small></label>
+      <input class="inp" id="jName" autocomplete="username" placeholder="예: 김대건">
+      <label class="lbl" for="jPw">비밀번호</label>
+      <input class="inp" id="jPw" type="password" autocomplete="new-password" placeholder="4자 이상">
+      <label class="lbl" for="jPw2">비밀번호 확인</label>
+      <input class="inp" id="jPw2" type="password" autocomplete="new-password" placeholder="한 번 더">
+      <label class="lbl">내 팀 <small>· 새 핀을 찍을 때 먼저 골라져요</small></label>
+      <div class="vchips" id="jTeam"></div>
+      <p class="gmsg" id="gMsg3"></p>
+      <button class="gbtn" id="jGo">가입하고 시작하기</button>
+      <button class="glink" id="jBack">이미 가입했어요 · <b>로그인</b></button>
+    </div>
+    <button class="glink goff" id="gOff">인터넷 없이 <b>오프라인으로 들어가기</b></button>
   </div>
 </section>
 
-<section id="viewer" class="screen" hidden>
+<section id="viewer" class="screen" data-lb="C1 도면 화면" hidden>
   <header>
     <button class="hbtn" id="backBtn">‹ 목록</button>
-    <h1 id="vTitle" title="눌러서 도면 정보"></h1><span class="sync" id="syncTxt" hidden></span>
+    <h1 id="vTitle" title="눌러서 도면 정보"></h1><span class="sync" id="syncTxt" role="status" hidden><i></i></span>
   </header>
   <div class="pgbar" id="pager" hidden><button id="prevPg" aria-label="이전 쪽">‹</button><button class="pgmid" id="pgMid"><b id="pgTxt"></b><small id="pgNum"></small></button><button id="nextPg" aria-label="다음 쪽">›</button></div>
   <div id="fPanel">
@@ -659,6 +715,7 @@ header #backBtn{color:#fff!important;background:none!important}
     <div class="hint" id="hint" hidden></div>
   </div>
   <div class="toolbar">
+    <div class="cntdock" id="cntDock" data-lb="C1-1 핀 개수" aria-live="polite"></div>
     <div class="dock">
       <button id="listBtn"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg></i><span>목록</span></button>
       <button id="addBtn" aria-label="핀 찍기"></button>
@@ -668,10 +725,10 @@ header #backBtn{color:#fff!important;background:none!important}
 </section>
 
 <div class="sheet-bg" id="sheetBg" hidden></div>
-<div id="tour" hidden><div class="spot"><div class="ring"></div></div><div class="card"><div class="st"></div><div class="tx"></div><div class="bt"></div></div></div>
+<div id="tour" data-lb="E4 따라하기" hidden><div class="spot"><div class="ring"></div></div><div class="card"><div class="st"></div><div class="tx"></div><div class="bt"></div></div></div>
 
 <!-- 핀 메모 -->
-<div class="sheet" id="pinSheet" hidden>
+<div class="sheet" id="pinSheet" data-lb="C2 핀 창" hidden>
   <div class="sh"><span class="badge" id="pBadge"></span><h2 id="pTitle"></h2><button class="pnav" id="pPrev" aria-label="이전 핀">‹</button><button class="pnav" id="pNext" aria-label="다음 핀">›</button><button class="x" data-close>✕</button></div>
   <div class="sb">
     <p id="pLock" hidden style="margin:2px 0 8px;font-size:13px;color:var(--sub)"></p>
@@ -703,7 +760,7 @@ header #backBtn{color:#fff!important;background:none!important}
 </div>
 
 <!-- 핀 목록 -->
-<div class="sheet" id="listSheet" hidden>
+<div class="sheet" id="listSheet" data-lb="C3 핀 목록" hidden>
   <div class="sh"><h2 id="lTitle">핀 목록</h2><button class="x" data-close>✕</button></div>
   <div class="sb">
     <div class="seg" id="lMode" hidden style="margin-bottom:10px"><button data-v="pins" class="a on">핀</button><button data-v="cm" class="a">댓글</button></div>
@@ -715,20 +772,20 @@ header #backBtn{color:#fff!important;background:none!important}
 </div>
 
 <!-- 업체·공종 필터 -->
-<div class="sheet" id="vfSheet" hidden>
+<div class="sheet" id="vfSheet" data-lb="C4 업체·공종 필터" hidden>
   <div class="sh"><h2>업체 · 공종으로 보기</h2><button class="x" data-close>✕</button></div>
   <div class="sb" id="vfBody"></div>
 </div>
 
 <!-- 내보내기 -->
-<div id="pvw" hidden><div class="pvbar"><button id="pvClose">‹ 돌아가기</button><b>미리보기 <span id="pvInfo"></span></b><button id="pvGo">PDF 만들기</button></div><div id="pvPages"></div></div>
-<div class="sheet" id="expSheet" hidden>
+<div id="pvw" data-lb="D2 미리보기" hidden><div class="pvbar"><button id="pvClose">‹ 돌아가기</button><b>미리보기 <span id="pvInfo"></span></b><button id="pvGo">PDF 만들기</button></div><div id="pvPages"></div></div>
+<div class="sheet" id="expSheet" data-lb="D1 내보내기" hidden>
   <div class="sh"><h2>내보내기</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp" id="expBody"></div>
 </div>
 
 <!-- 공유 연결 -->
-<div class="sheet" id="cloudSheet" hidden>
+<div class="sheet" id="cloudSheet" data-lb="B7 공유 연결" hidden>
   <div class="sh"><h2>공유 연결</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp">
     <p>로그인한 사람끼리 협업 도면과 핀을 함께 보고 고칩니다. 핀·메모와 도면 PDF, 사진은 공유 서버에 저장됩니다. 다른 사람이 고친 내용은 몇 초 안에 들어옵니다.</p>
@@ -741,19 +798,19 @@ header #backBtn{color:#fff!important;background:none!important}
 </div>
 
 <!-- 부분 캡처 -->
-<div class="sheet" id="capSheet" hidden>
+<div class="sheet" id="capSheet" data-lb="D3 부분 캡처" hidden>
   <div class="sh"><h2>부분 캡처</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp" id="capBody"></div>
 </div>
 
 <!-- 도면 정보 -->
-<div class="sheet" id="infoSheet" hidden>
+<div class="sheet" id="infoSheet" data-lb="B3 도면 정보" hidden>
   <div class="sh"><h2>도면 정보</h2><button class="x" data-close>✕</button></div>
   <div class="sb" id="infoBody"></div>
 </div>
 
 <!-- 쪽 더하기·빼기 -->
-<div class="sheet" id="pageSheet" hidden>
+<div class="sheet" id="pageSheet" data-lb="B4 쪽 편집" hidden>
   <div class="sh"><h2 id="pgTitle">쪽 편집</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp">
     <p style="font-size:13px;color:var(--sub);margin:0 0 4px">쪽마다 이름(예: 지하 4층)을 붙이면 핀 창과 사진대지의 위치에 나옵니다. 다른 PDF(또는 DWG)의 쪽을 뒤에 더하거나, 쪽을 빼거나 순서를 바꿀 수도 있습니다. 핀이 있는 쪽은 뺄 수 없습니다. 핀은 자기 쪽을 따라 함께 옮겨집니다.</p>
@@ -766,7 +823,7 @@ header #backBtn{color:#fff!important;background:none!important}
 </div>
 
 <!-- 도면 비밀번호 -->
-<div class="sheet" id="lockSheet" hidden>
+<div class="sheet" id="lockSheet" data-lb="B5 도면 비밀번호" hidden>
   <div class="sh"><h2 id="lkTitle">도면 비밀번호</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp">
     <p id="lkDesc" style="margin-top:0"></p>
@@ -778,19 +835,19 @@ header #backBtn{color:#fff!important;background:none!important}
 </div>
 
 <!-- 도면 메뉴 -->
-<div class="sheet" id="actSheet" hidden>
+<div class="sheet" id="actSheet" data-lb="B2 도면 메뉴" hidden>
   <div class="sh"><h2 id="actTitle" style="word-break:break-all"></h2><button class="x" data-close>✕</button></div>
   <div class="sb exp" id="actBody"></div>
 </div>
 
 <!-- 알림 -->
-<div class="sheet" id="noteSheet" hidden>
+<div class="sheet" id="noteSheet" data-lb="B6 알림" hidden>
   <div class="sh"><h2>알림</h2><button class="nclr" id="noteClr" hidden>모두 지우기</button><button class="x" data-close>✕</button></div>
   <div class="sb" id="noteBody"></div>
 </div>
 
 <!-- 사용법 -->
-<div class="sheet" id="helpSheet" hidden>
+<div class="sheet" id="helpSheet" data-lb="E1 설정" hidden>
   <div class="sh"><h2>설정</h2><button class="x" data-close>✕</button></div>
   <div class="sb exp">
     <div class="lbl" style="margin-top:0">어플 사용법</div>
@@ -822,19 +879,21 @@ header #backBtn{color:#fff!important;background:none!important}
       <button class="sec" id="userBtn">사용자 관리</button>
       <button id="tourAllBtn" class="sec">모든 사용자에게 따라하기 알림 보내기</button>
       <button id="demoBtn" class="sec">테스트 도면 만들기 (개인 도면 · 핀 50개)</button>
+      <label class="sw" style="margin-top:12px"><input type="checkbox" id="lbSw"><span></span>화면마다 분류 라벨 보기</label>
+      <button id="lbList" class="sec">화면 분류표 보기</button>
     </div>
   </div>
 </div>
 
 <!-- 설정 팝업 (업체 목록·사용자 관리·저장 공간·현장 이름) -->
-<div id="setDlg" hidden>
+<div id="setDlg" data-lb="E2 설정 팝업" hidden>
   <div class="pwbox" role="dialog" aria-modal="true" aria-labelledby="sdTitle">
     <div class="pwhd"><h2 id="sdTitle"></h2><button class="x" id="sdX" aria-label="닫기">✕</button></div>
     <div id="sdBody"></div>
   </div>
 </div>
 <!-- 비밀번호 변경 팝업 -->
-<div id="pwDlg" hidden>
+<div id="pwDlg" data-lb="E3 비밀번호 변경" hidden>
   <div class="pwbox" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
     <div class="pwhd"><h2 id="pwTitle">비밀번호 변경</h2><button class="x" id="pwX" aria-label="닫기">✕</button></div>
       <div id="pwForm">
@@ -854,7 +913,7 @@ header #backBtn{color:#fff!important;background:none!important}
   </div>
 </div>
 
-<div class="viewer-img" id="imgView" hidden>
+<div class="viewer-img" id="imgView" data-lb="C5 사진 크게 보기" hidden>
   <div class="imgbox" id="imgBox"><img id="imgViewImg" alt="">
     <div class="imgpos" id="imgPos"></div>
     <button class="imgnav l" id="imgPrev" aria-label="이전 사진">‹</button><button class="imgnav r" id="imgNext" aria-label="다음 사진">›</button></div>
@@ -864,7 +923,7 @@ header #backBtn{color:#fff!important;background:none!important}
 
 <script>
 "use strict";
-const APP_VER = "3.53";
+const APP_VER = "3.54";
 const $=s=>document.querySelector(s);
 /* 쪽 이름(예: 지하 4층). 없으면 여러 쪽일 때 'N쪽' */
 const pgName=(d,n)=>((d&&d.pageNames&&d.pageNames[n-1])||"").trim();
@@ -968,8 +1027,20 @@ $("#setTeam").addEventListener("click",e=>{ const b=e.target.closest("[data-mt]"
 $("#setPhoto").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; setPref("photoQ",b.dataset.v); renderPrefs(); });
 $("#setTmpl").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; setPref("expTmpl",b.dataset.v); renderPrefs(); });
 $("#setPh").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; setPref("expAllPhotos",b.dataset.v); renderPrefs(); });
+/* 화면 분류 라벨 (관리자만): 창마다 data-lb를 붙여 두고, 켜면 창 위쪽 가운데에 보인다. 고칠 화면을 라벨로 알려 주면 바로 찾을 수 있다 */
+const LB_ON=()=>isAdmin()&&myPref("showLb","1")==="1";
+function renderLb(){ document.body.classList.toggle("lbOn",LB_ON()); const sw=$("#lbSw"); if(sw) sw.checked=myPref("showLb","1")==="1"; }
+$("#lbSw").addEventListener("change",e=>{ setPref("showLb",e.target.checked?"1":"0"); renderLb(); });
+$("#lbList").addEventListener("click",()=>{
+  const g={A:"시작",B:"도면 목록",C:"도면 화면",D:"내보내기",E:"설정"}, rows=[...document.querySelectorAll("[data-lb]")].map(e=>e.dataset.lb).filter((v,i,a)=>a.indexOf(v)===i)
+    .concat(Object.entries(SD_LB).map(([t,c])=>c+" "+t)).sort((a,b)=>a.localeCompare(b,"ko",{numeric:true}));
+  let cur="", h="<p class='sdnote'>고치고 싶은 화면이 있으면 라벨(예: C2 핀 창)로 알려 주세요.</p>";
+  rows.forEach(r=>{ const k=r[0]; if(k!==cur){ cur=k; h+=`<div class="lbl">${k} · ${g[k]||""}</div>`; } h+=`<div class="setrow"><span>${esc(r.slice(r.indexOf(" ")+1))}</span><b>${esc(r.split(" ")[0])}</b></div>`; });
+  sdOpen("화면 분류표",h);
+});
 /* 설정 팝업 */
-function sdOpen(title,html){ $("#sdTitle").textContent=title; $("#sdBody").innerHTML=html; $("#setDlg").hidden=false; }
+const SD_LB={"저장 공간":"E2-1","현장 이름":"E2-2","현장 업체 목록":"E2-3","사용자 관리":"E2-4","화면 분류표":"E2-5"};
+function sdOpen(title,html){ $("#setDlg").dataset.lb=(SD_LB[title]||"E2")+" "+title; $("#sdTitle").textContent=title; $("#sdBody").innerHTML=html; $("#setDlg").hidden=false; }
 function sdClose(){ $("#setDlg").hidden=true; $("#sdBody").innerHTML=""; }
 $("#sdX").addEventListener("click",sdClose);
 $("#setDlg").addEventListener("click",e=>{ if(e.target.id==="setDlg") sdClose(); });
@@ -1429,6 +1500,7 @@ const isAdmin=()=>!!cloud.admin&&!asUser;
 const myName=()=>cloud.name&&cloud.admin&&asUser?cloud.name+"(테스트)":cloud.name;   // 관리자 일반 사용자 모드 = 임시 테스트 계정
 function setAsUser(on){ asUser=!!on; try{ localStorage.setItem("pinsAsUser",asUser?"1":"0"); }catch(e){} renderMode(); renderHome(); }
 function renderMode(){
+  renderLb();
   const b=$("#modeBtn"); b.hidden=!(cloudOn()&&cloud.admin); b.textContent=asUser?"사용자 모드":"관리자"; b.classList.toggle("admin",!asUser);
   $("#asUserBar").hidden=!(cloudOn()&&cloud.admin&&asUser);
   $("#asUserTxt").textContent=`임시 테스트 계정 「${myName()}」(으)로 쓰는 중이에요. 여기서 찍은 핀·조치완료·알림은 이 계정 이름으로 남아요.`;
@@ -1539,9 +1611,11 @@ function canEdit(p){
 function bufToB64(buf){const a=new Uint8Array(buf);let s="";for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode.apply(null,a.subarray(i,i+32768));return btoa(s);}
 function b64ToBuf(b){const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a.buffer;}
 function setSync(state,txt){
-  const b=$("#cloudBtn"); b.dataset.state=cloudOn()?state:""; $("#cloudTxt").textContent=cloudOn()?txt:cloudSet()?"로그인":"공유";
-  const v=$("#syncTxt"); v.hidden=!cloudOn(); v.dataset.state=state; v.textContent=txt;
+  const on=cloudOn(), b=$("#cloudBtn"); b.dataset.state=on?state:offMode?"err":""; b.classList.toggle("dot",on); b.title=on?txt:"";
+  $("#cloudTxt").textContent=on?txt:offMode?"오프라인":cloudSet()?"로그인":"공유";
+  const v=$("#syncTxt"); v.hidden=!on; v.dataset.state=state; v.title=txt; v.setAttribute("aria-label",txt);
 }
+$("#syncTxt").addEventListener("click",()=>{ const t=$("#syncTxt").title; if(t) toast(t,2500); });
 /* 핀을 고치면 휴대폰에 먼저 저장하고, 공유 중이면 곧 공유 서버로 보낸다 */
 async function savePin(p){
   p.updated=Date.now(); if(canEdit(p)) p.editor=myName()||p.editor||"";
@@ -1561,7 +1635,7 @@ let homeSyncing=false;
 async function syncDrawings(){
   if(!cloudOn()||homeSyncing) return; homeSyncing=true;
   try{
-    setSync("wait","서버 확인 중…");
+    setSync("wait","연결 중…");
     const j=await api({action:"drawings"}), locals=await dbAll("drawings");
     setNotes(j.notes);
     if(j.settings) applySettings(j.settings);
@@ -1580,7 +1654,7 @@ async function syncDrawings(){
     for(const l of locals) if(!l.cloud&&!l.sample&&!l.private&&!j.drawings.some(r=>r.id===l.id)){ await uploadDrawing(l); }
     for(const l of await dbAll("drawings")) if(l.cloud){ try{ await pushDirty(l.id); }catch(e){ if(!e.locked) throw e; } }   // 비밀번호를 모르는 잠긴 도면은 건너뜀
     await renderHome();
-    setSync("on","공유 중");
+    setSync("on","연결 확인");
   }catch(err){ setSync("err",navigator.onLine===false?"오프라인":"서버 연결 실패"); }
   finally{ homeSyncing=false; }
 }
@@ -1637,7 +1711,7 @@ async function syncPins(){
     }
     if(changed){ renderTeamBar(); drawPins(); if(!$("#listSheet").hidden) renderList(); }
     const left=(await pinsOf(d.id)).filter(p=>p.dirty).length;
-    setSync(left?"wait":"on", left?`보낼 것 ${left}`:"공유 중");
+    setSync(left?"wait":"on", left?`보낼 것 ${left}`:"연결 확인");
   }catch(err){
     console.error(err);
     if(err.locked&&V.drawing===d){ toast("도면 비밀번호가 바뀌었습니다. 다시 열어 주세요",4000); syncing=false; $("#backBtn").click(); return; }
@@ -1692,10 +1766,7 @@ async function loginAs(nw,msg){
   let j;
   try{
     j=await api({action:"login"});
-    if(j.newUser){
-      if(!confirm(`'${nw.name}' 이름은 처음입니다. 지금 넣은 비밀번호로 새로 등록할까요?\n(이미 쓰던 이름이면 '취소'를 누르고 이름을 확인해 주세요)`)){ cloud=old; msg("등록하지 않았습니다. 이름을 확인해 주세요."); return false; }
-      j=await api({action:"login",register:true});
-    }
+    if(j.newUser){ cloud=old; msg(`'${nw.name}'(은)는 가입되지 않은 이름이에요. 이름을 확인하거나 아래 '회원가입'을 눌러 주세요.`); return false; }
   }catch(err){
     cloud=old;
     msg(/PIN이/.test(err.message)?"팀 PIN이 맞지 않습니다. 관리자에게 받은 PIN을 넣어 주세요."
@@ -1968,7 +2039,7 @@ function renderTeamBar(){
 /* 팀 아래 업체 줄·공종 줄: 지금 보는 팀의 핀에 있는 업체·공종만 버튼으로 (여러 개 선택) */
 const teamPins=()=>V.pins.filter(p=>p.id!=="temp"&&!p.deleted&&teamFilter.has(p.team||""));
 function scopedVals(kind){
-  const pins=teamPins(), f=kind==="v"?vendorOf:workOf, vals=[...new Set(pins.map(f))].sort((a,b)=>(a===""?1:b===""?-1:a.localeCompare(b,"ko")));
+  const pins=teamPins().filter(p=>kind==="v"||!VF.v||VF.v.has(vendorOf(p))), f=kind==="v"?vendorOf:workOf, vals=[...new Set(pins.map(f))].sort((a,b)=>(a===""?1:b===""?-1:a.localeCompare(b,"ko")));
   if(VF[kind]){ [...VF[kind]].forEach(x=>{ if(!vals.includes(x)) VF[kind].delete(x); }); if(!VF[kind].size) VF[kind]=null; }   // 숨긴 팀에만 있던 선택은 푼다
   return [vals,pins,f];
 }
@@ -1982,14 +2053,15 @@ function renderWorkBar(){
 }
 ["#vendBar","#workBar"].forEach(id=>$(id).addEventListener("click",e=>{ const b=e.target.closest("[data-fk]"); if(!b) return;
   const k=b.dataset.fk; vfToggle(k,b.dataset.fv,scopedVals(k)[0]); renderTeamBar(); drawPins(); if(!$("#listSheet").hidden) renderList(); }));
-/* 팀·업체·공종 줄 펼치기/접기: 손잡이를 아래로 밀면 펼침, 위로 밀면 접힘 (누르면 바뀜) */
+/* 팀·업체·공종 줄 펼치기/접기: 손잡이를 아래로 밀면 펼침, 위로 밀면 접힘, 손잡이를 누르면 바뀜 */
 const fOpen=()=>myPref("filterOpen","1")==="1";
 function setFOpen(o){ setPref("filterOpen",o?"1":"0"); $("#fPanel").classList.toggle("closed",!o); $("#fHandle").classList.toggle("closed",!o); if(V.page) setTimeout(()=>{ apply(); scheduleDetail(); },240); }
-(()=>{ let y0=null, x0=0, y1=0, x1=0;   // 밀기만 (누르기로는 안 바뀜)
-  const st=e=>{ y0=y1=e.clientY; x0=x1=e.clientX; };
+(()=>{ let y0=null, x0=0, y1=0, x1=0, tab=false;   // 밀기와 손잡이 누르기 둘 다
+  const st=e=>{ y0=y1=e.clientY; x0=x1=e.clientX; tab=!!e.target.closest("#fTab"); };
   const mv=e=>{ if(y0===null) return; y1=e.clientY; x1=e.clientX; if(y1-y0>20&&!fOpen()){ y0=null; setFOpen(true); } else if(y0-y1>20&&fOpen()&&Math.abs(y1-y0)>Math.abs(x1-x0)){ y0=null; setFOpen(false); } };
   const en=()=>{ if(y0===null) return; const dy=y1-y0, dx=x1-x0; y0=null;
-    if(Math.abs(dy)>20&&Math.abs(dy)>Math.abs(dx)){ if(dy>0&&!fOpen()) setFOpen(true); else if(dy<0&&fOpen()) setFOpen(false); } };
+    if(Math.abs(dy)>20&&Math.abs(dy)>Math.abs(dx)){ if(dy>0&&!fOpen()) setFOpen(true); else if(dy<0&&fOpen()) setFOpen(false); }
+    else if(tab&&Math.abs(dy)<10&&Math.abs(dx)<10) setFOpen(!fOpen()); };
   ["#fTab","#fPanel"].forEach(id=>$(id).addEventListener("pointerdown",st));
   window.addEventListener("pointermove",mv,true); window.addEventListener("pointerup",en,true);   // 손가락이 탭 밖으로 나가도 처리 (움직이는 중에 바로 펼침·접힘)
 })();
@@ -2067,8 +2139,12 @@ function inShape(sh,[x,y],tol){
     if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi) c=!c; }
   return c;
 }
+function renderCnt(){
+  const all=V.pins.filter(p=>p.id!=="temp"&&!p.deleted&&passFilter(p)), pg=all.filter(p=>p.page===V.pageNo).length, multi=(V.drawing&&V.drawing.pages||1)>1;
+  $("#cntDock").innerHTML=multi?`보기 핀 <b>${all.length}</b><span>·</span>이 쪽 <b>${pg}</b>`:`보기 핀 <b>${all.length}</b>`;
+}
 function drawPins(){
-  drawShapes();
+  drawShapes(); renderCnt();
   const list=visPins().filter(p=>p.page===V.pageNo).sort(pinCmp);
   pinLayer.innerHTML=list.map(p=>{
     const x=V.tx+p.nx*V.pw*V.k, y=V.ty+p.ny*V.ph*V.k;
@@ -2376,6 +2452,7 @@ function updateModeUI(){
     mb.innerHTML=`<button data-act="cancelmove" class="cancel">취소</button>`; mb.hidden=false;
   }
   else h.hidden=true;
+  $("#cntDock").hidden=!h.hidden;
 }
 $("#modeBar").addEventListener("pointerdown",e=>e.stopPropagation());
 $("#modeBar").addEventListener("click",e=>{
@@ -2728,7 +2805,7 @@ function renderCmList(){
   const all=(V.cm||[]).filter(c=>V.pins.some(p=>p.id===c.pinId&&!p.deleted)).sort((a,b)=>b.created-a.created);
   $("#lTitle").textContent=`댓글 목록 (${all.length})`;
   $("#lItems").innerHTML=all.length?all.map(c=>{ const p=V.pins.find(q=>q.id===c.pinId);
-    return `<div class="li" data-id="${p.id}"><span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${pinLabel(p)}</span>
+    return `<div class="li" data-id="${p.id}"><span class="badge${p.status==="done"?" done":""}" style="background:${teamColor(p.team)}">${pinLabel(p)}</span>
     <div class="t"><div class="t1">${esc(c.by)} <span style="color:var(--sub);font-weight:500;font-size:13px">${fmtDate(c.created)}${c.edited?" · 수정됨":""}</span></div><div class="t2" style="white-space:normal">💬 ${esc(c.text)}</div>
     <div class="t3">${esc(vendorOf(p)||"미분류")} · ${esc(p.text||"(내용 없음)")}</div></div></div>`; }).join("")
     :`<div class="empty" style="padding:30px">아직 댓글이 없어요</div>`;
@@ -2747,7 +2824,7 @@ function renderList(){
   $("#lPages").innerHTML=V.drawing.pages>1&&pc.length?`<b>쪽별</b> `+pc.map(([n,nm,c,oc])=>`<span${n===V.pageNo?' class="cur"':""}>${esc(nm)} <em>${c}</em>${oc&&oc!==c?`<small>(미조치 ${oc})</small>`:""}</span>`).join(""):"";
   const list=all.filter(passFilter).filter(p=>lFilter==="all"||(lFilter==="done")===(p.status==="done"));
   $("#lItems").innerHTML=list.length?list.map(p=>`<div class="li" data-id="${p.id}">
-    <span class="badge${p.status==="done"?" done":""}" style="${p.status==="done"?"":`background:${teamColor(p.team)}`}">${pinLabel(p)}</span>
+    <span class="badge${p.status==="done"?" done":""}" style="background:${teamColor(p.team)}">${pinLabel(p)}</span>
     <div class="t"><div class="t1">${esc(vendorOf(p)||"미분류")}${workOf(p)?` <span style="color:var(--sub);font-weight:500">· ${esc(workOf(p))}</span>`:""}</div><div class="t2">${esc(p.text||"(내용 없음)")}</div>
     <div class="t3"><b style="color:${teamColor(p.team)}">${teamName(p.team)}</b> · ${pgLabel(V.drawing,p.page)?esc(pgLabel(V.drawing,p.page))+" · ":""}${p.shape?kindLabel(p)+" · ":""}${fmtDate(p.created)}${p.by?" · "+esc(p.by):""}${p.photos.length?" · 사진 "+p.photos.length:""}${cmOf(p.id).length?` · <span class="cmc">💬 ${cmOf(p.id).length}</span>`:""}</div></div></div>`).join("")
     :`<div class="empty" style="padding:30px">핀이 없습니다</div>`;
@@ -3254,7 +3331,7 @@ const TOUR=[
   {t:()=>$('#actSheet [data-v="pdf"]'),x:"<b>부분 캡처</b>는 도면 일부를 그림으로, <b>PDF 만들기</b>는 핀 표시 도면과 사진대지를 한 파일로 만들어요. <b>PDF 만들기</b>를 눌러 보세요.",go:()=>sheetOpen("#expSheet")},
   {t:"#expSheet",x:"보낼 <b>팀</b>을 고르고 <b>미리보기</b>로 먼저 확인할 수 있어요. 만들면, 핀 표시 도면 + <b>사진대지</b>(한 쪽에 핀 2개: 조치 전·후 사진, 내용, 위치도) PDF를 카톡 등으로 바로 보낼 수 있어요.",next:1,post:()=>closeSheets()},
   {t:"#backBtn",x:"<b>‹ 목록</b>을 눌러 도면 목록으로 돌아가세요.",go:()=>!$("#home").hidden},
-  {t:"#cloudBtn",x:"이 버튼은 <b>공유</b> 연결 상태예요. 로그인하면 <b>공유 중</b>으로 바뀌고, 협업 도면을 여러 사람이 함께 봐요. 눌러서 로그아웃할 수도 있어요.",next:1,post:()=>closeSheets()},
+  {t:"#cloudBtn",x:"이 버튼은 <b>연결</b> 상태예요. 로그인하면 <b>초록 동그라미</b>(연결 확인)로 바뀌고, 협업 도면을 여러 사람이 함께 봐요. 눌러서 로그아웃할 수도 있어요.",next:1,post:()=>closeSheets()},
   {t:"#importBtn",x:"이제 실제 도면을 쓰려면 <b>도면 불러오기</b>로 카톡·파일 앱에 받은 PDF나 DWG를 고르면 돼요.",next:1,pre:()=>closeSheets()},
   {t:"#hTabs",x:"<b>협업 도면</b>은 공유 서버에 올라가서 함께 쓰는 사람 모두가 같은 도면·핀·사진·댓글을 봐요. (로그인 필요)<br><b>개인 도면</b>은 내 휴대폰에만 저장돼서 나만 보고, 인터넷이 없어도 써요. 도면 <b>⋯</b> 메뉴에서 서로 바꿀 수 있어요.",next:1,pre:()=>{ closeSheets(); tourHome(); renderHome(); }},
   {t:()=>$('[data-more="sample"]'),x:"도면 오른쪽 <b>⋯</b>를 누르면 <b>도면 설정</b>이 나와요. 눌러 보세요.",go:()=>sheetOpen("#actSheet"),pre:()=>closeSheets()},
@@ -3369,14 +3446,17 @@ function tourBlocks(e){
 
 /* ---------- 시작 화면: ① 서버 연결(URL·PIN) → ② 로그인(이름·비밀번호) → 도면 목록 ---------- */
 let tourAfterLogin=false;
+let offMode=false;   // 오프라인으로 들어감(로그인 없이 이 휴대폰의 개인 도면만)
 function showGate(step,msg){
-  $("#gate").hidden=false; $("#gStep1").hidden=step!==1; $("#gStep2").hidden=step!==2;
+  $("#gate").hidden=false; $("#gStep1").hidden=step!==1; $("#gStep2").hidden=step!==2; $("#gStep3").hidden=step!==3;
+  $("#gOff").classList.toggle("hl",navigator.onLine===false);
+  if(step===3){ ["#jName","#jPw","#jPw2"].forEach(x=>$(x).value=""); $("#jName").value=$("#gName").value||""; $("#gMsg3").textContent=msg||""; renderJTeam(); }
   $("#gUrl").value=cloud.url||""; $("#gPin").value=cloud.pin||""; $("#gName").value=cloud.name||""; $("#gPw").value="";
   $("#gRemember").checked=true; $("#gMsg1").textContent=step===1?(msg||""):""; $("#gMsg2").textContent=step===2?(msg||""):"";
   if(step!==2) $("#gTip2").hidden=true;
 }
 function enterApp(){
-  $("#gate").hidden=true; renderMode(); renderHome(); renderNoteBadge(); syncDrawings();
+  offMode=false; $("#gate").hidden=true; renderMode(); renderHome(); renderNoteBadge(); syncDrawings();
   if(tourAfterLogin){ tourAfterLogin=false; setTimeout(startTour,300); }
 }
 $("#gNext").addEventListener("click",async()=>{
@@ -3390,17 +3470,43 @@ $("#gNext").addEventListener("click",async()=>{
     if(!j.ok&&/PIN이/.test(j.error||"")){ msg("팀 PIN이 맞지 않습니다. 관리자에게 받은 PIN을 넣어 주세요."); return; }
     if(cloud.url!==url||cloud.pin!==pin){ cloud.url=url; cloud.pin=pin; cloud.pw=""; cloud.admin=false; saveCloud(); }
     showGate(2); setTimeout(()=>$("#gName").focus(),50);
-  }catch(err){ msg("서버에 연결하지 못했습니다. 인터넷과 서버 주소를 확인해 주세요."); }
+  }catch(err){ msg("서버에 연결하지 못했습니다. 인터넷과 서버 주소를 확인해 주세요. 인터넷이 안 되면 아래 '오프라인으로 들어가기'를 눌러 주세요."); $("#gOff").classList.add("hl"); }
   finally{ b.disabled=false; }
 });
 $("#gLogin").addEventListener("click",async()=>{
+  if(navigator.onLine===false){ $("#gMsg2").textContent="인터넷이 연결되어 있지 않아요. 아래 '오프라인으로 들어가기'를 눌러 주세요."; $("#gOff").classList.add("hl"); return; }
   const b=$("#gLogin"); b.disabled=true;
   const nw={url:cloud.url,pin:cloud.pin,name:$("#gName").value.trim(),pw:$("#gPw").value,remember:$("#gRemember").checked};
-  try{ if(await loginAs(nw,t=>$("#gMsg2").textContent=t)) enterApp(); } finally{ b.disabled=false; }
+  try{ if(await loginAs(nw,t=>{ $("#gMsg2").textContent=t; if(/연결하지 못했/.test(t)) $("#gOff").classList.add("hl"); })) enterApp(); } finally{ b.disabled=false; }
 });
 $("#gPw").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#gLogin").click(); });
 $("#gPin").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#gNext").click(); });
 $("#gBack").addEventListener("click",()=>showGate(1));
+/* 회원가입: 이름·비밀번호 두 번·내 팀 → 서버에 새 사용자로 등록하고 바로 들어간다 */
+let jTeam="";
+function renderJTeam(){ jTeam=jTeam||myPref("myTeam",""); $("#jTeam").innerHTML=TEAMS.map(([v,n,c])=>`<button class="vchip${jTeam===v?" on":""}" data-jt="${v}" style="${jTeam===v?`background:${c}`:""}">${n}</button>`).join(""); }
+$("#jTeam").addEventListener("click",e=>{ const b=e.target.closest("[data-jt]"); if(!b) return; jTeam=jTeam===b.dataset.jt?"":b.dataset.jt; renderJTeam(); });
+$("#gJoin").addEventListener("click",()=>showGate(3));
+$("#jBack").addEventListener("click",()=>{ $("#gName").value=$("#jName").value.trim(); showGate(2); $("#gName").value=$("#jName").value.trim()||cloud.name||""; });
+$("#jGo").addEventListener("click",async()=>{
+  const msg=t=>$("#gMsg3").textContent=t, name=$("#jName").value.trim(), pw=$("#jPw").value, pw2=$("#jPw2").value;
+  if(!name) return msg("이름을 넣어 주세요.");
+  if(pw.length<4) return msg("비밀번호를 4자 이상으로 넣어 주세요.");
+  if(pw!==pw2) return msg("비밀번호 확인이 다릅니다. 같은 비밀번호를 두 번 넣어 주세요.");
+  const b=$("#jGo"); b.disabled=true; const old={...cloud};
+  try{
+    cloud={url:old.url,pin:old.pin,name,pw,remember:true,admin:false}; msg("가입하는 중…");
+    let j;
+    try{ j=await api({action:"login"}); }
+    catch(err){ cloud=old; msg(/비밀번호가 맞지/.test(err.message)?"이미 가입된 이름이에요. 다른 이름을 쓰거나 로그인해 주세요.":/PIN이/.test(err.message)?"팀 PIN이 맞지 않습니다. 서버 연결 정보를 확인해 주세요.":"연결하지 못했습니다. 인터넷을 확인해 주세요."); return; }
+    if(j.newUser) j=await api({action:"login",register:true});
+    cloud.admin=!!(j.me&&j.me.admin); saveCloud(); if(jTeam) setPref("myTeam",jTeam);
+    toast(j.created?`${name}님, 가입했어요`:"이미 가입된 이름이라 로그인했어요",3000); enterApp();
+  }catch(err){ cloud=old; msg("가입하지 못했습니다: "+err.message); }
+  finally{ b.disabled=false; }
+});
+/* 오프라인으로 들어가기: 로그인 없이 이 휴대폰에 저장된 개인 도면과 핀을 쓴다. 인터넷이 되면 위 연결 버튼으로 로그인 */
+$("#gOff").addEventListener("click",()=>{ offMode=true; $("#gate").hidden=true; setSync("",""); renderMode(); renderHome(); toast("오프라인으로 들어왔어요. 이 휴대폰의 개인 도면을 쓸 수 있어요",3500); });
 $("#modeBtn").addEventListener("click",()=>{ setAsUser(!asUser); toast(asUser?`일반 사용자 모드: 테스트 계정 「${myName()}」(으)로 바꿨어요`:"관리자 모드로 돌아왔어요",3000); syncDrawings(); });
 $("#asUserOff").addEventListener("click",()=>{ setAsUser(false); toast("관리자 모드로 돌아왔어요"); syncDrawings(); });
 
