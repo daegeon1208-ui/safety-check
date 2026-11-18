@@ -45,6 +45,7 @@ function doPost(e) {
     if (String(req.pin) !== String(PIN)) return out_({ ok: false, error: 'PIN이 맞지 않습니다' });
     if (req.action === 'drawingFile') { const me = auth_(req); gate_(req.id, me, req); return out_({ ok: true, data: drawingFile_(req.id) }); }   // 읽기만 하는 큰 요청은 잠금 없이
     if (req.action === 'photo') { auth_(req); return out_({ ok: true, data: photo_(req.id) }); }
+    if (req.action === 'savePhotos') { const me = auth_(req); gate_(req.drawingId, me, req); return out_({ ok: true, ids: savePhotos_(req, me) }); }   // 사진 저장은 잠금 밖에서 (여러 핀을 동시에 올릴 수 있게, 3.79)
     const lock = LockService.getScriptLock(); lock.waitLock(25000);
     try {
       if (req.action === 'login') return out_(Object.assign({ ok: true }, login_(req)));
@@ -564,6 +565,20 @@ function respond_(noteId, accept, me) {
     }
   }
   return { id: n.id, state: n.state };
+}
+// 핀 사진을 드라이브에 먼저 저장하고 {k: 파일 id}를 돌려준다. 폴더 찾기·만들기만 잠깐 잠그고, 파일 저장은 잠금 없이
+function savePhotos_(req, me) {
+  const photos = req.photos || {}, keys = Object.keys(photos); if (!keys.length) return {};
+  let folder;
+  const lock = LockService.getScriptLock(); lock.waitLock(25000);
+  try { const dname = (rows_('도면').list.find(o => o.id === req.drawingId) || {}).name || req.drawingId; folder = folder_(['사진', dname]); }
+  finally { lock.releaseLock(); }
+  const prefix = String(req.prefix || '핀').slice(0, 60), ids = {};
+  keys.forEach((k, i) => {
+    const blob = Utilities.newBlob(Utilities.base64Decode(photos[k]), 'image/jpeg', prefix + ' ' + (i + 1) + '.jpg');
+    ids[k] = folder.createFile(blob).getId();
+  });
+  return ids;
 }
 function photo_(id) { return Utilities.base64Encode(DriveApp.getFileById(id).getBlob().getBytes()); }
 
