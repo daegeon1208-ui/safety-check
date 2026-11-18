@@ -355,8 +355,8 @@ function pinOut_(o) {
 }
 function pins_(drawingId) { return rows_('핀').list.filter(o => o.drawingId === drawingId).map(pinOut_); }
 function pinRow_(p) {
-  const ph = x => { const o = { k: x.k, id: x.id, w: x.w, h: x.h }; if (x.rep) o.rep = true; if (x.at) o.at = x.at; return o; };   // at: 사진 날짜
-  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '', team: p.team || '', vendor: p.vendor || '', work: p.work || '',
+  const ph = x => { const o = { k: x.k, id: x.id, w: x.w, h: x.h }; if (x.rep) o.rep = true; if (x.at) o.at = x.at; if (x.lines) o.lines = x.lines; return o; };   // at: 사진 날짜, lines: 사진 위 균열선
+  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '', team: p.team || '', vendor: p.vendor || '', work: p.work || '', crack: p.crack || null,
     photos: (p.photos || []).map(ph), donePhotos: (p.donePhotos || []).map(ph) };
   return Object.assign({}, p, { deleted: p.deleted ? 'true' : 'false', doneAt: p.doneAt || '', 'data(JSON)': JSON.stringify(extra) });
 }
@@ -367,7 +367,7 @@ function syncPhotos_(list, before, photos, folderParts, prefix) {
       const blob = Utilities.newBlob(Utilities.base64Decode(photos[x.k]), 'image/jpeg', prefix + ' ' + (i + 1) + '.jpg');
       x.id = folder_(folderParts).createFile(blob).getId();
     }
-    const o = { k: x.k, id: x.id, w: x.w, h: x.h }; if (x.rep) o.rep = true;
+    const o = { k: x.k, id: x.id, w: x.w, h: x.h }; if (x.rep) o.rep = true; if (x.at) o.at = x.at; if (x.lines) o.lines = x.lines;
     return o;
   }).filter(x => x.id);
   const keep = out.map(x => x.id);
