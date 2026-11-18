@@ -380,7 +380,7 @@ function savePin_(p, photos, me) {
   const now = Date.now(), old = ex ? pinOut_(ex) : null;
   // 상태: 조치완료로 바뀌면 누른 사람과 시각을 서버에서 적는다
   let becameDone = false;
-  const tellOwner = q => { if (becameDone && old && old.by && old.by !== me.name) addNote_({ to: old.by, type: 'done', from: me.name, drawingId: q.drawingId, pinId: q.id, text: label_(q) }); };
+  const tellOwner = q => { if (becameDone && old && old.by && old.by !== me.name) addNote_({ to: old.by, type: 'done', from: me.name, drawingId: q.drawingId, pinId: q.id, text: label_(q, list) }); };
   const setDone = (q, status) => {
     const was = old ? old.status : 'open';
     q.status = status === 'done' ? 'done' : 'open';
@@ -404,13 +404,9 @@ function savePin_(p, photos, me) {
   p.by = old ? (old.by || me.name) : me.name;   // 만든 사람은 바뀌지 않는다
   p.editor = me.name;
   setDone(p, p.status);
-  // 번호: 팀마다 따로 매긴다(공1, 안1 …). 새 핀이나 팀을 바꾼 핀이 그 팀에서 이미 쓰인 번호를 달고 오면
-  // (동시에 찍은 경우) 그 팀에서 비어 있는 가장 앞 번호로 바꾼다 (지워진 핀 번호는 다시 쓴다)
-  const teamOf = o => String(pinOut_(o).team || '');
-  const others = list.filter(o => o.drawingId === p.drawingId && o.id !== p.id && String(o.deleted) !== 'true' && teamOf(o) === String(p.team || ''));
-  const sameTeam = ex && String(old.team || '') === String(p.team || '');
-  if (sameTeam) p.no = +ex.no;
-  else if (others.some(o => +o.no === +p.no) || !(+p.no > 0)) { const used = {}; others.forEach(o => { used[+o.no] = 1; }); let n = 1; while (used[n]) n++; p.no = n; }
+  // 번호: 팀마다 따로, 찍은 날짜(created) 순서로 매긴다 (공1, 안1 …, 핀톡 3.76~). 앱도 같은 규칙으로 번호를 보여 준다
+  if (!(+p.created > 0)) p.created = old && old.created ? old.created : now;
+  p.no = rankNo_(p, list);
   // 사진(조치 전)과 조치완료 사진
   p.photos = syncPhotos_(p.photos, old ? old.photos : [], photos, ['사진', dname], label_(p) + ' 핀');
   p.donePhotos = syncPhotos_(p.donePhotos, old ? old.donePhotos : [], photos, ['사진', dname], label_(p) + ' 핀 조치완료');
@@ -419,7 +415,13 @@ function savePin_(p, photos, me) {
   tellOwner(p);
   return pinOut_(pinRow_(p));
 }
-function label_(p) { return String(p.team || '').charAt(0) + p.no; }   // 핀 이름: 팀 글자 + 번호 (공1)
+function label_(p, list) { return String(p.team || '').charAt(0) + (list ? rankNo_(p, list) : p.no); }
+// 같은 도면·같은 팀에서 찍은 날짜 순서 (같으면 id 순), 지운 핀은 빼고 센다
+function rankNo_(p, list) {
+  const team = String(p.team || ''), t = +p.created || 0;
+  return 1 + list.filter(o => o.drawingId === p.drawingId && o.id !== p.id && String(o.deleted) !== 'true').map(pinOut_)
+    .filter(o => String(o.team || '') === team && ((+o.created || 0) < t || ((+o.created || 0) === t && String(o.id) < String(p.id)))).length;
+}   // 핀 이름: 팀 글자 + 번호 (공1)
 function deletePin_(id, me) {
   const { sh, list } = rows_('핀');
   const o = list.find(x => x.id === id); if (!o) return null;
@@ -476,10 +478,10 @@ function addComment_(drawingId, pinId, text, me) {
   const { sh } = rows_('댓글');
   writeRow_(sh, C_COLS, 0, { id: Utilities.getUuid(), drawingId: drawingId, pinId: pinId, by: me.name, text: text, created: Date.now(), deleted: 'false' });
   // 핀을 만든 사람과 앞서 댓글을 단 사람에게 알림
-  const pr = rows_('핀').list.find(x => x.id === pinId), pin = pr ? pinOut_(pr) : null, all = comments_(drawingId).filter(c => c.pinId === pinId);
+  const pl = rows_('핀').list, pr = pl.find(x => x.id === pinId), pin = pr ? pinOut_(pr) : null, all = comments_(drawingId).filter(c => c.pinId === pinId);
   const to = {}; if (pin && pin.by) to[pin.by] = 1; all.forEach(c => { to[c.by] = 1; }); delete to[me.name];
   const short = text.length > 60 ? text.slice(0, 60) + '…' : text;
-  Object.keys(to).forEach(name => addNote_({ to: name, type: 'comment', from: me.name, drawingId: drawingId, pinId: pinId, text: (pin ? label_(pin) : '') + '\n' + short }));
+  Object.keys(to).forEach(name => addNote_({ to: name, type: 'comment', from: me.name, drawingId: drawingId, pinId: pinId, text: (pin ? label_(pin, pl) : '') + '\n' + short }));
   return all;
 }
 function delComment_(id, me, req) {
