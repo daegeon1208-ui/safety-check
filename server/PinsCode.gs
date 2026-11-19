@@ -64,6 +64,8 @@ function doPost(e) {
         case 'notes': return out_({ ok: true, notes: notes_(me) });
         case 'changePw': changePw_(me, req.newPw); return out_({ ok: true });
         case 'readNotes': readNotes_(me); return out_({ ok: true });
+        case 'pushToken': return out_({ ok: true, n: pushToken_(req.token, !!req.on, req.ua, me) });
+        case 'pushTest': return out_({ ok: true, sent: pushTo_(me.name, { type: 'test', from: '핀톡', text: '휴대폰 알림이 잘 옵니다.' }) });
         case 'tourAll': return out_({ ok: true, sent: tourAll_(me) });
         case 'callPin': gate_(req.drawingId, me, req); return out_({ ok: true, sent: callPin_(req, me) });
         case 'feedback': return out_({ ok: true, list: addFeedback_(req.kind, req.text, me) });
@@ -170,15 +172,29 @@ const DEF_SETTINGS = { site: '온천제2공영아파트일원 가로주택정비
   vendors: [['세모건설', '토목'], ['동우건설', '골조'], ['수우전기', '전기'], ['정진설비', '설비'], ['HK안전시스템', '안전시설물'], ['청오건설', '방수']] };
 function settings_() {
   let o = null; try { o = JSON.parse(PropertiesService.getScriptProperties().getProperty('PINS_SETTINGS') || 'null'); } catch (e) {}
-  return Object.assign({}, DEF_SETTINGS, o || {});
+  o = Object.assign({}, DEF_SETTINGS, o || {});
+  o.pushReady = !!(o.push && o.push.vapid && PropertiesService.getScriptProperties().getProperty('PINS_PUSH_SA'));   // 비밀 키는 내보내지 않고 준비 여부만
+  return o;
 }
 function saveSettings_(n, me) {
   if (!me.admin) throw new Error('관리자만 바꿀 수 있습니다');
   const o = settings_();
   if (n.site !== undefined) o.site = String(n.site || '').trim().slice(0, 80);
   if (Array.isArray(n.vendors)) o.vendors = n.vendors.map(v => [String(v[0] || '').trim().slice(0, 40), String(v[1] || '').trim().slice(0, 40)]).filter(v => v[0]).slice(0, 60);
+  if (n.push !== undefined) {   // 휴대폰 알림: 웹 앱 설정(공개값)과 VAPID 공개 키
+    const q = n.push || {}, cfg = q.cfg || {};
+    o.push = q.vapid ? { vapid: String(q.vapid).trim(), cfg: { apiKey: String(cfg.apiKey || ''), projectId: String(cfg.projectId || ''), messagingSenderId: String(cfg.messagingSenderId || ''), appId: String(cfg.appId || '') } } : null;
+  }
+  if (n.pushKey !== undefined) {   // 서비스 계정 키(JSON): 서버에만 저장, 앱에는 다시 보내지 않는다
+    const k = String(n.pushKey || '').trim();
+    if (!k) PropertiesService.getScriptProperties().deleteProperty('PINS_PUSH_SA');
+    else { const j = JSON.parse(k); if (!j.private_key || !j.client_email || !j.project_id) throw new Error('서비스 계정 키(JSON)가 아닙니다');
+      PropertiesService.getScriptProperties().setProperty('PINS_PUSH_SA', JSON.stringify({ project_id: j.project_id, client_email: j.client_email, private_key: j.private_key }));
+      CacheService.getScriptCache().remove('PUSH_AT'); }
+  }
+  delete o.pushReady;
   PropertiesService.getScriptProperties().setProperty('PINS_SETTINGS', JSON.stringify(o));
-  return o;
+  return settings_();
 }
 /* ---------- 사용자 관리 (관리자) ---------- */
 function userList_(me) {
@@ -437,6 +453,7 @@ function deletePin_(id, me) {
 function addNote_(n) {
   const { sh } = rows_('알림');
   writeRow_(sh, N_COLS, 0, Object.assign({ id: Utilities.getUuid(), created: Date.now(), read: 'false', state: n.type === 'invite' ? 'pending' : '' }, n));
+  if (n.type !== 'welcome') { try { pushTo_(n.to, n); } catch (e) { console.log('push 실패: ' + e); } }   // 휴대폰 알림 (설정이 없으면 아무것도 안 함)
 }
 function users_(me) {
   const U = rows_('사용자').list, l = U.map(u => String(u.name).trim()).filter(Boolean);
@@ -585,4 +602,51 @@ function photo_(id) { return Utilities.base64Encode(DriveApp.getFileById(id).get
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
 /* 배포 전 한 번 실행하면 시트·폴더를 만들고 권한을 승인받는다 */
+/* ---------- 휴대폰 알림 (웹 푸시, FCM 중계) ----------
+   시트 '푸시': 사람마다 기기 토큰. 알림이 생기면(addNote_) 받는 사람의 기기마다 FCM HTTP v1 으로 보낸다.
+   필요한 것: 관리자 설정의 '휴대폰 알림' 칸(웹 앱 설정·VAPID 키·서비스 계정 키). 없으면 조용히 건너뛴다. */
+const PU_COLS = ['token', 'name', 'ua', 'updated'];
+function pushSheet_() {
+  const ss = ss_(); let sh = ss.getSheetByName('푸시');
+  if (!sh) { sh = ss.insertSheet('푸시'); sh.getRange(1, 1, 1, PU_COLS.length).setValues([PU_COLS]); sh.setFrozenRows(1); }
+  const n = sh.getLastRow(), v = n < 2 ? [] : sh.getRange(2, 1, n - 1, PU_COLS.length).getValues();
+  return { sh, list: v.map((r, i) => ({ token: String(r[0]), name: String(r[1]), ua: String(r[2]), updated: r[3], _row: i + 2 })) };
+}
+function pushToken_(token, on, ua, me) {
+  token = String(token || '').trim(); if (!token) throw new Error('기기 토큰이 없습니다');
+  const { sh, list } = pushSheet_(), o = list.find(x => x.token === token);
+  if (!on) { if (o) sh.deleteRow(o._row); return 0; }
+  writeRow_(sh, PU_COLS, o ? o._row : 0, { token: token, name: me.name, ua: String(ua || '').slice(0, 120), updated: Date.now() });   // 같은 기기를 다른 사람이 쓰면 새 사람으로
+  return list.filter(x => x.name === me.name && x.token !== token).length + 1;
+}
+function pushAccess_() {
+  const c = CacheService.getScriptCache(), hit = c.get('PUSH_AT'); if (hit) return hit;
+  const sa = JSON.parse(PropertiesService.getScriptProperties().getProperty('PINS_PUSH_SA') || 'null'); if (!sa) return null;
+  const b64 = x => Utilities.base64EncodeWebSafe(typeof x === 'string' ? Utilities.newBlob(x).getBytes() : x).replace(/=+$/, '');
+  const now = Math.floor(Date.now() / 1000);
+  const head = b64(JSON.stringify({ alg: 'RS256', typ: 'JWT' })), body = b64(JSON.stringify({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/firebase.messaging', aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 }));
+  const sig = b64(Utilities.computeRsaSha256Signature(head + '.' + body, sa.private_key));
+  const r = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', { method: 'post', muteHttpExceptions: true,
+    payload: { grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: head + '.' + body + '.' + sig } });
+  const j = JSON.parse(r.getContentText() || '{}'); if (!j.access_token) throw new Error('푸시 인증 실패: ' + r.getContentText().slice(0, 200));
+  c.put('PUSH_AT', j.access_token, 3000); return j.access_token;
+}
+const PUSH_TITLE = { done: '조치 완료', comment: '새 댓글', call: '핀 호출', invite: '협업 요청', feedback: '문의·개선사항', reply: '문의 답장', test: '핀톡 알림' };
+function pushTo_(name, n) {
+  const st = settings_(); if (!st.pushReady || !name) return 0;
+  const { sh, list } = pushSheet_(), mine = list.filter(x => x.name === name); if (!mine.length) return 0;
+  const at = pushAccess_(); if (!at) return 0;
+  const sa = JSON.parse(PropertiesService.getScriptProperties().getProperty('PINS_PUSH_SA'));
+  const D = n.drawingId ? rows_('도면').list.find(x => x.id === n.drawingId) : null;
+  const title = (PUSH_TITLE[n.type] || '핀톡') + (n.from ? ' · ' + n.from : '');
+  const lines = String(n.text || '').split('\n'), body = ((D && D.name ? D.name + ' ' : '') + lines.join(' ')).slice(0, 180);
+  const reqs = mine.map(x => ({ url: 'https://fcm.googleapis.com/v1/projects/' + sa.project_id + '/messages:send', method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + at },
+    payload: JSON.stringify({ message: { token: x.token, data: { title: title, body: body, type: String(n.type || ''), drawingId: String(n.drawingId || ''), pinId: String(n.pinId || ''), tag: String(n.drawingId || n.type || 'pintalk') },
+      webpush: { headers: { Urgency: 'high', TTL: '86400' } } } }) }));
+  const rs = UrlFetchApp.fetchAll(reqs); let sent = 0; const gone = [];
+  rs.forEach((r, i) => { const c = r.getResponseCode(); if (c === 200) sent++; else if (c === 404 || /UNREGISTERED/.test(r.getContentText())) gone.push(mine[i]._row); else console.log('push ' + c + ' ' + r.getContentText().slice(0, 200)); });
+  gone.sort((a, b) => b - a).forEach(row => sh.deleteRow(row));   // 앱을 지운 기기 등 죽은 토큰 정리
+  return sent;
+}
 function setup() { ss_(); folder_([]); Logger.log('시트: ' + ss_().getUrl()); }
