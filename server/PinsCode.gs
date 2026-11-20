@@ -180,7 +180,7 @@ function saveSettings_(n, me) {
   if (!me.admin) throw new Error('관리자만 바꿀 수 있습니다');
   const o = settings_();
   if (n.site !== undefined) o.site = String(n.site || '').trim().slice(0, 80);
-  if (Array.isArray(n.vendors)) o.vendors = n.vendors.map(v => [String(v[0] || '').trim().slice(0, 40), String(v[1] || '').trim().slice(0, 40)]).filter(v => v[0]).slice(0, 60);
+  if (Array.isArray(n.vendors)) o.vendors = n.vendors.map(v => [String(v[0] || '').trim().slice(0, 40), String(v[1] || '').trim().slice(0, 40), Array.isArray(v[2]) ? v[2].map(String).slice(0, 10) : []]).filter(v => v[0]).slice(0, 80);
   if (n.push !== undefined) {   // 휴대폰 알림: 웹 앱 설정(공개값)과 VAPID 공개 키
     const q = n.push || {}, cfg = q.cfg || {};
     o.push = q.vapid ? { vapid: String(q.vapid).trim(), cfg: { apiKey: String(cfg.apiKey || ''), projectId: String(cfg.projectId || ''), messagingSenderId: String(cfg.messagingSenderId || ''), appId: String(cfg.appId || '') } } : null;
@@ -437,9 +437,9 @@ function savePin_(p, photos, me) {
 function label_(p, list) { return String(p.team || '').charAt(0) + (list ? rankNo_(p, list) : p.no); }
 // 같은 도면·같은 팀에서 찍은 날짜 순서 (같으면 id 순), 지운 핀은 빼고 센다
 function rankNo_(p, list) {
-  const team = String(p.team || ''), t = +p.created || 0;
+  const team = String(p.team || ''), t = +p.created || 0, memo = p.rec === 'memo';   // 조치 전·후 핀과 기록 핀은 번호를 따로 (핀톡 4.21)
   return 1 + list.filter(o => o.drawingId === p.drawingId && o.id !== p.id && String(o.deleted) !== 'true').map(pinOut_)
-    .filter(o => String(o.team || '') === team && ((+o.created || 0) < t || ((+o.created || 0) === t && String(o.id) < String(p.id)))).length;
+    .filter(o => String(o.team || '') === team && (o.rec === 'memo') === memo && ((+o.created || 0) < t || ((+o.created || 0) === t && String(o.id) < String(p.id)))).length;
 }   // 핀 이름: 팀 글자 + 번호 (공1)
 function deletePin_(id, me) {
   const { sh, list } = rows_('핀');
