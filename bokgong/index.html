@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#D3162F">
+<title>복공 구조검토</title>
+<link rel="icon" href="../icon-192.png">
+<style>
+@font-face{font-family:"Pretendard";src:url("../fonts/PretendardVariable.woff2") format("woff2");font-weight:100 900;font-display:swap}
+:root{
+  --bg:#F2F2EE; --surface:#FFFFFF; --sunk:#E9EAE4; --ink:#1D1E1A; --muted:#66685F; --line:#D5D6CE;
+  --brand:#D3162F; --ok:#1E7A4B; --ok-soft:#E1F1E8; --bad:#C3172E; --bad-soft:#FBE4E6; --warn:#8A5A00; --warn-soft:#FBF0D9;
+  --focus:#1D4ED8; --r:10px;
+  --f:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141513; --surface:#1E1F1C; --sunk:#262823; --ink:#ECECE6; --muted:#A3A598; --line:#363832;
+  --brand:#FF4A5D; --ok:#47C584; --ok-soft:#173326; --bad:#FF5A6B; --bad-soft:#3A1A1E; --warn:#F2C060; --warn-soft:#3A3018; --focus:#7AA2FF; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141513; --surface:#1E1F1C; --sunk:#262823; --ink:#ECECE6; --muted:#A3A598; --line:#363832;
+  --brand:#FF4A5D; --ok:#47C584; --ok-soft:#173326; --bad:#FF5A6B; --bad-soft:#3A1A1E; --warn:#F2C060; --warn-soft:#3A3018; --focus:#7AA2FF; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+html,body,button,input,select{touch-action:manipulation}
+.wrap{max-width:820px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left,0px)) 80px}
+header.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+header.top .in{max-width:820px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:10px}
+header.top h1{font-size:18px;margin:0;font-weight:800;letter-spacing:-.02em}
+header.top h1 b{color:var(--brand)}
+header.top .sp{flex:1}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:14px}
+.btn:hover{background:var(--sunk)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.sm{padding:4px 9px;font-size:13px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.lead{color:var(--muted);font-size:14px;margin:14px 0 10px}
+.cases{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.cases .btn.on{border-color:var(--brand);color:var(--brand)}
+
+/* 결과 요약 */
+.verdict{border-radius:var(--r);padding:14px 16px;margin:6px 0 14px;border:1px solid var(--line);background:var(--surface)}
+.verdict .big{display:flex;align-items:center;gap:12px}
+.verdict .badge{font-size:22px;font-weight:900;padding:4px 14px;border-radius:8px;letter-spacing:.02em}
+.verdict.ok .badge{background:var(--ok-soft);color:var(--ok)}
+.verdict.ng .badge{background:var(--bad-soft);color:var(--bad)}
+.verdict .msg{font-weight:700}
+.verdict .sub{color:var(--muted);font-size:14px;margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.kpi{background:var(--sunk);border-radius:8px;padding:8px 10px}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi .v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+@media (max-width:520px){.kpis{grid-template-columns:1fr 1fr}.kpis .kpi:last-child{grid-column:1/-1}}
+
+/* 카드·입력 */
+details.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin:10px 0;overflow:hidden}
+details.card>summary{list-style:none;cursor:pointer;padding:12px 16px;font-weight:700;display:flex;align-items:center;gap:8px}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::after{content:"▾";margin-left:auto;color:var(--muted);transition:transform .15s}
+details.card:not([open])>summary::after{transform:rotate(-90deg)}
+details.card>summary .tag{font-weight:500;color:var(--muted);font-size:13px}
+.body{padding:0 16px 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 10px}
+label.f{display:flex;flex-direction:column;font-size:12.5px;color:var(--muted);gap:2px}
+label.f input,label.f select{font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 8px;width:100%;min-width:0;font-variant-numeric:tabular-nums}
+label.f.chk input{border-color:var(--warn)}
+label.f .u{color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hint{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.flag{display:inline-block;font-size:11px;font-weight:700;color:var(--warn);background:var(--warn-soft);border-radius:4px;padding:0 5px;margin-left:4px}
+
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+th,td{padding:6px 6px;border-bottom:1px solid var(--line);text-align:right;font-size:14px;white-space:nowrap}
+th{font-size:12px;color:var(--muted);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+table.eq input{width:100%;min-width:58px;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:5px 6px;text-align:right}
+table.eq td.nm input{text-align:left;min-width:120px}
+tr.gov td{background:var(--warn-soft)}
+.x{border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px}
+
+/* 검토 결과 표 */
+.chk td.st{font-weight:800}
+.chk td.st.ok{color:var(--ok)} .chk td.st.ng{color:var(--bad)}
+.bar{height:6px;background:var(--sunk);border-radius:3px;min-width:60px;position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:3px;background:var(--ok)}
+.bar.hi i{background:var(--warn)} .bar.ng i{background:var(--bad)}
+tr.ref td{color:var(--muted);font-style:italic}
+tr.sec td{background:var(--sunk);font-weight:700;font-size:12.5px}
+
+/* 계산서 */
+.rep h3{font-size:16px;margin:18px 0 6px;color:var(--brand)}
+.rep h3 small{color:var(--muted);font-weight:500;font-size:13px;margin-left:6px}
+.rep h4{font-size:14px;margin:12px 0 4px}
+.rep p{margin:3px 0 3px 10px;font-size:13.5px;word-break:keep-all;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.rep p.note{color:var(--muted);font-size:12.5px}
+.rep .res{margin:6px 0 0 10px;font-size:13.5px}
+.rep .res span{font-weight:800}
+.rep .res .ok{color:var(--ok)} .rep .res .ng{color:var(--bad)}
+.warns{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:13.5px;margin:10px 0}
+.warns ul{margin:4px 0 0 18px;padding:0}
+.footer{color:var(--muted);font-size:12.5px;margin-top:18px}
+
+@media print{
+  header.top,.cases,.noprint,details.card.inp{display:none!important}
+  body{background:#fff;color:#000;font-size:12px}
+  details.card{border:none}
+  details.card>summary::after{display:none}
+  .rep h3{break-after:avoid}
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <h1><b>복공</b> 구조검토</h1>
+  <span class="sp"></span>
+  <button class="btn sm" id="btnPrint" type="button">인쇄·PDF</button>
+</div></header>
+
+<div class="wrap">
+  <p class="lead">장비·자재 무게와 복공 부재 제원을 넣으면, 복공구조계산서(복공판 → 주형보 → 주형지지보 → 중간말뚝) 절차대로 계산해서 안정 여부를 보여줍니다. 값을 바꾸면 바로 다시 계산합니다.</p>
+
+  <div class="cases noprint" role="group" aria-label="계산서 예제 불러오기">
+    <button class="btn sm" data-case="earth" type="button">예제1 토공시</button>
+    <button class="btn sm" data-case="lift" type="button">예제2 장비인양시</button>
+    <button class="btn sm" data-case="pour" type="button">예제3 펌프카 타설시</button>
+  </div>
+
+  <section id="verdict" class="verdict" aria-live="polite"></section>
+  <div id="warns"></div>
+
+  <!-- 입력 -->
+  <details class="card inp" open>
+    <summary>① 장비·자재 하중 <span class="tag">가장 큰 하중으로 검토</span></summary>
+    <div class="body">
+      <div class="row" style="margin-bottom:8px">
+        <label class="f" style="flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:14px">입력 단위
+          <select id="unit" style="width:auto"><option value="kN">kN</option><option value="t">톤(t)</option></select>
+        </label>
+        <span class="sp" style="flex:1"></span>
+        <select id="preset" class="btn sm" aria-label="장비 추가"><option value="">+ 장비·자재 추가…</option></select>
+      </div>
+      <div class="tw"><table class="eq" id="eqTable">
+        <thead><tr><th>이름</th><th>차량중량</th><th>적재하중</th><th>총중량</th><th>분담계수</th><th>P (kN)</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <p class="hint">P = 분담계수 × 총중량. 분담계수는 한쪽 아웃트리거·궤도·바퀴에 실리는 비율입니다 (계산서: 크롤러크레인 0.85, 하이드로크레인·펌프카 0.7, 덤프트럭·레미콘 0.4). 자재를 한 점에 적치하면 1.0으로 넣으세요. 톤 입력은 계산서처럼 1t = 10kN으로 바꿉니다.</p>
+    </div>
+  </details>
+
+  <details class="card inp">
+    <summary>② 충격·하중 분배 계수</summary>
+    <div class="body"><div class="grid" id="g-load"></div>
+      <p class="hint" id="wfHint"></p></div>
+  </details>
+
+  <details class="card inp">
+    <summary>③ 복공판 <span class="tag" id="t-deck"></span></summary>
+    <div class="body"><div class="grid" id="g-deck"></div></div>
+  </details>
+
+  <details class="card inp">
+    <summary>④ 주형보 <span class="tag" id="t-girder"></span></summary>
+    <div class="body"><div class="grid" id="g-girder"></div></div>
+  </details>
+
+  <details class="card inp">
+    <summary>⑤ 주형지지보 <span class="tag" id="t-beam"></span></summary>
+    <div class="body"><div class="grid" id="g-beam"></div></div>
+  </details>
+
+  <details class="card inp">
+    <summary>⑥ 중간말뚝 <span class="tag" id="t-pile"></span></summary>
+    <div class="body"><div class="grid" id="g-pile"></div>
+      <h4 style="margin:14px 0 4px;font-size:14px">기타 고정하중 (말뚝 1본 분담)</h4>
+      <div class="tw"><table class="eq" id="exTable">
+        <thead><tr><th>부재</th><th>kN/m</th><th>길이 m</th><th>열</th><th>단</th><th>kN</th></tr></thead><tbody></tbody>
+      </table></div>
+      <h4 style="margin:14px 0 4px;font-size:14px">지지력 (선굴착 최종경타)</h4>
+      <div class="grid" id="g-bear"></div>
+    </div>
+  </details>
+
+  <details class="card inp">
+    <summary>⑦ 허용응력·처짐 기준</summary>
+    <div class="body"><div class="grid" id="g-allow"></div>
+      <p class="hint">허용휨응력 fba = 증가 × 보정 × (기본 − 계수 × (ℓ/B − 4.5)), 허용압축응력 fca = 증가 × 보정 × (기본 − 계수 × (L/r − 20)). 계산서 값 그대로입니다.</p></div>
+  </details>
+
+  <div class="row noprint" style="margin:8px 0 4px">
+    <button class="btn sm" id="btnReset" type="button">처음 값(예제1)으로</button>
+  </div>
+
+  <!-- 결과 -->
+  <details class="card" open>
+    <summary>검토 결과 요약</summary>
+    <div class="body"><div class="tw"><table class="chk" id="chkTable">
+      <thead><tr><th>항목</th><th>작용</th><th>허용</th><th>사용률</th><th>안전율</th><th>판정</th></tr></thead><tbody></tbody>
+    </table></div></div>
+  </details>
+
+  <details class="card" open>
+    <summary>계산서 <span class="tag">단계별 계산 과정</span></summary>
+    <div class="body rep" id="report"></div>
+  </details>
+
+  <p class="footer">근거: 복공구조계산서(기술관리부) 의 절차와 계수(가시설 허용응력 증가 1.5, 재사용·부식 보정 0.9, 복공판 충격계수 0.4, 서울지하철 설계기준). 현장 참고용 간이 검토이며, 계산서 조건(지간, 부재 배치, 말뚝 지반조건)과 다르면 구조기술자 검토를 받으세요.</p>
+</div>
+
+<script src="calc.js"></script>
+<script>
+(function(){
+'use strict';
+var B = window.Bokgong, KEY = 'bokgong-input-v1';
+var inp = load() || B.defaultInput();
+var unit = (function(){ try { return localStorage.getItem(KEY+'-unit') || 'kN'; } catch(e){ return 'kN'; } })();
+var activeCase = 'earth';
+
+function load(){ try { var s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch(e){ return null; } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(inp)); localStorage.setItem(KEY+'-unit', unit); } catch(e){} }
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function n2(x,d){ if(d===undefined)d=2; return isFinite(x) ? x.toFixed(d) : '—'; }
+function get(path){ return path.split('.').reduce(function(o,k){ return o[k]; }, inp); }
+function set(path,v){ var ks=path.split('.'), o=inp; for(var i=0;i<ks.length-1;i++) o=o[ks[i]]; o[ks[ks.length-1]]=v; }
+
+// 입력칸 정의: [경로, 이름, 단위, 확인필요 메모]
+var FIELDS = {
+  'g-load': [['impactDeck','복공판 충격계수 I',''],['widthFactor','폭에 대한 영향계수','','계산서: 계산값 0.10 → 사용 0.15'],
+             ['girder.impactMax','주형보 충격계수 상한',''],['outrigger.D','아웃트리거 지름 D','m'],['outrigger.b','고임목 가로','m'],['outrigger.h','고임목 세로','m'],
+             ['outrigger.k','분담률 곱하는 값','','계산서 식의 ×0.4 근거가 계산서에 설명 없음']],
+  'g-deck': [['deck.name','규격','',null,'text'],['deck.w','중량','kg/장'],['deck.B','폭 B','m'],['deck.L','지간 L','m'],['deck.Ix','Ix','cm⁴'],['deck.A','A','cm²'],['deck.Zx','Zx','cm³'],['deck.E','E','MPa']],
+  'g-girder': [['girder.section','단면','',null,'sec'],['girder.w','자중 w','kN/m'],['girder.Ix','Ix','cm⁴'],['girder.Zx','Zx','cm³'],['girder.Aw','Aw (웨브)','cm²'],['girder.Bf','플랜지폭 B','mm'],['girder.E','E','MPa'],
+               ['girder.L','설계지간','m'],['girder.Lb','브레이싱 간격','m'],['girder.other','기타 고정하중','kN/m']],
+  'g-beam': [['beam.section','단면','',null,'sec'],['beam.rows','열 수','열'],['beam.w','자중 w (1열)','kN/m'],['beam.Zx','Zx (1열)','cm³'],['beam.Aw','Aw (1열)','cm²'],['beam.Bf','플랜지폭 B','mm'],
+             ['beam.L','설계지간 = 말뚝 간격','m'],['beam.s','주형보 간격','m'],['beam.rail','난간 하중','kN/m'],
+             ['beam.boltGrade','볼트 등급','',null,'text'],['beam.boltD','볼트 지름 M','mm'],['beam.boltFsa','볼트 허용전단 (기본)','MPa'],['beam.boltN','사용 볼트','개']],
+  'g-pile': [['pile.section','단면','',null,'sec'],['pile.w','자중 w','kN/m'],['pile.A','A','cm²'],['pile.Zx','Zx','cm³'],['pile.Bf','플랜지폭 B','mm'],['pile.ry','ry (약축)','cm'],
+             ['pile.rx','rx (강축, 좌굴)','cm','계산서 Euler 값을 역산하면 13.0 (KS 표는 13.1)'],
+             ['pile.h','말뚝 길이 h','m'],['pile.h1','최대 수직지간 h1','m'],['pile.e','편심거리 e','m','근거가 계산서에 없음. 예제1 0.325(표시 0.33), 예제2·3 0.30'],
+             ['pile.nGirder','분담 주형보 수','개'],['pile.nBeam','분담 지지보 열','열']],
+  'g-bear': [['pile.N','선단 N치',''],['pile.Ns','모래층 평균 N',''],['pile.Nc','점토층 평균 N',''],['pile.Ls','모래층 길이 Ls','m'],['pile.Lc','점토층 길이 Lc','m'],
+             ['pile.Ap','선단 면적 Ap','m²'],['pile.U','둘레 U','m'],['pile.Fs','안전율 Fs','']],
+  'g-allow': [['allow.inc','허용응력 증가계수',''],['allow.red','강재 보정계수',''],['allow.fb0','기본 허용휨','MPa'],['allow.fbk','휨 감소계수',''],['allow.fs0','기본 허용전단','MPa'],
+              ['allow.fc0','기본 허용압축','MPa'],['allow.fck','압축 감소계수',''],['allow.Euler','Euler 상수',''],['allow.deflDiv','처짐 기준 L ÷',''],['allow.deckDeflMax','복공판 처짐 상한','mm'],['allow.girderDeflMax','주형보 처짐 상한','mm']]
+};
+
+function buildFields(){
+  Object.keys(FIELDS).forEach(function(gid){
+    var g = $(gid); g.innerHTML = '';
+    FIELDS[gid].forEach(function(fd){
+      var path=fd[0], lab=fd[1], u=fd[2], flag=fd[3], type=fd[4]||'num';
+      var L = document.createElement('label'); L.className = 'f' + (flag ? ' chk' : '');
+      L.innerHTML = '<span>' + esc(lab) + (u ? ' <span class="u">(' + esc(u) + ')</span>' : '') + (flag ? '<span class="flag" title="' + esc(flag) + '">확인필요</span>' : '') + '</span>';
+      var el;
+      if (type === 'sec') {
+        el = document.createElement('select');
+        el.innerHTML = Object.keys(B.H_SECTIONS).map(function(k){ return '<option>' + k + '</option>'; }).join('') + '<option value="직접입력">직접 입력</option>';
+        el.value = B.H_SECTIONS[get(path)] ? get(path) : '직접입력';
+        el.addEventListener('change', function(){ applySection(path.split('.')[0], el.value); });
+      } else {
+        el = document.createElement('input');
+        el.type = type === 'text' ? 'text' : 'number'; if (type !== 'text') { el.step = 'any'; el.inputMode = 'decimal'; }
+        el.value = get(path);
+        el.addEventListener('input', function(){
+          if (type === 'text') set(path, el.value);
+          else { var v = parseFloat(el.value); if (!isFinite(v)) return; set(path, v); }
+          if (/^(girder|beam|pile)\.(w|A|Ix|Zx|Aw|Bf|ry|rx)$/.test(path)) {
+            var sel = document.querySelector('[data-sec="' + path.split('.')[0] + '"]'); if (sel) sel.value = '직접입력';
+          }
+          run();
+        });
+      }
+      if (type === 'sec') el.setAttribute('data-sec', path.split('.')[0]);
+      el.setAttribute('data-path', path);
+      if (flag) L.title = flag;
+      L.appendChild(el); g.appendChild(L);
+    });
+  });
+}
+function applySection(part, name){
+  set(part + '.section', name);
+  var s = B.H_SECTIONS[name];
+  if (s) {
+    var o = inp[part];
+    o.w = s.w; o.A = s.A; o.Ix = s.Ix; o.Zx = s.Zx; o.Bf = s.B; o.Aw = +B.webArea(s).toFixed(2);
+    if (part === 'pile') { o.ry = s.ry; o.rx = s.rx; o.Ap = +(s.H * s.B / 1e6).toFixed(4); o.U = +(2 * (s.H + s.B) / 1000).toFixed(3); }
+  }
+  refreshFields(); run();
+}
+function refreshFields(){
+  document.querySelectorAll('[data-path]').forEach(function(el){
+    var p = el.getAttribute('data-path');
+    if (el.tagName === 'SELECT') el.value = B.H_SECTIONS[get(p)] ? get(p) : '직접입력';
+    else if (document.activeElement !== el) el.value = get(p);
+  });
+}
+
+// ---- 장비 표 ----
+var fac = function(){ return unit === 't' ? 10 : 1; };
+function buildPresets(){
+  var s = $('preset');
+  s.innerHTML = '<option value="">+ 장비·자재 추가…</option>' + B.EQUIP_PRESETS.map(function(p,i){ return '<option value="' + i + '">' + esc(p.name) + '</option>'; }).join('') +
+    '<option value="mat">자재 (직접 입력)</option><option value="custom">장비 (직접 입력)</option>';
+  s.addEventListener('change', function(){
+    var v = s.value; if (v === '') return;
+    if (v === 'mat') inp.equip.push({ name: '자재', vehicle: 0, load: 0, factor: 1.0 });
+    else if (v === 'custom') inp.equip.push({ name: '장비', vehicle: 0, load: 0, factor: 0.7 });
+    else inp.equip.push(B.clone(B.EQUIP_PRESETS[+v]));
+    s.value = ''; buildEq(); run();
+  });
+}
+function buildEq(){
+  var tb = $('eqTable').querySelector('tbody'); tb.innerHTML = '';
+  var uh = unit === 't' ? 't' : 'kN';
+  $('eqTable').querySelectorAll('th')[1].textContent = '차량중량 (' + uh + ')';
+  $('eqTable').querySelectorAll('th')[2].textContent = '적재하중 (' + uh + ')';
+  $('eqTable').querySelectorAll('th')[3].textContent = '총중량 (' + uh + ')';
+  inp.equip.forEach(function(e, i){
+    var tr = document.createElement('tr'); tr.dataset.i = i;
+    tr.innerHTML = '<td class="nm"><input type="text" data-k="name" aria-label="이름"></td>' +
+      '<td><input type="number" step="any" inputmode="decimal" data-k="vehicle" aria-label="차량중량"></td>' +
+      '<td><input type="number" step="any" inputmode="decimal" data-k="load" aria-label="적재하중"></td>' +
+      '<td class="tot"></td><td><input type="number" step="any" inputmode="decimal" data-k="factor" aria-label="분담계수" style="min-width:52px"></td><td class="p"></td>' +
+      '<td><button class="x" type="button" aria-label="삭제">✕</button></td>';
+    tr.querySelector('[data-k=name]').value = e.name;
+    tr.querySelector('[data-k=vehicle]').value = +(e.vehicle / fac()).toFixed(3);
+    tr.querySelector('[data-k=load]').value = +(e.load / fac()).toFixed(3);
+    tr.querySelector('[data-k=factor]').value = e.factor;
+    tr.querySelectorAll('input').forEach(function(el){
+      el.addEventListener('input', function(){
+        var k = el.dataset.k;
+        if (k === 'name') e.name = el.value;
+        else { var v = parseFloat(el.value); if (!isFinite(v)) v = 0; e[k] = (k === 'factor') ? v : v * fac(); }
+        run();
+      });
+    });
+    tr.querySelector('.x').addEventListener('click', function(){ inp.equip.splice(i,1); buildEq(); run(); });
+    tb.appendChild(tr);
+  });
+}
+function updateEqTotals(res){
+  var rows = $('eqTable').querySelectorAll('tbody tr');
+  rows.forEach(function(tr, i){
+    var r = res.eqRows[i]; if (!r) return;
+    tr.querySelector('.tot').textContent = n2(r.total / fac(), 1);
+    tr.querySelector('.p').textContent = n2(r.P);
+    tr.classList.toggle('gov', res.govern === r);
+  });
+}
+
+// ---- 기타 고정하중 표 ----
+function buildExtras(){
+  var tb = $('exTable').querySelector('tbody'); tb.innerHTML = '';
+  inp.pile.extras.forEach(function(x, i){
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td class="nm"><input type="text" data-k="name"></td><td><input type="number" step="any" inputmode="decimal" data-k="w"></td><td><input type="number" step="any" inputmode="decimal" data-k="len"></td><td><input type="number" step="any" inputmode="decimal" data-k="rows"></td><td><input type="number" step="any" inputmode="decimal" data-k="tiers"></td><td class="v"></td>';
+    tr.querySelectorAll('input').forEach(function(el){
+      el.value = x[el.dataset.k];
+      el.addEventListener('input', function(){ var k = el.dataset.k; x[k] = k === 'name' ? el.value : (parseFloat(el.value) || 0); run(); });
+    });
+    tb.appendChild(tr);
+  });
+}
+function updateExtras(){
+  $('exTable').querySelectorAll('tbody tr').forEach(function(tr, i){
+    var x = inp.pile.extras[i]; tr.querySelector('.v').textContent = n2(x.w * x.len * x.rows * x.tiers);
+  });
+}
+
+// ---- 결과 ----
+function render(res){
+  var v = $('verdict'); v.className = 'verdict ' + (res.ok ? 'ok' : 'ng');
+  var w = res.worst, mx = B.maxPmax(inp);
+  var gov = res.govern;
+  var allowTxt = gov && gov.factor > 0
+    ? '<b>' + esc(gov.name) + '</b> 기준 총중량 약 <b>' + n2(mx / gov.factor / 10, 1) + ' t</b> (' + n2(mx / gov.factor, 0) + ' kN)까지'
+    : '';
+  v.innerHTML = '<div class="big"><span class="badge">' + (res.ok ? 'O.K' : 'N.G') + '</span><span class="msg">' +
+    (res.Pmax <= 0 ? '장비·자재 하중을 입력하세요.' : res.ok ? '모든 항목이 허용값 이내입니다.' : 'NG 항목이 있습니다. 아래 표에서 빨간 항목을 확인하세요.') + '</span></div>' +
+    '<div class="kpis">' +
+      '<div class="kpi"><div class="l">검토 하중 Pmax</div><div class="v">' + n2(res.Pmax) + ' kN</div></div>' +
+      '<div class="kpi"><div class="l">최소 안전율 (' + esc(w.name) + ')</div><div class="v">' + (isFinite(w.sf) ? n2(w.sf) : '—') + '</div></div>' +
+      '<div class="kpi"><div class="l">견딜 수 있는 최대 Pmax</div><div class="v">' + n2(mx, 1) + ' kN</div></div>' +
+    '</div>' +
+    '<div class="sub">' + (gov ? '검토 장비: ' + esc(gov.name) + ' (P = ' + gov.factor + ' × ' + n2(gov.total,1) + ' kN). ' : '') +
+    (allowTxt ? '이 복공 구조로는 ' + allowTxt + ' 올릴 수 있습니다 (같은 분담계수 기준).' : '') + '</div>';
+
+  var ws = res.warn.slice();
+  $('warns').innerHTML = ws.length ? '<div class="warns"><b>확인 필요</b><ul>' + ws.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '';
+
+  var secName = { deck: '복공판', girder: '주형보', beam: '주형지지보', pile: '중간말뚝' }, last = '';
+  $('chkTable').querySelector('tbody').innerHTML = res.checks.map(function(c){
+    var pre = '';
+    if (c.sec !== last) { last = c.sec; pre = '<tr class="sec"><td colspan="6">' + secName[c.sec] + '</td></tr>'; }
+    var pct = Math.min(c.ratio, 1.5) / 1.5 * 100;
+    var cls = c.ratio > 1 ? 'ng' : c.ratio > 0.9 ? 'hi' : '';
+    var d = c.unit === 'ea' ? 2 : 2;
+    return pre + '<tr class="' + (c.ref ? 'ref' : '') + '"><td>' + esc(c.name.replace(secName[c.sec] + ' ', '')) + '</td><td>' + n2(c.demand, d) + ' ' + c.unit + '</td><td>' + n2(c.cap, d) + ' ' + c.unit + '</td>' +
+      '<td><div class="bar ' + cls + '" title="' + n2(c.ratio * 100, 1) + '%"><i style="width:' + pct + '%"></i></div><small>' + n2(c.ratio * 100, 1) + '%</small></td>' +
+      '<td>' + (isFinite(c.sf) ? n2(c.sf) : '—') + '</td><td class="st ' + (c.ok ? 'ok' : 'ng') + '">' + (c.ref ? '(참고) ' : '') + (c.ok ? 'O.K' : 'N.G') + '</td></tr>';
+  }).join('');
+
+  var h = '';
+  res.sections.forEach(function(s){
+    h += '<h3>' + s.title + '<small>' + esc(s.spec) + '</small></h3>';
+    s.lines.forEach(function(l){
+      if (l.h) h += '<h4>' + esc(l.h) + '</h4>';
+      else if (l.note) h += '<p class="note">※ ' + esc(l.note) + '</p>';
+      else if (l.table === 'equip') {
+        h += '<div class="tw"><table><thead><tr><th>장비·자재</th><th>차량 kN</th><th>적재 kN</th><th>총중량 kN</th><th>계수</th><th>P kN</th></tr></thead><tbody>' +
+          l.rows.map(function(r){ return '<tr' + (res.govern === r ? ' class="gov"' : '') + '><td>' + esc(r.name) + '</td><td>' + n2(r.vehicle,1) + '</td><td>' + n2(r.load,1) + '</td><td>' + n2(r.total,1) + '</td><td>' + r.factor + '</td><td>' + n2(r.P) + '</td></tr>'; }).join('') +
+          '</tbody></table></div><p>∴ Pmax = ' + n2(l.Pmax) + ' kN  ← ' + esc(l.govern) + '</p>';
+      } else if (l.table === 'dead') {
+        h += '<p>(1) 고정하중</p><div class="tw"><table><tbody>' + l.rows.map(function(r){ return '<tr><td>' + esc(r.name) + '</td><td style="text-align:left">' + esc(r.expr) + '</td><td>' + n2(r.v) + ' kN</td></tr>'; }).join('') +
+          '<tr><td><b>∑Ps</b></td><td></td><td><b>' + n2(l.sum) + ' kN</b></td></tr></tbody></table></div>';
+      } else h += '<p>' + esc(l.t) + '</p>';
+    });
+    h += '<div class="res">' + res.checks.filter(function(c){ return c.sec === s.key; }).map(function(c){
+      return (c.ref ? '(참고) ' : '') + esc(c.name) + ' ' + n2(c.demand) + ' ' + (c.ok ? '≤' : '>') + ' ' + n2(c.cap) + ' ' + c.unit + ' <span class="' + (c.ok ? 'ok' : 'ng') + '">∴ ' + (c.ok ? 'O.K' : 'N.G') + '</span>';
+    }).join('<br>') + '</div>';
+  });
+  $('report').innerHTML = h;
+
+  $('t-deck').textContent = inp.deck.name; $('t-girder').textContent = inp.girder.section + ', L=' + inp.girder.L + 'm';
+  $('t-beam').textContent = inp.beam.section + ' ' + inp.beam.rows + '열, L=' + inp.beam.L + 'm'; $('t-pile').textContent = inp.pile.section + ', h1=' + inp.pile.h1 + 'm';
+  var o = inp.outrigger, wf = Math.PI * o.D * o.D / 4 / (o.b * o.h) * o.k;
+  $('wfHint').textContent = '참고: 아웃트리거·고임목 치수로 계산한 영향계수 = ' + n2(wf) + ' (계산서는 0.10이 나와도 0.15를 사용). 아웃트리거 설치 시 주형보 직각 방향으로 2.0m 이상 지지보 2열을 설치해 하중을 분산하도록 계산서에 적혀 있습니다.';
+}
+
+function run(){
+  var res;
+  try { res = B.compute(inp); } catch(e) { $('verdict').textContent = '계산 오류: ' + e.message; return; }
+  updateEqTotals(res); updateExtras(); render(res); save();
+}
+
+function loadCase(k){
+  inp = B.caseInput(k); activeCase = k;
+  document.querySelectorAll('[data-case]').forEach(function(b){ b.classList.toggle('on', b.dataset.case === k); });
+  buildFields(); buildEq(); buildExtras(); run();
+}
+
+document.querySelectorAll('[data-case]').forEach(function(b){ b.addEventListener('click', function(){ loadCase(b.dataset.case); }); });
+$('btnReset').addEventListener('click', function(){ loadCase('earth'); });
+$('btnPrint').addEventListener('click', function(){ window.print(); });
+$('unit').value = unit;
+$('unit').addEventListener('change', function(){ unit = $('unit').value; buildEq(); run(); });
+
+buildPresets(); buildFields(); buildEq(); buildExtras(); run();
+})();
+</script>
+</body>
+</html>
