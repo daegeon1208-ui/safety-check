@@ -372,7 +372,7 @@ function pinOut_(o) {
 function pins_(drawingId) { return rows_('핀').list.filter(o => o.drawingId === drawingId).map(pinOut_); }
 function pinRow_(p) {
   const ph = x => { const o = { k: x.k, id: x.id, w: x.w, h: x.h }; if (x.rep) o.rep = true; if (x.at) o.at = x.at; if (x.lines) o.lines = x.lines; return o; };   // at: 사진 날짜, lines: 사진 위 균열선
-  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '', team: p.team || '', vendor: p.vendor || '', work: p.work || '', crack: p.crack || null, rec: p.rec || '',
+  const extra = { nx: p.nx, ny: p.ny, px: p.px, py: p.py, shape: p.shape || null, doneBy: p.doneBy || '', team: p.team || '', vendor: p.vendor || '', work: p.work || '', crack: p.crack || null, rec: p.rec || '', doneText: p.doneText || '',
     photos: (p.photos || []).map(ph), donePhotos: (p.donePhotos || []).map(ph) };
   return Object.assign({}, p, { deleted: p.deleted ? 'true' : 'false', doneAt: p.doneAt || '', 'data(JSON)': JSON.stringify(extra) });
 }
@@ -413,7 +413,9 @@ function savePin_(p, photos, me) {
     const dp = syncPhotos_(p.donePhotos, old.donePhotos, photos, ['사진', dname], label_(old) + ' 핀 조치완료');
     const dpChanged = JSON.stringify(dp.map(x => [x.id, !!x.rep])) !== JSON.stringify((old.donePhotos || []).map(x => [x.id, !!x.rep]));
     q.donePhotos = dp;
-    if (q.status !== old.status || dpChanged) { q.editor = me.name; q.updated = now; }
+    const dtChanged = typeof p.doneText === 'string' && p.doneText !== (old.doneText || '');   // 조치 후 코멘트는 누구나 (조치완료처럼)
+    if (dtChanged) q.doneText = p.doneText;
+    if (q.status !== old.status || dpChanged || dtChanged) { q.editor = me.name; q.updated = now; }
     writeRow_(sh, P_COLS, ex._row, pinRow_(q));
     tellOwner(q);
     return pinOut_(pinRow_(q));
