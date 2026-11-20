@@ -44,7 +44,7 @@ function doPost(e) {
     const req = JSON.parse(e.postData.contents || '{}');
     if (String(req.pin) !== String(PIN)) return out_({ ok: false, error: 'PIN이 맞지 않습니다' });
     if (req.action === 'drawingFile') { const me = auth_(req); gate_(req.id, me, req); return out_({ ok: true, data: drawingFile_(req.id) }); }   // 읽기만 하는 큰 요청은 잠금 없이
-    if (req.action === 'photo') { auth_(req); return out_({ ok: true, data: photo_(req.id) }); }
+    if (req.action === 'photo') { auth_(req); const r = photoSized_(req.id, req.size); return out_({ ok: true, data: r.data, sz: r.sz }); }
     if (req.action === 'savePhotos') { const me = auth_(req); gate_(req.drawingId, me, req); return out_({ ok: true, ids: savePhotos_(req, me) }); }   // 사진 저장은 잠금 밖에서 (여러 핀을 동시에 올릴 수 있게, 3.79)
     const lock = LockService.getScriptLock(); lock.waitLock(25000);
     try {
@@ -618,6 +618,23 @@ function savePhotos_(req, me) {
   return ids;
 }
 function photo_(id) { return Utilities.base64Encode(DriveApp.getFileById(id).getBlob().getBytes()); }
+/* 4.25 볼 때 화질: size(긴 변 px)를 주면 드라이브가 만들어 둔 작은 그림(미리보기)을 그 크기로 받아 보낸다.
+   원본이 그보다 작거나, 미리보기가 아직 없거나, 실패하면 원본을 보낸다 (sz 0 = 원본) */
+function photoSized_(id, size) {
+  size = Math.round(+size || 0);
+  if (size > 0) {
+    try {
+      const tok = ScriptApp.getOAuthToken(), h = { Authorization: 'Bearer ' + tok };
+      const meta = JSON.parse(UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) + '?fields=thumbnailLink,imageMediaMetadata(width,height)', { headers: h, muteHttpExceptions: true }).getContentText());
+      const im = meta.imageMediaMetadata || {}, W = Math.max(+im.width || 0, +im.height || 0);
+      if (meta.thumbnailLink && (!W || W > size * 1.1)) {
+        const r = UrlFetchApp.fetch(meta.thumbnailLink.replace(/=s\d+$/, '') + '=s' + size, { headers: h, muteHttpExceptions: true });
+        if (r.getResponseCode() === 200) { const b = r.getBlob(); if (/^image\//.test(b.getContentType() || '')) return { data: Utilities.base64Encode(b.getBytes()), sz: size }; }
+      }
+    } catch (e) {}
+  }
+  return { data: photo_(id), sz: 0 };
+}
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
