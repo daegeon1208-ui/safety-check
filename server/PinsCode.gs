@@ -30,7 +30,7 @@ const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세
 
 const SS_NAME = '도면 하자 핀';
 const ROOT_NAME = '도면 하자 핀';
-const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames', 'kind', 'lockSalt', 'lockHash', 'members'];
+const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames', 'kind', 'lockSalt', 'lockHash', 'members', 'vendors'];
 const N_COLS = ['id', 'to', 'type', 'from', 'drawingId', 'pinId', 'text', 'created', 'read', 'state'];
 const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
 const C_COLS = ['id', 'drawingId', 'pinId', 'by', 'text', 'created', 'deleted', 'edited'];
@@ -78,6 +78,7 @@ function doPost(e) {
         case 'deleteDrawing': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: patchDrawing_(req.id, { deleted: true }) });
         case 'replaceDrawingFile': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names) });
         case 'setPageNames': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: setPageNames_(req.id, req.names) });
+        case 'setVendors': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: setVendors_(req.id, req.vendors) });
         case 'setKind': gate_(req.id, me, req); return out_({ ok: true, drawing: setKind_(req.id, req.kind, me) });
         case 'unlock': gate_(req.id, me, req); return out_({ ok: true });
         case 'setLock': return out_({ ok: true, drawing: setLock_(req.id, req.lockNew, me) });
@@ -248,7 +249,7 @@ function login_(req) {
 /* ---------- 도면 ---------- */
 function drawingOut_(o) {
   return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '', pageNames: names_(o.pageNames), kind: o.kind || '', locked: !!o.lockHash,
-    members: names_(o.members) };   // 비밀번호 자체는 내보내지 않는다
+    members: names_(o.members), vendors: vendorsOf_(o.vendors) };   // 비밀번호 자체는 내보내지 않는다
 }
 /* 협업 요청을 수락한 사람(members): 잠긴 도면도 비밀번호 없이 연다. 공유 도면은 누구에게나 보인다 */
 function isMember_(o, me) { return names_(o.members).indexOf(me.name) >= 0; }
@@ -275,6 +276,15 @@ function setLock_(id, pw, me) {
   if (pw && pw.length < 4) throw new Error('도면 비밀번호는 4자 이상으로 해 주세요');
   if (pw) { o.lockSalt = Utilities.getUuid(); o.lockHash = hash_(o.lockSalt, pw); } else { o.lockSalt = ''; o.lockHash = ''; }
   o.updated = Date.now();
+  writeRow_(sh, D_COLS, o._row, o);
+  return drawingOut_(o);
+}
+function vendorsOf_(t) { if (!t) return null; try { const a = JSON.parse(t); return Array.isArray(a) ? a : null; } catch (e) { return null; } }
+function cleanVendors_(list) { return (Array.isArray(list) ? list : []).map(v => [String(v[0] || '').trim().slice(0, 40), String(v[1] || '').trim().slice(0, 40), Array.isArray(v[2]) ? v[2].map(String).slice(0, 10) : []]).filter(v => v[0]).slice(0, 80); }
+function setVendors_(id, list) {   // 4.22 도면별 업체 목록
+  const { sh, list: rows } = rows_('도면');
+  const o = rows.find(x => x.id === id); if (!o) throw new Error('도면이 없습니다');
+  o.vendors = JSON.stringify(cleanVendors_(list)); o.updated = Date.now();
   writeRow_(sh, D_COLS, o._row, o);
   return drawingOut_(o);
 }
