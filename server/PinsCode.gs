@@ -86,6 +86,11 @@ function doPost(e) {
         case 'addComment': gate_(req.drawingId, me, req); return out_({ ok: true, comments: addComment_(req.drawingId, req.pinId, req.text, me) });
         case 'delComment': return out_({ ok: true, comments: delComment_(req.id, me, req) });
         case 'editComment': return out_({ ok: true, comments: editComment_(req.id, req.text, me, req) });
+        case 'savePins': {   // 4.24 핀 여러 개를 한 번에 (사진은 savePhotos 로 먼저 올림)
+          const items = (req.items || []).slice(0, 40), outp = [];
+          const ok = {}; items.forEach(it => { try { const did = it && it.drawingId; if (!ok[did]) { gate_(did, me, req); ok[did] = 1; } outp.push({ id: it.id, pin: savePin_(it, {}, me) }); } catch (e) { outp.push({ id: it && it.id, error: String(e.message || e) }); } });
+          return out_({ ok: true, pins: outp });
+        }
         case 'savePin': gate_(req.item && req.item.drawingId, me, req); return out_({ ok: true, pin: savePin_(req.item, req.photos || {}, me) });
         case 'deletePin': gate_(pinDrawing_(req.id), me, req); return out_({ ok: true, pin: deletePin_(req.id, me) });
         default: return out_({ ok: false, error: '알 수 없는 요청' });
@@ -97,7 +102,9 @@ function doPost(e) {
 }
 
 /* ---------- 시트·폴더 ---------- */
+let SS__ = null;   // 4.24 한 번의 요청 안에서는 시트를 한 번만 연다 (요청마다 여러 번 열던 것이 느렸음)
 function ss_() {
+  if (SS__) return SS__;
   const props = PropertiesService.getScriptProperties();
   let id = props.getProperty('PINS_SS_ID'), ss = null;
   if (id) { try { ss = SpreadsheetApp.openById(id); } catch (e) { ss = null; } }
@@ -127,6 +134,7 @@ function ss_() {
     const u = ss.insertSheet('사용자');
     u.getRange(1, 1, 1, U_COLS.length).setValues([U_COLS]); u.setFrozenRows(1);
   }
+  SS__ = ss;
   return ss;
 }
 function folder_(parts) {
