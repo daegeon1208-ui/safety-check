@@ -317,8 +317,10 @@ function parts_(pins) {
 }
 function drawings_(me) {
   const pins = rows_('핀').list.filter(p => p.deleted !== 'true');
+  let props = {}; try { props = PropertiesService.getScriptProperties().getProperties(); } catch (e) {}
   return rows_('도면').list.map(o => {
     const d = drawingOut_(o), mine = pins.filter(p => p.drawingId === o.id);
+    d.size = +props['SZ_' + o.id] || 0;
     d.open = mine.filter(p => p.status !== 'done').length; d.done = mine.length - d.open;
     d.parts = parts_(mine);
     return d;
@@ -329,7 +331,7 @@ function uploadDrawing_(d, data, by) {
   const ex = list.find(o => o.id === d.id);
   if (ex) return drawingOut_(ex);   // 이미 올라간 도면
   const blob = Utilities.newBlob(Utilities.base64Decode(data), 'application/pdf', String(d.name).replace(/[\\/]/g, '_') + '.pdf');
-  const file = folder_(['도면']).createFile(blob);
+  const file = folder_(['도면']).createFile(blob); setSize_(d.id, blob.getBytes().length);
   const now = Date.now();
   const o = { id: d.id, name: d.name, pages: d.pages || 1, fileId: file.getId(), created: d.created || now, updated: now, deleted: 'false', by: by || '', kind: d.kind === 'dwg' ? 'dwg' : (d.kind === 'pdf' ? 'pdf' : ''), members: '[]' };
   writeRow_(sh, D_COLS, 0, o);
@@ -363,7 +365,7 @@ function replaceDrawingFile_(id, data, pages, map, me, names) {
   if (lost.length) throw new Error('빼려는 쪽에 핀이 있습니다 (' + lost.map(x => x.no + '번').join(', ') + '). 새로 고친 뒤 다시 해 주세요');
   const now = Date.now(), stamp = Utilities.formatDate(new Date(now), 'Asia/Seoul', 'yyMMdd HHmm');
   const blob = Utilities.newBlob(Utilities.base64Decode(data), 'application/pdf', String(o.name).replace(/[\\/]/g, '_') + ' (' + stamp + ').pdf');
-  o.fileId = folder_(['도면']).createFile(blob).getId();
+  o.fileId = folder_(['도면']).createFile(blob).getId(); setSize_(id, blob.getBytes().length);
   o.pages = +pages || 1; o.updated = now; o.ver = String(now); o.by = o.by || me.name;
   if (names) o.pageNames = JSON.stringify(names.map(x => String(x || '').slice(0, 40)));
   writeRow_(sh, D_COLS, o._row, o);
@@ -375,7 +377,13 @@ function replaceDrawingFile_(id, data, pages, map, me, names) {
 }
 function drawingFile_(id) {
   const o = rows_('도면').list.find(x => x.id === id); if (!o) throw new Error('도면이 없습니다');
-  return Utilities.base64Encode(DriveApp.getFileById(o.fileId).getBlob().getBytes());
+  const bytes = DriveApp.getFileById(o.fileId).getBlob().getBytes();
+  setSize_(id, bytes.length);
+  return Utilities.base64Encode(bytes);
+}
+/* 도면 파일 크기(바이트): 받을 때 몇 % 받았는지 보여 주려고 목록에 함께 보낸다. 시트 칸을 늘리지 않고 스크립트 속성에 둔다 */
+function setSize_(id, n) {
+  try { const props = PropertiesService.getScriptProperties(); if (props.getProperty('SZ_' + id) !== String(n)) props.setProperty('SZ_' + id, String(n)); } catch (e) {}
 }
 
 /* ---------- 핀 ---------- */
