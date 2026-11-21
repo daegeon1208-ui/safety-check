@@ -317,10 +317,10 @@ function parts_(pins) {
 }
 function drawings_(me) {
   const pins = rows_('핀').list.filter(p => p.deleted !== 'true');
-  let props = {}; try { props = PropertiesService.getScriptProperties().getProperties(); } catch (e) {}
+  const sz = sizes_();
   return rows_('도면').list.map(o => {
     const d = drawingOut_(o), mine = pins.filter(p => p.drawingId === o.id);
-    d.size = +props['SZ_' + o.id] || 0;
+    d.size = +sz[o.id] || 0;
     d.open = mine.filter(p => p.status !== 'done').length; d.done = mine.length - d.open;
     d.parts = parts_(mine);
     return d;
@@ -382,8 +382,9 @@ function drawingFile_(id) {
   return Utilities.base64Encode(bytes);
 }
 /* 도면 파일 크기(바이트): 받을 때 몇 % 받았는지 보여 주려고 목록에 함께 보낸다. 시트 칸을 늘리지 않고 스크립트 속성에 둔다 */
+function sizes_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('PINS_SIZES') || '{}') || {}; } catch (e) { return {}; } }
 function setSize_(id, n) {
-  try { const props = PropertiesService.getScriptProperties(); if (props.getProperty('SZ_' + id) !== String(n)) props.setProperty('SZ_' + id, String(n)); } catch (e) {}
+  try { const o = sizes_(); if (o[id] !== n) { o[id] = n; PropertiesService.getScriptProperties().setProperty('PINS_SIZES', JSON.stringify(o)); } } catch (e) {}
 }
 
 /* ---------- 핀 ---------- */
