@@ -30,7 +30,7 @@ const PIN = '0000';   // ← 앱에서 입력할 비밀번호. 꼭 바꿔 주세
 
 const SS_NAME = '도면 하자 핀';
 const ROOT_NAME = '도면 하자 핀';
-const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames', 'kind', 'lockSalt', 'lockHash', 'members', 'vendors'];
+const D_COLS = ['id', 'name', 'pages', 'fileId', 'created', 'updated', 'deleted', 'by', 'ver', 'pageNames', 'kind', 'lockSalt', 'lockHash', 'members', 'vendors', 'owner'];   // owner: 개인 도면이면 올린 사람 이름 (그 사람만 보고 받음, 4.41)
 const N_COLS = ['id', 'to', 'type', 'from', 'drawingId', 'pinId', 'text', 'created', 'read', 'state'];
 const U_COLS = ['name', 'salt', 'hash', 'admin', 'created', 'lastLogin'];
 const C_COLS = ['id', 'drawingId', 'pinId', 'by', 'text', 'created', 'deleted', 'edited'];
@@ -79,6 +79,7 @@ function doPost(e) {
         case 'replaceDrawingFile': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: replaceDrawingFile_(req.id, req.data, req.pages, req.map || {}, me, req.names) });
         case 'setPageNames': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: setPageNames_(req.id, req.names) });
         case 'setVendors': gate_(req.id, me, req); owner_(req.id, me); return out_({ ok: true, drawing: setVendors_(req.id, req.vendors) });
+        case 'setPrivate': gate_(req.id, me, req); return out_({ ok: true, drawing: setPrivate_(req.id, !!req.private, me) });
         case 'setKind': gate_(req.id, me, req); return out_({ ok: true, drawing: setKind_(req.id, req.kind, me) });
         case 'unlock': gate_(req.id, me, req); return out_({ ok: true });
         case 'setLock': return out_({ ok: true, drawing: setLock_(req.id, req.lockNew, me) });
@@ -257,7 +258,7 @@ function login_(req) {
 /* ---------- 도면 ---------- */
 function drawingOut_(o) {
   return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '', pageNames: names_(o.pageNames), kind: o.kind || '', locked: !!o.lockHash,
-    members: names_(o.members), vendors: vendorsOf_(o.vendors) };   // 비밀번호 자체는 내보내지 않는다
+    members: names_(o.members), vendors: vendorsOf_(o.vendors), private: !!o.owner };   // 비밀번호 자체는 내보내지 않는다
 }
 /* 협업 요청을 수락한 사람(members): 잠긴 도면도 비밀번호 없이 연다. 공유 도면은 누구에게나 보인다 */
 function isMember_(o, me) { return names_(o.members).indexOf(me.name) >= 0; }
@@ -272,13 +273,14 @@ function gate_(id, me, req) {
   if (!id) return;
   const o = rows_('도면').list.find(x => x.id === id);
   if (!o) return;
+  if (o.owner && o.owner !== me.name) throw new Error('도면이 없습니다');   // 개인 도면은 올린 사람만 (관리자도 못 봄)
   if (!o.lockHash || me.admin || (o.by && o.by === me.name) || isMember_(o, me)) return;   // 협업 요청을 수락한 사람은 비밀번호 없이
   if (!req.lockPw) throw new Error('LOCKED: 도면 비밀번호를 넣어야 열립니다');
   if (hash_(o.lockSalt, String(req.lockPw)) !== o.lockHash) throw new Error('LOCKED: 도면 비밀번호가 틀렸습니다');
 }
 function setLock_(id, pw, me) {
   const { sh, list } = rows_('도면');
-  const o = list.find(x => x.id === id); if (!o) throw new Error('도면이 없습니다');
+  const o = list.find(x => x.id === id); if (!o || (o.owner && o.owner !== me.name)) throw new Error('도면이 없습니다');
   if (!me.admin && !(o.by && o.by === me.name)) throw new Error('도면을 올린 사람과 관리자만 도면 비밀번호를 바꿀 수 있습니다');
   pw = String(pw || '');
   if (pw && pw.length < 4) throw new Error('도면 비밀번호는 4자 이상으로 해 주세요');
@@ -293,6 +295,15 @@ function setVendors_(id, list) {   // 4.22 도면별 업체 목록
   const { sh, list: rows } = rows_('도면');
   const o = rows.find(x => x.id === id); if (!o) throw new Error('도면이 없습니다');
   o.vendors = JSON.stringify(cleanVendors_(list)); o.updated = Date.now();
+  writeRow_(sh, D_COLS, o._row, o);
+  return drawingOut_(o);
+}
+/* 개인 도면 ↔ 협업 도면 (4.41). 올린 사람만 바꿀 수 있다 */
+function setPrivate_(id, priv, me) {
+  const { sh, list } = rows_('도면');
+  const o = list.find(x => x.id === id); if (!o) throw new Error('도면이 없습니다');
+  if (o.owner ? o.owner !== me.name : (o.by && o.by !== me.name)) throw new Error('도면을 올린 사람만 바꿀 수 있어요');
+  o.owner = priv ? me.name : ''; o.updated = Date.now();
   writeRow_(sh, D_COLS, o._row, o);
   return drawingOut_(o);
 }
@@ -318,7 +329,7 @@ function parts_(pins) {
 function drawings_(me) {
   const pins = rows_('핀').list.filter(p => p.deleted !== 'true');
   const sz = sizes_();
-  return rows_('도면').list.map(o => {
+  return rows_('도면').list.filter(o => !o.owner || o.owner === me.name).map(o => {
     const d = drawingOut_(o), mine = pins.filter(p => p.drawingId === o.id);
     d.size = +sz[o.id] || 0;
     d.open = mine.filter(p => p.status !== 'done').length; d.done = mine.length - d.open;
@@ -333,7 +344,7 @@ function uploadDrawing_(d, data, by) {
   const blob = Utilities.newBlob(Utilities.base64Decode(data), 'application/pdf', String(d.name).replace(/[\\/]/g, '_') + '.pdf');
   const file = folder_(['도면']).createFile(blob); setSize_(d.id, blob.getBytes().length);
   const now = Date.now();
-  const o = { id: d.id, name: d.name, pages: d.pages || 1, fileId: file.getId(), created: d.created || now, updated: now, deleted: 'false', by: by || '', kind: d.kind === 'dwg' ? 'dwg' : (d.kind === 'pdf' ? 'pdf' : ''), members: '[]' };
+  const o = { id: d.id, name: d.name, pages: d.pages || 1, fileId: file.getId(), created: d.created || now, updated: now, deleted: 'false', by: by || '', kind: d.kind === 'dwg' ? 'dwg' : (d.kind === 'pdf' ? 'pdf' : ''), members: '[]', owner: d.private ? (by || '') : '' };
   writeRow_(sh, D_COLS, 0, o);
   return drawingOut_(o);
 }
@@ -491,6 +502,7 @@ function users_(me) {
 }
 function invite_(id, to, me) {
   const o = rows_('도면').list.find(x => x.id === id); if (!o || o.deleted === 'true') throw new Error('도면이 없습니다');
+  if (o.owner) throw new Error('개인 도면은 협업 요청을 보낼 수 없어요. 먼저 협업 도면으로 바꿔 주세요');
   if (!me.admin && !(o.by && o.by === me.name)) throw new Error('도면을 올린 사람과 관리자만 협업 요청을 보낼 수 있습니다');
   const users = users_({ admin: true }), N = rows_('알림').list;
   let sent = 0;
