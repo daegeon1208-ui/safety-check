@@ -357,7 +357,7 @@ const MONTHS = Object.keys(DEFAULT_TPLS).sort();
 /* 일일안전관리자 편성표 (11월 일일 안전관리자 활동 운영 지침, 2026.10.30) — 일요일은 비어 있음 */
 const ROSTERS = { "2026-11": {2:"배윤기",3:"김대건",4:"신상우",5:"배윤기",6:"신상우",7:"배윤기",9:"김용규",10:"최성기",11:"정병익",12:"김용규",13:"최성기",14:"신상우",16:"정병익",17:"김대건",18:"김용규",19:"정병익",20:"최성기",21:"김대건",23:"배윤기",24:"최성기",25:"김용규",26:"김대건",27:"정병익",28:"신상우",30:"김대건"} };
 function rosterOf(dateStr){ const [y,m,d]=dateStr.split("-").map(Number); const r=ROSTERS[`${y}-${String(m).padStart(2,"0")}`]; return r ? (r[d]||"") : ""; }
-const APP_VER="2026-11-10g";
+const APP_VER="2026-11-26a";
 const EXTRA_ROWS = 2; // 엑셀 19·20행
 const WD = ["일","월","화","수","목","금","토"];
 
@@ -858,10 +858,11 @@ async function prepareExport(){
     pdfUrl=URL.createObjectURL(blob);
     pdfFile = (typeof File!=="undefined") ? new File([blob],f.name,{type:f.type}) : null;
     const a=$("#pdfSave"); a.href=pdfUrl; a.download=f.name; a.textContent=(fmt==="xlsx"?"엑셀":"PDF")+" 저장"; a.hidden=false;
-    const canShare = !!(pdfFile && navigator.canShare && navigator.canShare({files:[pdfFile]}));
-    $("#pdfShare").hidden = !canShare;
-    a.classList.toggle("primary-alt", !canShare);   // 보내기가 안 되는 기기에서는 저장 버튼을 강조
-    $("#pdfMsg").textContent=`${f.name} (${Math.max(1,Math.round(f.bytes.length/1024))} KB) 준비됐어요.`;
+    // 보내기 버튼은 늘 보여 준다. 바로 보내기가 안 되는 기기(안드로이드 크롬의 엑셀, 카톡 안 브라우저 등)는
+    // 누르면 휴대폰에 저장하고 카톡에서 첨부하는 방법을 알려 준다.
+    $("#pdfShare").hidden = false;
+    a.classList.remove("primary-alt");
+    $("#pdfMsg").textContent=`${f.name} (${Math.max(1,Math.round(f.bytes.length/1024))} KB) 준비됐어요.` + (canShareFile(pdfFile) ? "" : shareHint(fmt));
   }catch(err){
     if(job!==expJob) return;
     $("#pdfMsg").textContent = fmt==="xlsx" ? "엑셀 파일을 만들지 못했어요. 인터넷에 연결된 상태에서 다시 눌러 주세요." : "PDF를 만들지 못했어요. 인터넷에 연결된 상태에서 한 번 열어 글꼴을 받은 뒤 다시 눌러 주세요.";
@@ -916,7 +917,36 @@ $("#viewBtn").addEventListener("click", async ()=>{
 $("#pvZoom").addEventListener("click",()=>{ const z=$("#pvBody").classList.toggle("zoom"); $("#pvZoom").textContent=z?"작게":"크게"; });
 $("#pvClose").addEventListener("click",()=>{ pvJob++; $("#pvSheet").hidden=true; $("#pvBody").innerHTML=""; });
 $("#pvExport").addEventListener("click",()=>{ $("#pdfBtn").click(); });
-$("#pdfShare").addEventListener("click", async ()=>{ try{ await navigator.share({files:[pdfFile], title:pdfFile.name}); }catch(e){} });
+/* 보내기: 안드로이드는 파일과 제목(title)을 같이 넘기면 카톡 등이 파일을 못 받거나 공유가 실패하는 경우가 있어 파일만 넘긴다.
+   바로 보내기가 안 되면 휴대폰에 저장하고 첨부 방법을 알려 준다. */
+const UA=navigator.userAgent||"";
+const IS_ANDROID=/Android/i.test(UA);
+const IN_KAKAO=/KAKAOTALK/i.test(UA);
+function canShareFile(file){
+  try{ return !!(file && navigator.share && navigator.canShare && navigator.canShare({files:[file]})); }catch(e){ return false; }
+}
+function shareHint(fmt){
+  if(IN_KAKAO) return " 카카오톡 안에서 연 화면이라 바로 보내기가 안 돼요. 오른쪽 위 ⋮ → '다른 브라우저로 열기'(크롬)로 열면 보낼 수 있어요. 단, 기록은 브라우저마다 따로 저장돼요.";
+  if(IS_ANDROID && fmt==="xlsx") return " 안드로이드는 엑셀 파일을 바로 보내지 못해요(PDF는 가능). '보내기'를 누르면 휴대폰에 저장되니 카톡 채팅방 ＋ → 파일에서 골라 보내 주세요.";
+  return " 이 브라우저는 바로 보내기가 안 돼요. '보내기'를 누르면 휴대폰에 저장되니 카톡 채팅방 ＋ → 파일에서 골라 보내 주세요.";
+}
+function saveFallback(msg){
+  const a=$("#pdfSave"); if(a.href) a.click();
+  $("#pdfMsg").textContent = msg || `휴대폰에 저장했어요(다운로드 폴더). 카톡 채팅방 ＋ → 파일에서 ${pdfFile?pdfFile.name:"파일"}을 골라 보내 주세요.`;
+}
+let sharing=false;
+$("#pdfShare").addEventListener("click", async ()=>{
+  if(!pdfFile){ saveFallback(); return; }
+  if(!canShareFile(pdfFile)){ saveFallback(); return; }
+  if(sharing) return;
+  sharing=true;
+  try{ await navigator.share({files:[pdfFile]}); }
+  catch(e){
+    if(e && e.name==="AbortError"){ /* 사용자가 공유 창을 닫음 */ }
+    else saveFallback(`바로 보내기가 안 돼서 휴대폰에 저장했어요(다운로드 폴더). 카톡 채팅방 ＋ → 파일에서 ${pdfFile.name}을 골라 보내 주세요.`);
+  }
+  finally{ sharing=false; }
+});
 $("#pdfClose").addEventListener("click", ()=>{ expJob++; });
 $("#pdfClose").addEventListener("click", ()=>{ $("#pdfSheet").hidden=true; });
 $("#pdfSheet").addEventListener("click", e=>{ if(e.target.id==="pdfSheet") $("#pdfSheet").hidden=true; });
