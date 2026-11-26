@@ -260,8 +260,20 @@ function drawingOut_(o) {
   return { id: o.id, name: o.name, pages: +o.pages || 1, created: +o.created || 0, updated: +o.updated || 0, deleted: o.deleted === 'true' || o.deleted === true, by: o.by || '', ver: o.ver || '', pageNames: names_(o.pageNames), kind: o.kind || '', locked: !!o.lockHash,
     members: names_(o.members), vendors: vendorsOf_(o.vendors), private: !!o.owner };   // 비밀번호 자체는 내보내지 않는다
 }
-/* 협업 요청을 수락한 사람(members): 잠긴 도면도 비밀번호 없이 연다. 공유 도면은 누구에게나 보인다 */
+/* 협업 요청을 수락한 사람(members): 잠긴 도면도 비밀번호 없이 연다 */
 function isMember_(o, me) { return names_(o.members).indexOf(me.name) >= 0; }
+/* 핀톡 4.68: 협업 도면은 초대받은 사람만 보고 받는다.
+   볼 수 있는 사람 = 관리자 · 올린 사람 · 협업 요청을 수락한 사람(members)
+   KEEP_PARTS 가 true 이면, 초대 기능 전에 이미 그 도면에 핀을 올렸거나 조치완료한 사람(참가자)도 계속 본다 */
+const KEEP_PARTS = true;
+function canSee_(o, me, pins) {
+  if (!o) return false;
+  if (o.owner) return o.owner === me.name;   // 개인 도면은 올린 사람만 (관리자도 못 봄)
+  if (me.admin || (o.by && o.by === me.name) || isMember_(o, me)) return true;
+  if (!KEEP_PARTS) return false;
+  const mine = (pins || rows_('핀').list).filter(p => p.drawingId === o.id && p.deleted !== 'true');
+  return parts_(mine).indexOf(me.name) >= 0;
+}
 /* 도면 비밀번호: 잠긴 도면은 올린 사람·관리자가 아니면 req.lockPw 가 맞아야 통과 */
 /* 협업 도면의 이름·쪽 편집·파일 교체·삭제는 올린 사람과 관리자만 */
 function owner_(id, me) {
@@ -273,7 +285,7 @@ function gate_(id, me, req) {
   if (!id) return;
   const o = rows_('도면').list.find(x => x.id === id);
   if (!o) return;
-  if (o.owner && o.owner !== me.name) throw new Error('도면이 없습니다');   // 개인 도면은 올린 사람만 (관리자도 못 봄)
+  if (!canSee_(o, me)) throw new Error('도면이 없습니다');   // 개인 도면은 올린 사람만, 협업 도면은 초대받은 사람만 (4.68)
   if (!o.lockHash || me.admin || (o.by && o.by === me.name) || isMember_(o, me)) return;   // 협업 요청을 수락한 사람은 비밀번호 없이
   if (!req.lockPw) throw new Error('LOCKED: 도면 비밀번호를 넣어야 열립니다');
   if (hash_(o.lockSalt, String(req.lockPw)) !== o.lockHash) throw new Error('LOCKED: 도면 비밀번호가 틀렸습니다');
@@ -329,7 +341,7 @@ function parts_(pins) {
 function drawings_(me) {
   const pins = rows_('핀').list.filter(p => p.deleted !== 'true');
   const sz = sizes_();
-  return rows_('도면').list.filter(o => !o.owner || o.owner === me.name).map(o => {
+  return rows_('도면').list.filter(o => canSee_(o, me, pins)).map(o => {
     const d = drawingOut_(o), mine = pins.filter(p => p.drawingId === o.id);
     d.size = +sz[o.id] || 0;
     d.open = mine.filter(p => p.status !== 'done').length; d.done = mine.length - d.open;
